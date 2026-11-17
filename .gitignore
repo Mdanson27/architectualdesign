@@ -1,0 +1,26 @@
+# Strict allowlist: never commit private architectural originals, source IFC, backups or QA data.
+*
+!/.gitignore
+!/.github/
+!/.github/workflows/
+!/.github/workflows/pages.yml
+!/README.md
+!/package.json
+!/package-lock.json
+!/vite.config.js
+!/index.html
+!/actual-house.html
+!/src/
+!/src/phase2/
+!/src/phase2/actual-house.js
+!/src/phase2/actual-house.css
+!/src/phase2/functional-doors.js
+!/src/phase2/door-apertures.js
+!/src/phase2/dining-furnishings.js
+!/src/phase2/house-enhancements.js
+!/public/
+!/public/ifc/
+!/public/ifc/house/
+!/public/ifc/house/*.glb
+!/public/ifc/house/*.json
+/public/ifc/house/*.tmp

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="theme-color" content="#102428"/>
+<meta name="robots" content="noindex,nofollow"/>
+<meta name="description" content="Source-accurate interactive BIM-based architectural walkthrough, built from Archicad IFC and original interior renders."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<title>Actual House | AutoMinds SPACES</title>
+</head>
+<body>
+<div class="app" id="app">
+ <div class="viewport" id="viewport"></div>
+ <div class="vignette"></div>
+ <header class="header">
+   <a class="logo" href="./actual-house.html" title="AutoMinds Spaces">
+     <span class="logoMark">A<span>.</span></span>
+     <span class="logoText"><strong>AUTOMINDS <em>SPACES</em></strong><small>ARCHITECTURAL EXPERIENCES</small></span>
+   </a>
+   <div class="headerCenter"><span class="statusDot"></span><span>IFC SOURCE MODEL</span><i></i><span>REAL 3D GEOMETRY</span></div>
+   <div class="headerActions">
+     <button id="lightBtn" title="Toggle day and night"><span class="symbol">☼</span><span class="long">Daylight</span></button>
+     <button id="referenceBtn" title="Compare with architectural renders"><span class="symbol">◫</span><span class="long">Design references</span></button>
+     <button id="drawingsBtn" title="View the actual architectural PDF floor plans"><span class="symbol">▤</span><span class="long">Architectural plans</span></button>
+     <button id="mapBtn" title="Open navigation map"><span class="symbol">▦</span><span class="long">Floor map</span></button>
+     <button id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+   </div>
+ </header>
+ <aside class="sidebar">
+   <div class="overline"><span></span> BIM-BASED RECONSTRUCTION</div>
+   <h1>The house.<br/><em>As modelled.</em></h1>
+   <p class="sidebarDesc">Explore geometry extracted from the original architectural IFC. The structure is source-derived; the warm material treatment is an interior visual approximation.</p>
+   <div class="stats"><div><b>3</b><small>IFC LEVELS</small></div><div><b id="elementTotal">2,575</b><small>IFC ELEMENTS INDEXED</small></div></div>
+   <div class="sideTitle">LEVEL SELECTION <span>2 FLOORS + ROOF</span></div>
+   <div class="floorButtons" id="floorButtons">
+     <button data-floor="all" class="floorBtn active"><span class="floorIcon">▥</span><span><b>Complete building</b><small>View all modelled levels</small></span><span class="endArrow">↗</span></button>
+     <button data-floor="ground" class="floorBtn"><span class="floorIcon">G</span><span><b>Ground floor</b><small>Architectural elevation · 0.00m</small></span><span class="endArrow">↗</span></button>
+     <button data-floor="first" class="floorBtn"><span class="floorIcon">1</span><span><b>First floor</b><small>Architectural elevation · +3.30m</small></span><span class="endArrow">↗</span></button>
+     <button data-floor="second" class="floorBtn"><span class="floorIcon">R</span><span><b>Roof level</b><small>Architectural roof datum · +6.60m</small></span><span class="endArrow">↗</span></button>
+   </div>
+   <div class="sideTitle">STRUCTURE VIEW <span>NON-DESTRUCTIVE</span></div>
+   <div class="layerToggles">
+     <label class="toggleLine"><span><b>Show surrounding IFC groups</b><small>Detached design clusters and auxiliary structures</small></span><input id="surroundingsToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
+     <label class="toggleLine"><span><b>Section / remove roof above floor</b><small>Reveal wall layout and rooms from above</small></span><input id="sectionToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
+   </div>
+   <button id="stairFocusBtn" class="structAction">↗ INSPECT REAL STAIRCASE</button>
+   <button id="gateBtn" class="structAction">▣ INSPECT GATE / BOUNDARY</button>
+   <button id="measureBtn" class="structAction">⌁ MEASURE ROOM DISTANCE</button>
+   <div id="measureStatus" class="measureStatus">Measurement tool is off.</div>
+   <button id="bedroomsBtn" class="structAction">⌂ NAVIGATE TO BEDROOMS</button>
+   <div id="doorSystemCount" class="measureStatus">Checking all IFC door assemblies...</div>
+   <label class="toggleLine"><span><b>Reveal door openings</b><small>Reversible preview repair for occluding IFC walls</small></span><input id="doorRevealToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
+   <button id="doorNavigatorBtn" class="structAction">🚪 NAVIGATE TO ANY DOOR</button>
+   <button id="diningBtn" class="structAction">▣ VISIT DINING ROOM · SIX SEATS</button>
+   <div class="sideTitle">DETAIL LAYERS <span>LIVE GEOMETRY</span></div>
+   <div class="layerToggles">
+     <label class="toggleLine"><span><b>Architecture</b><small>Walls, floors, doors, windows, railings</small></span><input id="architectureToggle" type="checkbox" checked disabled/><span class="checkVisual">✓</span></label>
+     <label class="toggleLine"><span><b>Built-in details</b><small>Columns, stairs, trims, fixtures</small></span><input id="detailsToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
+     <label class="toggleLine"><span><b>Furniture & interiors</b><small>Source IFC furnishings and fittings</small></span><input id="furnitureToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
+     <label class="toggleLine"><span><b>Enhanced bedroom furniture</b><small>Real 3D beds anchored to IFC furniture footprints</small></span><input id="styledBedsToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
+   </div>
+   <div class="sourceNote"><span>MEASURED PLAN SPACE</span><p>35 m² sitting room, 35 m² master bedroom, 20/17/13 m² bedrooms and 11 m² maid's room. Model units remain true metres.</p></div>
+   <div class="sourceNote"><span>HOME.PDF · CLIENT ARCHITECTURAL PLAN</span><p>2 occupied floors, roof at +6.60m. Plans label four bedrooms plus maid room. Previous 13-suite claim is not confirmed by these drawings.</p></div>
+ </aside>
+ <div class="sceneTag"><span class="liveDot"></span><strong id="locationText">SOURCE MODEL · OVERVIEW</strong><i></i><span id="levelText">ALL LEVELS</span></div>
+ <div id="crosshair" class="crosshair hidden">+</div>
+ <div id="doorInteract" class="doorInteract hidden" role="status" aria-live="polite">
+  <span id="doorHint">Approach a door to interact</span>
+  <button id="doorActionBtn" type="button" aria-label="Open or close nearest door">OPEN DOOR</button>
+ </div>
+ <div id="doorPanel" class="bedroomPanel hidden">
+  <div class="panelHead"><div><small>ARCHITECT IFC · FUNCTIONAL PREVIEW</small><b>Door-by-door navigation</b></div><button id="closeDoorPanel" aria-label="Close door navigation">×</button></div>
+  <p id="doorTotal">Loading IFC openings...</p>
+  <div id="doorList" class="bedroomList"></div>
+  <p>All doors stay visible while opening. Press E to swing or slide the door, then walk through the opening.</p>
+ </div>
+ <div id="bedroomPanel" class="bedroomPanel hidden">
+   <div class="panelHead"><div><small>FURNISHING ANCHORS · FROM REAL IFC</small><b>Bedroom entry points</b></div><button id="closeBedroomPanel" aria-label="Close bedrooms">×</button></div>
+   <p id="bedroomCount">Loading furniture anchor points</p>
+   <div id="bedroomList" class="bedroomList"></div>
+   <p>Bed placements use original IFC geometry. Exact room names remain subject to architectural floor-plan mapping.</p>
+ </div>
+ <div id="mapPanel" class="mapPanel hidden">
+   <div class="panelHead"><b>ARCHITECTURAL PLAN</b><button id="closeMap" aria-label="Close map">×</button></div>
+   <p>Calculated from source element outlines; this is not a surveyed room map.</p>
+   <canvas id="mapCanvas" width="300" height="270"></canvas>
+   <div class="mapLegend"><span><i class="point"></i> You</span><span><i class="outline"></i> IFC geometry</span></div>
+ </div>
+ <div id="renderPanel" class="renderPanel hidden">
+   <div class="panelHead"><div><small>ORIGINAL INTERIOR RENDERS</small><b id="referenceTitle">Foyer Staircase</b></div><button id="closeRef" aria-label="Close comparison">×</button></div>
+   <img id="referenceImage" alt="Architectural interior reference"/>
+   <div class="renderNav"><button id="prevRef" aria-label="Previous render">‹</button><span id="referenceCount">1 / 14</span><button id="nextRef" aria-label="Next render">›</button></div>
+   <p>The images guide appearance. Exact placement of furniture is verified only where included in the IFC.</p>
+ </div>
+ <div id="drawingPanel" class="drawingPanel hidden" aria-label="Original client architectural drawings">
+   <div class="panelHead"><div><small>CLIENT-SUPPLIED · HOME.PDF</small><b id="drawingTitle">Ground-floor plan</b></div><button id="closeDrawings" aria-label="Close architectural drawings">×</button></div>
+   <div class="drawingViewport"><img id="drawingImage" alt="Original dimensioned architectural plan"/></div>
+   <div class="drawingNav"><button id="previousDrawing" aria-label="Previous architectural drawing">‹</button><span id="drawingCount">1 / 5</span><button id="nextDrawing" aria-label="Next architectural drawing">›</button></div>
+   <p><strong>Measured drawing reference.</strong> Ground, first, roof, site and elevations are available. Four bedrooms plus a maid's room are labelled across two occupied floors; the earlier 13-suite claim remains unverified.</p>
+ </div>
+ <div class="hud">
+   <div class="help"><kbd>W A S D</kbd><span>MOVE</span></div>
+   <div class="help"><kbd>↗</kbd><span>LOOK</span></div>
+   <div class="help"><kbd>SHIFT</kbd><span>FASTER</span></div><div class="help"><kbd>E</kbd><span>DOORS</span></div>
+   <div class="help"><kbd>ESC</kbd><span>RELEASE</span></div>
+   <span class="fill"></span>
+   <span class="hudStatus" id="hudStatus">SOURCE MODEL</span>
+   <button class="hudButton" id="walkBtn">⌖ WALK INSIDE</button><button class="hudButton" id="coreFocusBtn">⌂ FOCUS BUILDING</button><button class="hudButton" id="recenterBtn">◎ ENTIRE IFC</button>
+ </div>
+ <div id="touchJoystick" class="touchJoystick"><div class="touchRing"><div id="touchThumb"></div></div><small>MOVE</small></div>
+ <div class="touchLook">DRAG TO LOOK</div>
+ <div id="loading" class="loading">
+   <div class="loadingLogo">A<span>.</span></div>
+   <h2>Preparing the actual house</h2>
+   <p>Loading measured IFC geometry, architectural surfaces and interior components.</p>
+   <div class="progress"><div id="progressBar"></div></div>
+   <small id="progressLabel">Reading building manifest</small>
+ </div>
+ <div id="intro" class="intro hidden">
+   <div class="introBackdrop"></div>
+   <div class="introContent">
+     <div class="overline"><span></span> REAL ARCHITECTURAL GEOMETRY</div>
+     <h2>Step into<br/><em>the actual house.</em></h2>
+     <p>This is the building geometry extracted from the Archicad IFC, with the original interior renders guiding finishes and styling. Walk through it in first person, turn to inspect walls and furniture, and navigate across two occupied floors beneath the roof.</p>
+     <div class="introFacts"><span>REAL IFC DIMENSIONS</span><span>INTERACTIVE FIRST PERSON</span><span>14 DESIGN REFERENCES</span></div>
+     <div class="introActions">
+       <button id="enterBtn" class="enterBtn">ENTER THE HOUSE <b>↗</b></button>
+       <button id="orbitBtn" class="orbitBtn">VIEW 3D MODEL <span>◌</span></button>
+     </div>
+     <small>WASD TO WALK · MOUSE TO LOOK · ESC TO RELEASE · FLOOR CONTROLS AT LEFT</small>
+   </div>
+ </div>
+ <div id="error" class="error hidden"><h2>3D geometry could not load</h2><p id="errorMessage"></p><button onclick="location.reload()">Reload viewer</button></div>
+ <div id="toast" class="toast"></div>
+</div>
+<script type="module" src="/src/phase2/actual-house.js"></script>
+</body></html>

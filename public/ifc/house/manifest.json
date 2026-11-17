@@ -1,0 +1,2186 @@
+{
+  "schema": "autominds.ifc-geometry-manifest.v1",
+  "source": "Archicad 24 IFC2X3",
+  "units": "metres",
+  "modelStoreys": {
+    "ground": 0,
+    "first": 3.3,
+    "second": 6.6
+  },
+  "sceneBounds": [
+    [
+      28.7437615115,
+      -5.493592834472656,
+      -43.89074198427227
+    ],
+    [
+      150.71396087044096,
+      10.691777276992799,
+      19.335613703546485
+    ]
+  ],
+  "progress": {
+    "source_product_count": 2575,
+    "converted_layers": 76,
+    "source_items_skipped_for_resource_limit": 3,
+    "excluded_element_labels": [
+      "ground-proxies-r290",
+      "ground-proxies-r076",
+      "ground-proxies-r294"
+    ],
+    "total_batches_after_recovery": 79,
+    "base_batch_initial_failures_resolved_to_three_source_items": true
+  },
+  "layers": [
+    {
+      "name": "first-columns-00",
+      "level": "first",
+      "category": "columns",
+      "part": 0,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.12,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          115.93823643716765,
+          5.7,
+          -4.570957757096483
+        ],
+        [
+          119.65323643683236,
+          6.000000011920929,
+          -4.550957757543518
+        ]
+      ],
+      "glb": "/ifc/house/first-columns-00.glb",
+      "seconds": 0.45,
+      "types": {
+        "IFCCOLUMN": 75
+      }
+    },
+    {
+      "name": "first-columns-01",
+      "level": "first",
+      "category": "columns",
+      "part": 1,
+      "elements": 72,
+      "rendered_objects": 72,
+      "entities": null,
+      "subset_mb": 0.12,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          112.17624768322351,
+          3.3000000000000003,
+          -7.551680345806482
+        ],
+        [
+          115.90323643683236,
+          6.399999904632569,
+          -4.550957757543518
+        ]
+      ],
+      "glb": "/ifc/house/first-columns-01.glb",
+      "seconds": 0.44,
+      "types": {
+        "IFCCOLUMN": 72
+      }
+    },
+    {
+      "name": "first-doors-00",
+      "level": "first",
+      "category": "doors",
+      "part": 0,
+      "elements": 2,
+      "rendered_objects": 2,
+      "entities": null,
+      "subset_mb": 0.09,
+      "glb_mb": 0.01,
+      "bounds": [
+        [
+          108.07806925661096,
+          3.3000000000000003,
+          -14.144746670857765
+        ],
+        [
+          115.70595174308684,
+          5.837000036239624,
+          -9.22827915915865
+        ]
+      ],
+      "glb": "/ifc/house/first-doors-00.glb",
+      "seconds": 0.31,
+      "types": {
+        "IFCDOOR": 2
+      }
+    },
+    {
+      "name": "first-furniture-00",
+      "level": "first",
+      "category": "furniture",
+      "part": 0,
+      "elements": 30,
+      "rendered_objects": 30,
+      "entities": null,
+      "subset_mb": 2.74,
+      "glb_mb": 0.47,
+      "bounds": [
+        [
+          107.88318954399999,
+          3.3000000000000003,
+          -14.247540017673487
+        ],
+        [
+          118.60733896232978,
+          6.149999988079071,
+          0.5632153202319999
+        ]
+      ],
+      "glb": "/ifc/house/first-furniture-00.glb",
+      "seconds": 11.29,
+      "types": {
+        "IFCFURNISHINGELEMENT": 30
+      }
+    },
+    {
+      "name": "first-proxies-00",
+      "level": "first",
+      "category": "proxies",
+      "part": 0,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 1.63,
+      "glb_mb": 0.4,
+      "bounds": [
+        [
+          106.10042127462748,
+          -1.1744847932998086,
+          -14.592592108472529
+        ],
+        [
+          122.64333256764355,
+          6.51344159026,
+          1.7091409793099999
+        ]
+      ],
+      "glb": "/ifc/house/first-proxies-00.glb",
+      "seconds": 6.9,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "first-proxies-01",
+      "level": "first",
+      "category": "proxies",
+      "part": 1,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 16.34,
+      "glb_mb": 1.69,
+      "bounds": [
+        [
+          106.32542127524466,
+          -1.1744849205017083,
+          -13.647592124686206
+        ],
+        [
+          144.50034189797256,
+          6.91991690369,
+          2.034249342296029
+        ]
+      ],
+      "glb": "/ifc/house/first-proxies-01.glb",
+      "seconds": 50.94,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "first-proxies-02",
+      "level": "first",
+      "category": "proxies",
+      "part": 2,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 1.09,
+      "glb_mb": 0.2,
+      "bounds": [
+        [
+          112.427516012,
+          3.2,
+          -13.647592243658076
+        ],
+        [
+          144.796131962352,
+          6.91991690369,
+          2.0342494182987356
+        ]
+      ],
+      "glb": "/ifc/house/first-proxies-02.glb",
+      "seconds": 5.24,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "first-proxies-03",
+      "level": "first",
+      "category": "proxies",
+      "part": 3,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 0.56,
+      "glb_mb": 0.13,
+      "bounds": [
+        [
+          106.12542127500001,
+          2.796477461519035,
+          -14.558398083470166
+        ],
+        [
+          132.36314736897256,
+          6.519917049870501,
+          1.634502537462918
+        ]
+      ],
+      "glb": "/ifc/house/first-proxies-03.glb",
+      "seconds": 2.76,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "first-proxies-04",
+      "level": "first",
+      "category": "proxies",
+      "part": 4,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 3.83,
+      "glb_mb": 0.43,
+      "bounds": [
+        [
+          106.36706928010605,
+          3.3000000000000003,
+          -13.847592111080232
+        ],
+        [
+          118.12905403386355,
+          6.399999904632569,
+          0.5629600709837678
+        ]
+      ],
+      "glb": "/ifc/house/first-proxies-04.glb",
+      "seconds": 20.7,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "first-proxies-05",
+      "level": "first",
+      "category": "proxies",
+      "part": 5,
+      "elements": 20,
+      "rendered_objects": 20,
+      "entities": null,
+      "subset_mb": 42.56,
+      "glb_mb": 4.33,
+      "bounds": [
+        [
+          106.35706925622353,
+          3.285000000447035,
+          -13.650592142755567
+        ],
+        [
+          115.60699431299633,
+          6.755153694724426,
+          -9.484701445944282
+        ]
+      ],
+      "glb": "/ifc/house/first-proxies-05.glb",
+      "seconds": 202.49,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 20
+      }
+    },
+    {
+      "name": "first-railings-00",
+      "level": "first",
+      "category": "railings",
+      "part": 0,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 6.22,
+      "glb_mb": 1.1,
+      "bounds": [
+        [
+          106.62706922738978,
+          3.167140042111999,
+          -14.517592108770552
+        ],
+        [
+          122.59624814792139,
+          4.313303785392339,
+          1.513110052887598
+        ]
+      ],
+      "glb": "/ifc/house/first-railings-00.glb",
+      "seconds": 19.64,
+      "types": {
+        "IFCRAILING": 5
+      }
+    },
+    {
+      "name": "first-slabs-00",
+      "level": "first",
+      "category": "slabs",
+      "part": 0,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.15,
+      "glb_mb": 0.08,
+      "bounds": [
+        [
+          105.72542130938031,
+          2.7541644325944272,
+          -14.967592186600001
+        ],
+        [
+          123.02624797811963,
+          6.519917049870001,
+          1.80196004423496
+        ]
+      ],
+      "glb": "/ifc/house/first-slabs-00.glb",
+      "seconds": 0.56,
+      "types": {
+        "IFCSLAB": 75
+      }
+    },
+    {
+      "name": "first-slabs-01",
+      "level": "first",
+      "category": "slabs",
+      "part": 1,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 0.05,
+      "glb_mb": 0.01,
+      "bounds": [
+        [
+          106.325421275,
+          3.3000000000000003,
+          -9.24727923103
+        ],
+        [
+          119.72624755925537,
+          3.5000000029802325,
+          -0.14701876587731455
+        ]
+      ],
+      "glb": "/ifc/house/first-slabs-01.glb",
+      "seconds": 0.23,
+      "types": {
+        "IFCSLAB": 5
+      }
+    },
+    {
+      "name": "first-walls-00",
+      "level": "first",
+      "category": "walls",
+      "part": 0,
+      "elements": 72,
+      "rendered_objects": 72,
+      "entities": null,
+      "subset_mb": 0.14,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          106.12542123985975,
+          2.7964774610720005,
+          -14.5675921247893
+        ],
+        [
+          122.62624820752087,
+          6.60000004789451,
+          1.401960086869778
+        ]
+      ],
+      "glb": "/ifc/house/first-walls-00.glb",
+      "seconds": 0.91,
+      "types": {
+        "IFCWALLSTANDARDCASE": 72
+      }
+    },
+    {
+      "name": "ground-columns-00",
+      "level": "ground",
+      "category": "columns",
+      "part": 0,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.11,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          112.39127649322351,
+          0.0,
+          -9.257279155716482
+        ],
+        [
+          119.22511210466472,
+          3.2260148525238037,
+          -0.5028064719075175
+        ]
+      ],
+      "glb": "/ifc/house/ground-columns-00.glb",
+      "seconds": 0.55,
+      "types": {
+        "IFCCOLUMN": 75
+      }
+    },
+    {
+      "name": "ground-columns-01",
+      "level": "ground",
+      "category": "columns",
+      "part": 1,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.11,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          112.39127649322351,
+          0.0,
+          -9.257279155716482
+        ],
+        [
+          119.54511210466472,
+          3.2260148525238037,
+          -0.1428064719075174
+        ]
+      ],
+      "glb": "/ifc/house/ground-columns-01.glb",
+      "seconds": 0.47,
+      "types": {
+        "IFCCOLUMN": 75
+      }
+    },
+    {
+      "name": "ground-columns-02",
+      "level": "ground",
+      "category": "columns",
+      "part": 2,
+      "elements": 75,
+      "rendered_objects": 51,
+      "entities": null,
+      "subset_mb": 0.1,
+      "glb_mb": 0.05,
+      "bounds": [
+        [
+          112.39127649322351,
+          -2.3009316556200003,
+          -16.186461870132213
+        ],
+        [
+          148.03211743683224,
+          3.2260148525238037,
+          -1.4628064719035174
+        ]
+      ],
+      "glb": "/ifc/house/ground-columns-02.glb",
+      "seconds": 0.44,
+      "types": {
+        "IFCCOLUMN": 75
+      }
+    },
+    {
+      "name": "ground-columns-03",
+      "level": "ground",
+      "category": "columns",
+      "part": 3,
+      "elements": 75,
+      "rendered_objects": 28,
+      "entities": null,
+      "subset_mb": 0.09,
+      "glb_mb": 0.03,
+      "bounds": [
+        [
+          116.52833523922351,
+          -2.08908952591,
+          -10.452098590780231
+        ],
+        [
+          139.44953980898023,
+          3.100000004302917,
+          -2.2470850825535176
+        ]
+      ],
+      "glb": "/ifc/house/ground-columns-03.glb",
+      "seconds": 0.29,
+      "types": {
+        "IFCCOLUMN": 75
+      }
+    },
+    {
+      "name": "ground-columns-04",
+      "level": "ground",
+      "category": "columns",
+      "part": 4,
+      "elements": 75,
+      "rendered_objects": 70,
+      "entities": null,
+      "subset_mb": 0.12,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          72.58588683992352,
+          0.0,
+          -9.257279155716482
+        ],
+        [
+          114.07335890566472,
+          3.2260148525238037,
+          17.464355564076484
+        ]
+      ],
+      "glb": "/ifc/house/ground-columns-04.glb",
+      "seconds": 0.45,
+      "types": {
+        "IFCCOLUMN": 75
+      }
+    },
+    {
+      "name": "ground-columns-05",
+      "level": "ground",
+      "category": "columns",
+      "part": 5,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.12,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          35.237975041323516,
+          0.0,
+          -28.035127180776485
+        ],
+        [
+          77.1679743955765,
+          3.2260148525238037,
+          16.834355564076482
+        ]
+      ],
+      "glb": "/ifc/house/ground-columns-05.glb",
+      "seconds": 0.44,
+      "types": {
+        "IFCCOLUMN": 75
+      }
+    },
+    {
+      "name": "ground-columns-06",
+      "level": "ground",
+      "category": "columns",
+      "part": 6,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.12,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          37.69683946313528,
+          0.0,
+          -28.035127180776485
+        ],
+        [
+          42.086839462464724,
+          3.2260148525238037,
+          -28.01512718122352
+        ]
+      ],
+      "glb": "/ifc/house/ground-columns-06.glb",
+      "seconds": 0.48,
+      "types": {
+        "IFCCOLUMN": 75
+      }
+    },
+    {
+      "name": "ground-columns-07",
+      "level": "ground",
+      "category": "columns",
+      "part": 7,
+      "elements": 25,
+      "rendered_objects": 25,
+      "entities": null,
+      "subset_mb": 0.07,
+      "glb_mb": 0.02,
+      "bounds": [
+        [
+          35.237975041323516,
+          0.0,
+          -28.035127180776485
+        ],
+        [
+          42.406839462464724,
+          3.2260148525238037,
+          -25.29952249862352
+        ]
+      ],
+      "glb": "/ifc/house/ground-columns-07.glb",
+      "seconds": 0.27,
+      "types": {
+        "IFCCOLUMN": 25
+      }
+    },
+    {
+      "name": "ground-doors-00",
+      "level": "ground",
+      "category": "doors",
+      "part": 0,
+      "elements": 6,
+      "rendered_objects": 6,
+      "entities": null,
+      "subset_mb": 0.38,
+      "glb_mb": 0.18,
+      "bounds": [
+        [
+          34.25559929724902,
+          0.0,
+          -34.188884702889055
+        ],
+        [
+          112.16787191626084,
+          2.537000036239624,
+          -5.041375801614895
+        ]
+      ],
+      "glb": "/ifc/house/ground-doors-00.glb",
+      "seconds": 2.99,
+      "types": {
+        "IFCDOOR": 6
+      }
+    },
+    {
+      "name": "ground-furniture-00",
+      "level": "ground",
+      "category": "furniture",
+      "part": 0,
+      "elements": 35,
+      "rendered_objects": 35,
+      "entities": null,
+      "subset_mb": 0.53,
+      "glb_mb": 0.12,
+      "bounds": [
+        [
+          107.84190474594494,
+          0.0,
+          -9.247279167860928
+        ],
+        [
+          119.706247683,
+          2.630363460175298,
+          0.5219976997195853
+        ]
+      ],
+      "glb": "/ifc/house/ground-furniture-00.glb",
+      "seconds": 3.1,
+      "types": {
+        "IFCFURNISHINGELEMENT": 35
+      }
+    },
+    {
+      "name": "ground-furniture-01",
+      "level": "ground",
+      "category": "furniture",
+      "part": 1,
+      "elements": 35,
+      "rendered_objects": 35,
+      "entities": null,
+      "subset_mb": 5.07,
+      "glb_mb": 0.76,
+      "bounds": [
+        [
+          65.15733189896824,
+          -1.7,
+          -34.51488470387253
+        ],
+        [
+          147.62774596709815,
+          3.299999976158142,
+          18.129159735634985
+        ]
+      ],
+      "glb": "/ifc/house/ground-furniture-01.glb",
+      "seconds": 38.28,
+      "types": {
+        "IFCFURNISHINGELEMENT": 35
+      }
+    },
+    {
+      "name": "ground-furniture-02",
+      "level": "ground",
+      "category": "furniture",
+      "part": 2,
+      "elements": 35,
+      "rendered_objects": 35,
+      "entities": null,
+      "subset_mb": 2.44,
+      "glb_mb": 0.33,
+      "bounds": [
+        [
+          64.54982834533666,
+          0.0,
+          -35.06956334232093
+        ],
+        [
+          79.82767804772254,
+          2.950698807893707,
+          18.129159735634985
+        ]
+      ],
+      "glb": "/ifc/house/ground-furniture-02.glb",
+      "seconds": 21.22,
+      "types": {
+        "IFCFURNISHINGELEMENT": 35
+      }
+    },
+    {
+      "name": "ground-furniture-03",
+      "level": "ground",
+      "category": "furniture",
+      "part": 3,
+      "elements": 35,
+      "rendered_objects": 35,
+      "entities": null,
+      "subset_mb": 2.97,
+      "glb_mb": 0.53,
+      "bounds": [
+        [
+          64.38046127037023,
+          0.0,
+          -34.69988470282945
+        ],
+        [
+          79.70329830678952,
+          3.299999976158142,
+          18.17012201728938
+        ]
+      ],
+      "glb": "/ifc/house/ground-furniture-03.glb",
+      "seconds": 25.34,
+      "types": {
+        "IFCFURNISHINGELEMENT": 35
+      }
+    },
+    {
+      "name": "ground-furniture-04",
+      "level": "ground",
+      "category": "furniture",
+      "part": 4,
+      "elements": 35,
+      "rendered_objects": 35,
+      "entities": null,
+      "subset_mb": 8.43,
+      "glb_mb": 1.06,
+      "bounds": [
+        [
+          60.72091855809226,
+          -0.00838130748435,
+          -38.370197655700004
+        ],
+        [
+          79.48770568704056,
+          3.299999976158142,
+          15.996095671107486
+        ]
+      ],
+      "glb": "/ifc/house/ground-furniture-04.glb",
+      "seconds": 50.04,
+      "types": {
+        "IFCFURNISHINGELEMENT": 35
+      }
+    },
+    {
+      "name": "ground-furniture-05",
+      "level": "ground",
+      "category": "furniture",
+      "part": 5,
+      "elements": 18,
+      "rendered_objects": 18,
+      "entities": null,
+      "subset_mb": 0.64,
+      "glb_mb": 0.1,
+      "bounds": [
+        [
+          36.497645521799996,
+          0.0,
+          -30.8875603876
+        ],
+        [
+          65.14653012986513,
+          2.849999988079071,
+          -28.22512716817554
+        ]
+      ],
+      "glb": "/ifc/house/ground-furniture-05.glb",
+      "seconds": 2.64,
+      "types": {
+        "IFCFURNISHINGELEMENT": 18
+      }
+    },
+    {
+      "name": "ground-proxies-00",
+      "level": "ground",
+      "category": "proxies",
+      "part": 0,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 1.74,
+      "glb_mb": 0.4,
+      "bounds": [
+        [
+          106.12542127500001,
+          -1.4527540683746338,
+          -14.592592108472529
+        ],
+        [
+          144.52653472997258,
+          5.775,
+          1.8968233790100002
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-00.glb",
+      "seconds": 7.13,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "ground-proxies-02",
+      "level": "ground",
+      "category": "proxies",
+      "part": 2,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 64.52,
+      "glb_mb": 6.82,
+      "bounds": [
+        [
+          90.29279853909375,
+          -5.493592834472656,
+          -19.823540717883596
+        ],
+        [
+          150.71396087044096,
+          4.1359919522216995,
+          5.187666862682812
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-02.glb",
+      "seconds": 203.27,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "ground-proxies-03",
+      "level": "ground",
+      "category": "proxies",
+      "part": 3,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 35.44,
+      "glb_mb": 3.83,
+      "bounds": [
+        [
+          90.27838957929339,
+          -5.493592834472656,
+          -19.88984407758926
+        ],
+        [
+          150.71396087044096,
+          4.1359919522216995,
+          5.026878031014409
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-03.glb",
+      "seconds": 111.34,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "ground-proxies-04",
+      "level": "ground",
+      "category": "proxies",
+      "part": 4,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 0.12,
+      "glb_mb": 0.05,
+      "bounds": [
+        [
+          90.42605000278125,
+          -3.6952739892062842,
+          -19.4663092895
+        ],
+        [
+          149.0000741641108,
+          4.1359919522216995,
+          4.67524061696
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-04.glb",
+      "seconds": 0.43,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "ground-proxies-05",
+      "level": "ground",
+      "category": "proxies",
+      "part": 5,
+      "elements": 40,
+      "rendered_objects": 39,
+      "entities": null,
+      "subset_mb": 15.77,
+      "glb_mb": 1.68,
+      "bounds": [
+        [
+          68.25588683970001,
+          -2.3208001131942844,
+          -15.9469400873
+        ],
+        [
+          149.0520761286339,
+          4.1359919522216995,
+          17.445276445891835
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-05.glb",
+      "seconds": 47.76,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "ground-proxies-06",
+      "level": "ground",
+      "category": "proxies",
+      "part": 6,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 26.78,
+      "glb_mb": 3.06,
+      "bounds": [
+        [
+          36.859587103716606,
+          -0.0491639502947705,
+          -32.42544013252945
+        ],
+        [
+          80.36463684022155,
+          3.455153694724426,
+          18.395122005472526
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-06.glb",
+      "seconds": 75.0,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "ground-proxies-08",
+      "level": "ground",
+      "category": "proxies",
+      "part": 8,
+      "elements": 40,
+      "rendered_objects": 39,
+      "entities": null,
+      "subset_mb": 30.96,
+      "glb_mb": 3.2,
+      "bounds": [
+        [
+          29.218796614200002,
+          -2.7689758163992844,
+          -38.370197655700004
+        ],
+        [
+          68.22840022092154,
+          5.775,
+          -25.08231038016977
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-08.glb",
+      "seconds": 95.0,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "ground-proxies-09",
+      "level": "ground",
+      "category": "proxies",
+      "part": 9,
+      "elements": 11,
+      "rendered_objects": 11,
+      "entities": null,
+      "subset_mb": 54.87,
+      "glb_mb": 5.36,
+      "bounds": [
+        [
+          36.9227461823404,
+          0.0,
+          -32.43544013252945
+        ],
+        [
+          41.774839356235304,
+          3.0999999046325684,
+          -29.89445400324758
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-09.glb",
+      "seconds": 153.93,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 11
+      }
+    },
+    {
+      "name": "ground-proxies-r040",
+      "level": "ground",
+      "category": "proxies",
+      "part": 40,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 0.13,
+      "glb_mb": 0.02,
+      "bounds": [
+        [
+          111.53617059700001,
+          -0.8,
+          -12.479015241572556
+        ],
+        [
+          144.52653472997258,
+          3.3000000000000003,
+          2.0414006223799523
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r040.glb",
+      "seconds": 0.64,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r045",
+      "level": "ground",
+      "category": "proxies",
+      "part": 45,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 0.15,
+      "glb_mb": 0.02,
+      "bounds": [
+        [
+          111.57528566799999,
+          -0.9,
+          -12.946344023571097
+        ],
+        [
+          144.02711384817113,
+          3.3000000000000003,
+          2.0030062904478845
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r045.glb",
+      "seconds": 0.52,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r050",
+      "level": "ground",
+      "category": "proxies",
+      "part": 50,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 0.42,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          135.23337086965134,
+          -0.624883609378,
+          -12.477140241572556
+        ],
+        [
+          144.92336260217112,
+          0.9355456495285034,
+          -3.251811659287445
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r050.glb",
+      "seconds": 1.33,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r055",
+      "level": "ground",
+      "category": "proxies",
+      "part": 55,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 1.56,
+      "glb_mb": 0.29,
+      "bounds": [
+        [
+          110.07181858183424,
+          -0.1,
+          -11.704171850152965
+        ],
+        [
+          136.1603891225699,
+          1.946577548980713,
+          -0.6063344493824449
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r055.glb",
+      "seconds": 5.07,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r060",
+      "level": "ground",
+      "category": "proxies",
+      "part": 60,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 0.56,
+      "glb_mb": 0.1,
+      "bounds": [
+        [
+          119.68724768219533,
+          -0.1,
+          -8.560113918226838
+        ],
+        [
+          132.78873754997255,
+          2.5369999408721924,
+          1.0427994467725552
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r060.glb",
+      "seconds": 3.94,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r065",
+      "level": "ground",
+      "category": "proxies",
+      "part": 65,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 0.13,
+      "glb_mb": 0.02,
+      "bounds": [
+        [
+          133.66296523602745,
+          -0.1,
+          -5.094760528572555
+        ],
+        [
+          144.53153472997258,
+          0.700000011920929,
+          1.042174446772555
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r065.glb",
+      "seconds": 1.64,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r070",
+      "level": "ground",
+      "category": "proxies",
+      "part": 70,
+      "elements": 5,
+      "rendered_objects": 4,
+      "entities": null,
+      "subset_mb": 7.81,
+      "glb_mb": 0.86,
+      "bounds": [
+        [
+          107.78324768198672,
+          -0.36000000149011613,
+          -8.65445436987
+        ],
+        [
+          123.39650889303917,
+          2.5369999408721924,
+          0.5176735878669575
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r070.glb",
+      "seconds": 38.74,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r280",
+      "level": "ground",
+      "category": "proxies",
+      "part": 280,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 53.71,
+      "glb_mb": 5.32,
+      "bounds": [
+        [
+          67.6558868397,
+          -0.03740960732102394,
+          6.326669887275908
+        ],
+        [
+          72.81365850089038,
+          3.455153694724426,
+          16.92836572382418
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r280.glb",
+      "seconds": 201.57,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r285",
+      "level": "ground",
+      "category": "proxies",
+      "part": 285,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 0.15,
+      "glb_mb": 0.03,
+      "bounds": [
+        [
+          66.5667084128,
+          0.7000000000000001,
+          5.608794877592104
+        ],
+        [
+          72.84715518600001,
+          3.2,
+          18.1295391379
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r285.glb",
+      "seconds": 1.56,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r295",
+      "level": "ground",
+      "category": "proxies",
+      "part": 295,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 1.89,
+      "glb_mb": 0.23,
+      "bounds": [
+        [
+          67.43088683932747,
+          0.08612179447139999,
+          5.488822769537234
+        ],
+        [
+          77.77587367183128,
+          5.775,
+          11.302699680850232
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r295.glb",
+      "seconds": 5.4,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r300",
+      "level": "ground",
+      "category": "proxies",
+      "part": 300,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 0.08,
+      "glb_mb": 0.01,
+      "bounds": [
+        [
+          37.468786113770555,
+          0.0,
+          -32.129424979
+        ],
+        [
+          77.31530908592319,
+          3.4,
+          18.395122005472526
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r300.glb",
+      "seconds": 0.31,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r305",
+      "level": "ground",
+      "category": "proxies",
+      "part": 305,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 0.05,
+      "glb_mb": 0.01,
+      "bounds": [
+        [
+          66.76670841258732,
+          1.5999999970197678,
+          5.788677788543559
+        ],
+        [
+          79.79404192481718,
+          3.3000000000000003,
+          18.124197684
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r305.glb",
+      "seconds": 0.23,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r310",
+      "level": "ground",
+      "category": "proxies",
+      "part": 310,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 0.51,
+      "glb_mb": 0.09,
+      "bounds": [
+        [
+          60.450650221010946,
+          -0.10313259398646735,
+          -37.59115688683684
+        ],
+        [
+          80.15653072950333,
+          3.3000000000000003,
+          13.1165411646
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r310.glb",
+      "seconds": 2.13,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-proxies-r315",
+      "level": "ground",
+      "category": "proxies",
+      "part": 315,
+      "elements": 5,
+      "rendered_objects": 5,
+      "entities": null,
+      "subset_mb": 0.24,
+      "glb_mb": 0.04,
+      "bounds": [
+        [
+          61.03240785303593,
+          0.0,
+          -38.570197658680236
+        ],
+        [
+          67.90799873217507,
+          2.5999999761581423,
+          -34.119884702754945
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r315.glb",
+      "seconds": 2.75,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 5
+      }
+    },
+    {
+      "name": "ground-railings-00",
+      "level": "ground",
+      "category": "railings",
+      "part": 0,
+      "elements": 7,
+      "rendered_objects": 7,
+      "entities": null,
+      "subset_mb": 10.67,
+      "glb_mb": 1.9,
+      "bounds": [
+        [
+          31.33797513506218,
+          -0.13232109063,
+          -26.184887978738168
+        ],
+        [
+          122.59753641171399,
+          4.300000190734863,
+          10.94762357476214
+        ]
+      ],
+      "glb": "/ifc/house/ground-railings-00.glb",
+      "seconds": 35.09,
+      "types": {
+        "IFCRAILING": 7
+      }
+    },
+    {
+      "name": "ground-slabs-00",
+      "level": "ground",
+      "category": "slabs",
+      "part": 0,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.13,
+      "glb_mb": 0.08,
+      "bounds": [
+        [
+          103.164688643,
+          -2.1661525691057997,
+          -19.657929897014846
+        ],
+        [
+          146.832672945,
+          5.77231379307,
+          13.4747424784
+        ]
+      ],
+      "glb": "/ifc/house/ground-slabs-00.glb",
+      "seconds": 0.77,
+      "types": {
+        "IFCSLAB": 75
+      }
+    },
+    {
+      "name": "ground-slabs-01",
+      "level": "ground",
+      "category": "slabs",
+      "part": 1,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.14,
+      "glb_mb": 0.09,
+      "bounds": [
+        [
+          103.16468870782703,
+          -2.5000000029802325,
+          -19.813681827128516
+        ],
+        [
+          148.615598352,
+          6.499999904632569,
+          13.4405329876
+        ]
+      ],
+      "glb": "/ifc/house/ground-slabs-01.glb",
+      "seconds": 0.85,
+      "types": {
+        "IFCSLAB": 75
+      }
+    },
+    {
+      "name": "ground-slabs-02",
+      "level": "ground",
+      "category": "slabs",
+      "part": 2,
+      "elements": 75,
+      "rendered_objects": 23,
+      "entities": null,
+      "subset_mb": 0.14,
+      "glb_mb": 0.03,
+      "bounds": [
+        [
+          114.39188645828371,
+          -1.9990164964557997,
+          -18.90850390625108
+        ],
+        [
+          148.68912971499998,
+          0.27,
+          13.044043158970068
+        ]
+      ],
+      "glb": "/ifc/house/ground-slabs-02.glb",
+      "seconds": 0.53,
+      "types": {
+        "IFCSLAB": 75
+      }
+    },
+    {
+      "name": "ground-slabs-03",
+      "level": "ground",
+      "category": "slabs",
+      "part": 3,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.24,
+      "glb_mb": 0.1,
+      "bounds": [
+        [
+          28.7437615115,
+          -0.8299999785423279,
+          -43.89074198427227
+        ],
+        [
+          118.60733894451417,
+          6.499999904632569,
+          19.335613703546485
+        ]
+      ],
+      "glb": "/ifc/house/ground-slabs-03.glb",
+      "seconds": 0.98,
+      "types": {
+        "IFCSLAB": 75
+      }
+    },
+    {
+      "name": "ground-slabs-04",
+      "level": "ground",
+      "category": "slabs",
+      "part": 4,
+      "elements": 24,
+      "rendered_objects": 24,
+      "entities": null,
+      "subset_mb": 0.07,
+      "glb_mb": 0.03,
+      "bounds": [
+        [
+          31.3499186724,
+          -0.8349999785423279,
+          -33.125440116200004
+        ],
+        [
+          41.869066368767236,
+          6.499999904632569,
+          -24.13588786948174
+        ]
+      ],
+      "glb": "/ifc/house/ground-slabs-04.glb",
+      "seconds": 0.32,
+      "types": {
+        "IFCSLAB": 24
+      }
+    },
+    {
+      "name": "ground-walls-00",
+      "level": "ground",
+      "category": "walls",
+      "part": 0,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.14,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          102.78219932537452,
+          -5.433704625330001,
+          -19.891319541968247
+        ],
+        [
+          149.6706273331256,
+          7.019927107347434,
+          13.268076312113662
+        ]
+      ],
+      "glb": "/ifc/house/ground-walls-00.glb",
+      "seconds": 0.42,
+      "types": {
+        "IFCWALLSTANDARDCASE": 75
+      }
+    },
+    {
+      "name": "ground-walls-01",
+      "level": "ground",
+      "category": "walls",
+      "part": 1,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.15,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          102.78247841840312,
+          -5.433704625330001,
+          -19.89131954808669
+        ],
+        [
+          149.69545907177925,
+          3.2999999713897705,
+          13.605853366268377
+        ]
+      ],
+      "glb": "/ifc/house/ground-walls-01.glb",
+      "seconds": 0.77,
+      "types": {
+        "IFCWALLSTANDARDCASE": 75
+      }
+    },
+    {
+      "name": "ground-walls-02",
+      "level": "ground",
+      "category": "walls",
+      "part": 2,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.15,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          106.12542127500001,
+          -3.7841983533200003,
+          -14.5675921081
+        ],
+        [
+          118.80733894000001,
+          6.599999904632568,
+          0.562959969091
+        ]
+      ],
+      "glb": "/ifc/house/ground-walls-02.glb",
+      "seconds": 0.65,
+      "types": {
+        "IFCWALLSTANDARDCASE": 75
+      }
+    },
+    {
+      "name": "ground-walls-03",
+      "level": "ground",
+      "category": "walls",
+      "part": 3,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.14,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          41.6690662982,
+          -0.8149842645300001,
+          -32.62544013618024
+        ],
+        [
+          108.21319131388825,
+          6.799999770961943,
+          18.370122005099997
+        ]
+      ],
+      "glb": "/ifc/house/ground-walls-03.glb",
+      "seconds": 0.66,
+      "types": {
+        "IFCWALLSTANDARDCASE": 75
+      }
+    },
+    {
+      "name": "ground-walls-04",
+      "level": "ground",
+      "category": "walls",
+      "part": 4,
+      "elements": 75,
+      "rendered_objects": 75,
+      "entities": null,
+      "subset_mb": 0.14,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          29.1871486328,
+          -3.7841983533200003,
+          -39.290197672389304
+        ],
+        [
+          76.5166979117,
+          6.599999904632568,
+          18.370122005099997
+        ]
+      ],
+      "glb": "/ifc/house/ground-walls-04.glb",
+      "seconds": 0.76,
+      "types": {
+        "IFCWALLSTANDARDCASE": 75
+      }
+    },
+    {
+      "name": "ground-walls-05",
+      "level": "ground",
+      "category": "walls",
+      "part": 5,
+      "elements": 62,
+      "rendered_objects": 62,
+      "entities": null,
+      "subset_mb": 0.13,
+      "glb_mb": 0.06,
+      "bounds": [
+        [
+          29.187148606010886,
+          -1.05164867974,
+          -33.34544016181023
+        ],
+        [
+          70.68246061856111,
+          6.599999904632568,
+          7.59926082709
+        ]
+      ],
+      "glb": "/ifc/house/ground-walls-05.glb",
+      "seconds": 0.67,
+      "types": {
+        "IFCWALLSTANDARDCASE": 62
+      }
+    },
+    {
+      "name": "ground-windows-00",
+      "level": "ground",
+      "category": "windows",
+      "part": 0,
+      "elements": 4,
+      "rendered_objects": 4,
+      "entities": null,
+      "subset_mb": 0.06,
+      "glb_mb": 0.01,
+      "bounds": [
+        [
+          35.23297504072747,
+          0.374999999627471,
+          -26.95452837146253
+        ],
+        [
+          112.42124767703953,
+          2.525,
+          -5.896674473347
+        ]
+      ],
+      "glb": "/ifc/house/ground-windows-00.glb",
+      "seconds": 0.34,
+      "types": {
+        "IFCWINDOW": 4
+      }
+    },
+    {
+      "name": "none-proxies-00",
+      "level": "none",
+      "category": "proxies",
+      "part": 0,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 0.23,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          107.14624790083984,
+          -0.2627343237400055,
+          -8.608039869307987
+        ],
+        [
+          110.89932162296394,
+          3.275,
+          -5.458039893149846
+        ]
+      ],
+      "glb": "/ifc/house/none-proxies-00.glb",
+      "seconds": 1.28,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "none-proxies-01",
+      "level": "none",
+      "category": "proxies",
+      "part": 1,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 0.25,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          67.55588705763985,
+          -0.2627343237400055,
+          -8.508039949881859
+        ],
+        [
+          110.89932162225878,
+          3.3000000000000003,
+          12.149122142820154
+        ]
+      ],
+      "glb": "/ifc/house/none-proxies-01.glb",
+      "seconds": 0.99,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "none-proxies-02",
+      "level": "none",
+      "category": "proxies",
+      "part": 2,
+      "elements": 40,
+      "rendered_objects": 40,
+      "entities": null,
+      "subset_mb": 0.25,
+      "glb_mb": 0.07,
+      "bounds": [
+        [
+          30.20797525903984,
+          -0.2627343237400055,
+          -27.38588789433799
+        ],
+        [
+          71.3089607790588,
+          3.3000000000000003,
+          10.370122113744698
+        ]
+      ],
+      "glb": "/ifc/house/none-proxies-02.glb",
+      "seconds": 0.94,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 40
+      }
+    },
+    {
+      "name": "none-proxies-03",
+      "level": "none",
+      "category": "proxies",
+      "part": 3,
+      "elements": 6,
+      "rendered_objects": 6,
+      "entities": null,
+      "subset_mb": 0.09,
+      "glb_mb": 0.01,
+      "bounds": [
+        [
+          32.32949267372328,
+          2.406578946997471,
+          -27.28588797491186
+        ],
+        [
+          33.961048980458784,
+          3.3000000000000003,
+          -26.014887947255303
+        ]
+      ],
+      "glb": "/ifc/house/none-proxies-03.glb",
+      "seconds": 0.67,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 6
+      }
+    },
+    {
+      "name": "second-proxies-00",
+      "level": "second",
+      "category": "proxies",
+      "part": 0,
+      "elements": 1,
+      "rendered_objects": 1,
+      "entities": null,
+      "subset_mb": 0.06,
+      "glb_mb": 0.0,
+      "bounds": [
+        [
+          105.72542116881641,
+          6.519916909933091,
+          -14.967592171367482
+        ],
+        [
+          123.0262481951836,
+          10.691777276992799,
+          1.80196005946748
+        ]
+      ],
+      "glb": "/ifc/house/second-proxies-00.glb",
+      "seconds": 0.47,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 1
+      }
+    },
+    {
+      "name": "ground-proxies-r075",
+      "level": "ground",
+      "category": "proxies",
+      "part": 75,
+      "elements": 1,
+      "rendered_objects": 1,
+      "entities": null,
+      "subset_mb": 0.04,
+      "glb_mb": 0.0,
+      "bounds": [
+        [
+          121.1453460453374,
+          -0.9,
+          -8.654454403337489
+        ],
+        [
+          123.228789687,
+          -0.4,
+          -6.8552382521
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r075.glb",
+      "seconds": 0.76,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 1
+      }
+    },
+    {
+      "name": "ground-proxies-r077",
+      "level": "ground",
+      "category": "proxies",
+      "part": 77,
+      "elements": 1,
+      "rendered_objects": 1,
+      "entities": null,
+      "subset_mb": 0.13,
+      "glb_mb": 0.02,
+      "bounds": [
+        [
+          107.85129060975189,
+          1.7681913621448653,
+          -4.00719185494
+        ],
+        [
+          108.32490941003809,
+          2.5648646814473643,
+          -3.5292397620540292
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r077.glb",
+      "seconds": 1.07,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 1
+      }
+    },
+    {
+      "name": "ground-proxies-r078",
+      "level": "ground",
+      "category": "proxies",
+      "part": 78,
+      "elements": 1,
+      "rendered_objects": 1,
+      "entities": null,
+      "subset_mb": 0.04,
+      "glb_mb": 0.0,
+      "bounds": [
+        [
+          121.26731424844384,
+          -0.8,
+          -10.400911939221709
+        ],
+        [
+          123.35739355599999,
+          -0.3,
+          -8.65445436247
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r078.glb",
+      "seconds": 0.4,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 1
+      }
+    },
+    {
+      "name": "ground-proxies-r079",
+      "level": "ground",
+      "category": "proxies",
+      "part": 79,
+      "elements": 1,
+      "rendered_objects": 1,
+      "entities": null,
+      "subset_mb": 0.04,
+      "glb_mb": 0.0,
+      "bounds": [
+        [
+          121.094169515,
+          -0.8,
+          -10.400911939221709
+        ],
+        [
+          121.27034630142273,
+          -0.3,
+          -8.65445436247
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r079.glb",
+      "seconds": 0.47,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 1
+      }
+    },
+    {
+      "name": "ground-proxies-r291",
+      "level": "ground",
+      "category": "proxies",
+      "part": 291,
+      "elements": 1,
+      "rendered_objects": 1,
+      "entities": null,
+      "subset_mb": 0.16,
+      "glb_mb": 0.03,
+      "bounds": [
+        [
+          66.80285470261616,
+          0.0,
+          14.827743930855908
+        ],
+        [
+          67.77685467972798,
+          2.5369999408721924,
+          15.109743941689052
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r291.glb",
+      "seconds": 1.46,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 1
+      }
+    },
+    {
+      "name": "ground-proxies-r292",
+      "level": "ground",
+      "category": "proxies",
+      "part": 292,
+      "elements": 1,
+      "rendered_objects": 1,
+      "entities": null,
+      "subset_mb": 0.16,
+      "glb_mb": 0.03,
+      "bounds": [
+        [
+          73.09769791491865,
+          0.1,
+          7.140141411058162
+        ],
+        [
+          73.37969791271328,
+          2.537000036239624,
+          8.114141388169978
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r292.glb",
+      "seconds": 1.8,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 1
+      }
+    },
+    {
+      "name": "ground-proxies-r293",
+      "level": "ground",
+      "category": "proxies",
+      "part": 293,
+      "elements": 1,
+      "rendered_objects": 1,
+      "entities": null,
+      "subset_mb": 0.06,
+      "glb_mb": 0.01,
+      "bounds": [
+        [
+          66.5350604314,
+          0.7000000000000001,
+          13.02127613015
+        ],
+        [
+          66.63506043289011,
+          2.5999999761581423,
+          13.72127611822907
+        ]
+      ],
+      "glb": "/ifc/house/ground-proxies-r293.glb",
+      "seconds": 0.93,
+      "types": {
+        "IFCBUILDINGELEMENTPROXY": 1
+      }
+    }
+  ],
+  "missingOrFailed": [
+    {
+      "name": "ground-proxies-r290",
+      "error": "0 ROOT_ITEMS 1 CATEGORY_COUNT 371\n\nTraceback (most recent call last):\n  File \"C:\\Users\\PC\\Documents\\AutoMinds-3D-House-Demo\\analysis\\convert_ifc_layer.py\", line 52, in <module>\n    if len(closure)>1500000:raise MemoryError('Too many entities for one chunk. Reduce --chunk-size.')\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nMemoryError: Too many entities for one chunk. Reduce --chunk-size.\n"
+    },
+    {
+      "name": "ground-proxies-r076",
+      "error": "6 ROOT_ITEMS 1 CATEGORY_COUNT 371\n\nTraceback (most recent call last):\n  File \"C:\\Users\\PC\\Documents\\AutoMinds-3D-House-Demo\\analysis\\convert_ifc_layer.py\", line 52, in <module>\n    if len(closure)>1500000:raise MemoryError('Too many entities for one chunk. Reduce --chunk-size.')\n                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nMemoryError: Too many entities for one chunk. Reduce --chunk-size.\n"
+    },
+    {
+      "name": "ground-proxies-r294",
+      "error": "Command '['C:\\\\Users\\\\PC\\\\Documents\\\\AutoMinds-3D-House-Demo\\\\.ifcenv\\\\Scripts\\\\python.exe', 'C:\\\\Users\\\\PC\\\\Documents\\\\AutoMinds-3D-House-Demo\\\\analysis\\\\convert_ifc_layer.py', '--level', 'ground', '--category', 'proxies', '--start', '294', '--take', '1']' timed out after 100 seconds"
+    }
+  ],
+  "status": "Source IFC batch conversion complete with known exclusions",
+  "limitations": [
+    "IfcSpace count is zero, so exact room names and 13 suite identities cannot be verified from IFC classifications.",
+    "Some model geometry lies in spatially separated source clusters; room connections need matching with architectural floor plan.",
+    "Stair and door collisions use prototype raycast navigation; interactions are not fully architectural simulation.",
+    "Material palette is visual interpretation from 14 rendered PNGs, not a material schedule embedded in IFC.",
+    "Real IFC contains extremely dense objects excluded for DANSON RAM safety."
+  ]
+}
