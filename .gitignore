@@ -18,6 +18,9 @@
 !/src/phase2/door-apertures.js
 !/src/phase2/dining-furnishings.js
 !/src/phase2/house-enhancements.js
+!/src/phase2/site-context.js
+!/tests/
+!/tests/verify-site-context.mjs
 !/public/
 !/public/ifc/
 !/public/ifc/house/

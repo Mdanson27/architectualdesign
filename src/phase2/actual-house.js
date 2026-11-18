@@ -3,7 +3,8 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
 import './actual-house.css';
-import {buildBedroomDecorations,createGatePreview} from './house-enhancements.js';
+import {buildBedroomDecorations} from './house-enhancements.js';
+import {createCuratedSiteContext,auditSourceContext} from './site-context.js';
 import {createDoorSystem} from './functional-doors.js';
 import {revealObstructedDoors} from './door-apertures.js';
 import {createPlanDiningFurniture} from './dining-furnishings.js';
@@ -80,7 +81,7 @@ const state={
  center:new THREE.Vector3(),bounds:new THREE.Box3(),architectureBounds:new THREE.Box3(),
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
- enhancedFurniture:true,decor:null,gatePreview:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
+ enhancedFurniture:true,decor:null,gatePreview:null,siteContext:null,sourceContextAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -168,7 +169,7 @@ const mat={
 const occupiedAreas=new Map(); // optional broad-phase colliders
 // Preliminary spatial boundary found by source-mesh clustering (NOT a legal site boundary).
 // Other IFC models remain intact and can be re-enabled at any time.
-const residenceEnvelope={minX:103,maxX:124,minZ:-21,maxZ:4,maxSpanX:28,maxSpanZ:30};
+const residenceEnvelope={minX:104.9,maxX:123.7,minZ:-16.2,maxZ:2.6,maxSpanX:22,maxSpanZ:22};
 const clipCeiling=new THREE.Plane(new THREE.Vector3(0,-1,0),2.48);
 const centerScratch=new THREE.Vector3(),sizeScratch=new THREE.Vector3();
 function isResidenceRecord(rec){
@@ -186,29 +187,10 @@ function setClipping(){
 }
 function visibleSourceRecord(rec){
  if(!layerIsVisible(rec.layer))return false;
- if(!state.showSurroundings&&!isResidenceRecord(rec))return false;
- // Gate mode is a focused site presentation: keep house + relevant front boundary
- // without detached outbuilding/proxy fragments that would float over the compound.
- if(state.showGatePreview && !isResidenceRecord(rec)){
-  if(rec.category!=='walls')return false;
-  rec.box.getCenter(centerScratch);
-  const x=centerScratch.x+state.origin.x,z=centerScratch.z+state.origin.z;
-  if(x<99||x>145||z<11.5||z>16.5)return false;
- }
- // Door mesh replacement is handled non-destructively in refreshVisibility; all interactive leaves stay visible.
- if(state.showGatePreview&&state.showSurroundings&&rec.category==='walls'){
-  // Non-destructive gate preview: temporary wall replacement, never edit IFC.
-  rec.box.getCenter(centerScratch);rec.box.getSize(sizeScratch);
-  const x=centerScratch.x+state.origin.x,z=centerScratch.z+state.origin.z;
-  if(x>123.5&&x<141.1&&z>12.0&&z<13.8&&sizeScratch.x>2.8)return false;
- }
- if(state.showGatePreview&&state.showSurroundings&&rec.category==='proxies'){
-  rec.box.getCenter(centerScratch);rec.box.getSize(sizeScratch);
-  const x=centerScratch.x+state.origin.x,z=centerScratch.z+state.origin.z;
-  // In the gate presentation region, hide obvious orphaned source proxy fragments.
-  // The underlying IFC is unchanged and fully recoverable by ending preview.
-  if(x>125.8&&x<135.9&&z>10.0&&z<15.5&&sizeScratch.y<1.35&&Math.min(sizeScratch.x,sizeScratch.z)<.20)return false;
- }
+ // Phase 1: source elements outside the residential envelope are retained in
+ // memory for audit but NEVER rendered as raw scattered compound geometry.
+ // Both toggle states keep the verified core, while Phase 2 supplies curated site context.
+ if(!isResidenceRecord(rec))return false;
  if(state.mode==='orbit'&&state.sectionEnabled&&state.floor!=='all'){
   const top={ground:2.48,first:5.78,second:9.08}[state.floor];
   // Hide wholly higher components; global clipping cuts through crossing walls and roofs.
@@ -278,10 +260,16 @@ function refreshVisibility(){
   floor:state.floor,mode:state.mode,sectionEnabled:state.sectionEnabled,
   showSurroundings:state.showSurroundings,inside:isResidenceRecord
  });
- if(state.gatePreview)state.gatePreview.visible=state.showGatePreview&&state.showSurroundings;
+ if(state.siteContext){
+  state.siteContext.root.visible=state.showSurroundings &&
+    (state.floor==='all'||state.floor==='ground'||!state.sectionEnabled);
+ }
+ grid.visible=!state.showSurroundings;
  state.visibleMeshes=count;
  setClipping();
- $('hudStatus').textContent='SOURCE GEOMETRY · '+count.toLocaleString()+' VISIBLE';
+ $('hudStatus').textContent=state.showSurroundings?
+  'S1 SITE CONTEXT · '+count.toLocaleString()+' SOURCE ELEMENTS':
+  'SOURCE GEOMETRY · '+count.toLocaleString()+' VISIBLE';
 }
 // ---------- Geometry intake, layering and source provenance ----------
 const priority={walls:0,slabs:1,doors:2,windows:3,railings:4,columns:5,proxies:6,furniture:7};
@@ -363,11 +351,12 @@ async function addSourceLayer(layer){
  return count;
 }
 function bestArchitecturalBounds(floor='all'){
+ if(state.showSurroundings&&floor==='all'&&state.siteContext)return state.siteContext.bounds.clone();
  const b=new THREE.Box3();
  const cutoff={ground:2.48,first:5.78,second:9.08}[floor];
  for(const r of state.meshes){
   if(r.category!=='walls'&&r.category!=='slabs')continue;
-  if(!state.showSurroundings&&!isResidenceRecord(r))continue;
+  if(!isResidenceRecord(r))continue;
   if(cutoff!==undefined&&r.box.min.y>cutoff)continue;
   b.union(r.box);
  }
@@ -383,7 +372,7 @@ function bestArchitecturalBounds(floor='all'){
 function focusMainBuilding(){
  if(state.mode==='walk')exitWalk();
  state.showGatePreview=false;
- $('gateBtn').textContent='▣ INSPECT GATE / BOUNDARY';
+ $('gateBtn').textContent='▣ INSPECT SLIDING GATE / BOUNDARY';
  // The detected residence envelope is a REVERSIBLE viewer selection, not altered BIM geometry.
  state.showSurroundings=false;
  $('surroundingsToggle').checked=false;
@@ -402,7 +391,7 @@ function focusMainBuilding(){
 }
 function setupEnhancements(){
  if(state.decor)return;
- state.decor=buildBedroomDecorations(state.meshes,scene);
+ state.decor=buildBedroomDecorations(state.meshes.filter(isResidenceRecord),scene);
  state.doorSystem=createDoorSystem(state.doors,scene,isResidenceRecord);
  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord);
  const details=state.doorSystem.doors.length;
@@ -410,12 +399,20 @@ function setupEnhancements(){
   'actual wall obstructions at door locations, using reversible visual cutouts');
  $('doorSystemCount').textContent=details+' interactive doorways · '+state.doorSystem.sourceCount+' IFC parts · '+state.doorApertureAudit.obstructedCount+' source wall obstructions checked';
  console.info('[AutoMinds Spaces Doors] source records',state.doorSystem.sourceCount,'interactive doorways',details);
- state.gatePreview=createGatePreview(scene,state.origin);
+ state.siteContext=createCuratedSiteContext(scene,state.origin);
+ state.gatePreview=state.siteContext.gate;
+ state.sourceContextAudit=auditSourceContext(state.meshes,isResidenceRecord);
+ console.info('[AutoMinds Site Audit] residence/source elements',state.sourceContextAudit.insideResidence,
+  'suppressed unrelated source elements',state.sourceContextAudit.suppressedSurroundings,
+  'curated site components',state.siteContext.summary.approvedComponents);
+ $('siteAuditStatus').textContent='Plan S1 · 48.5 × 25 m · 3 paved parking bays, lawn, sliding gate and boundary. '+
+  state.sourceContextAudit.suppressedSurroundings+' unverified IFC source pieces excluded. Site alignment is provisional.';
  state.dining=createPlanDiningFurniture(scene,state.origin);
  buildBedroomNavigator();
  buildDoorNavigator();
  refreshVisibility();
- console.info('[AutoMinds SPACES] IFC furniture anchors',state.decor.entries.length,'gate location is provisional');
+ console.info('[AutoMinds SPACES] IFC furniture anchors',state.decor.entries.length,
+  'site location is plan-aligned but requires survey verification');
 }
 function buildBedroomNavigator(){
  const panel=$('bedroomList');panel.textContent='';
@@ -554,11 +551,11 @@ function focusGatePreview(){
  $('gateBtn').textContent=next?'✕ END GATE PREVIEW':'▣ INSPECT GATE / BOUNDARY';
  refreshVisibility();
  if(next){
-  const target=state.gatePreview.position.clone().add(new THREE.Vector3(0,1.3,0));
+  const target=state.siteContext.gateWorld.clone();
   orbit.target.copy(target);
   camera.position.set(target.x+6.6,target.y+4.0,target.z+8.6);camera.lookAt(target);orbit.update();
-  $('locationText').textContent='GATE DETAIL · PROVISIONAL PLACEMENT';
-  toast('Gate design follows the 4m PDF detail. Its exact site position remains to be verified.');
+  $('locationText').textContent='S1 SITE PLAN · 4M SLIDING GATE';
+  toast('Site-plan aligned compound preview · confirm final plot registration against survey.');
  }else focusMainBuilding();
 }
 function frameBuilding(floor=state.floor){
@@ -572,7 +569,8 @@ function frameBuilding(floor=state.floor){
  camera.position.set(target.x+distance*.65,target.y+Math.max(10,size.y*.6+6),target.z+distance*.85);
  camera.lookAt(target);
  orbit.update();
- $('locationText').textContent='ACTUAL IFC ARCHITECTURE';
+ $('locationText').textContent=state.showSurroundings?
+  'S1 SITE-PLAN COMPOUND · PREVIEW ALIGNMENT':'ACTUAL IFC ARCHITECTURE';
  $('levelText').textContent=floor==='all'?'ALL LEVELS':levelNames[floor];
 }
 function applyFloorSelection(choice){
@@ -1035,7 +1033,7 @@ $('surroundingsToggle').addEventListener('change',e=>{
  state.showSurroundings=e.target.checked;
  refreshVisibility();
  if(state.mode==='orbit')frameBuilding();
- toast(state.showSurroundings?'All source structures visible':'Main residence isolated; other source buildings preserved');
+ toast(state.showSurroundings?'Approved site-plan context shown; floating IFC fragments hidden':'Main residence isolated; compound preserved');
 });
 $('sectionToggle').addEventListener('change',e=>{
  state.sectionEnabled=e.target.checked;
@@ -1247,6 +1245,7 @@ if(isLocalQA){
  window.__AutoMindsQA={
   summary:()=>({meshes:state.meshes.length,loaded:state.loadedLayers,expected:state.totalLayers,
     doorCount:state.doorSystem?.doors.length??0,apertures:state.doorApertureAudit?.obstructedCount??0,
+    siteContext:state.siteContext?.summary??null,sourceContextAudit:state.sourceContextAudit??null,
     blockedCuts:state.doorApertureAudit?.occlusionDetails??[]}),
   inspectDoor:(id,side=1)=>{
    const door=state.doorSystem?.doors.find(d=>d.id===id);

@@ -41,11 +41,12 @@
    </div>
    <div class="sideTitle">STRUCTURE VIEW <span>NON-DESTRUCTIVE</span></div>
    <div class="layerToggles">
-     <label class="toggleLine"><span><b>Show surrounding IFC groups</b><small>Detached design clusters and auxiliary structures</small></span><input id="surroundingsToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
+     <label class="toggleLine"><span><b>Show curated site context</b><small>S1 plan · perimeter, 3 parking bays, pavers and lawns</small></span><input id="surroundingsToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
      <label class="toggleLine"><span><b>Section / remove roof above floor</b><small>Reveal wall layout and rooms from above</small></span><input id="sectionToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
    </div>
    <button id="stairFocusBtn" class="structAction">↗ INSPECT REAL STAIRCASE</button>
-   <button id="gateBtn" class="structAction">▣ INSPECT GATE / BOUNDARY</button>
+   <div id="siteAuditStatus" class="measureStatus">Loading plan-supported compound and IFC audit...</div>
+ <button id="gateBtn" class="structAction">▣ INSPECT SLIDING GATE / BOUNDARY</button>
    <button id="measureBtn" class="structAction">⌁ MEASURE ROOM DISTANCE</button>
    <div id="measureStatus" class="measureStatus">Measurement tool is off.</div>
    <button id="bedroomsBtn" class="structAction">⌂ NAVIGATE TO BEDROOMS</button>
@@ -106,7 +107,7 @@
    <div class="help"><kbd>ESC</kbd><span>RELEASE</span></div>
    <span class="fill"></span>
    <span class="hudStatus" id="hudStatus">SOURCE MODEL</span>
-   <button class="hudButton" id="walkBtn">⌖ WALK INSIDE</button><button class="hudButton" id="coreFocusBtn">⌂ FOCUS BUILDING</button><button class="hudButton" id="recenterBtn">◎ ENTIRE IFC</button>
+   <button class="hudButton" id="walkBtn">⌖ WALK INSIDE</button><button class="hudButton" id="coreFocusBtn">⌂ FOCUS BUILDING</button><button class="hudButton" id="recenterBtn">◎ VIEW COMPOUND</button>
  </div>
  <div id="touchJoystick" class="touchJoystick"><div class="touchRing"><div id="touchThumb"></div></div><small>MOVE</small></div>
  <div class="touchLook">DRAG TO LOOK</div>

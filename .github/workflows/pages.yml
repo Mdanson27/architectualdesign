@@ -28,6 +28,8 @@ jobs:
           cache: 'npm'
       - name: Install dependencies
         run: npm ci
+      - name: Verify S1 site layout geometry
+        run: npm run test:site
       - name: Build public GitHub Pages site
         run: npm run build
         env:
