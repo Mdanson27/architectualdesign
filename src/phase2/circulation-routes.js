@@ -21,7 +21,7 @@ function dist(a,b){return Math.hypot(a.x-b.x,a.z-b.z);}
 function quantized(v,step){return Math.round(v/step);}
 export function findPhysicalRoute(options){
  const {start,end,level,ground,blocked,gridStep=.48,maxVisited=1850,
-  maxWorldRadius=26,maxDeltaY=.29}=options;
+  maxWorldRadius=26,maxDeltaY=.29,searchMargin=5.2}=options;
  if(typeof ground!=='function'||typeof blocked!=='function')throw Error('Source floor and collision callbacks required');
  const cache=new Map(),dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
  function pos(x,z){return {x:quantized(x,gridStep)*gridStep,z:quantized(z,gridStep)*gridStep};}
@@ -29,7 +29,11 @@ export function findPhysicalRoute(options){
  function cell(x,z,alt=level){
   const p=pos(x,z),k=key(p);
   if(cache.has(k))return cache.get(k);
-  if(Math.hypot(p.x-start[0],p.z-start[1])>maxWorldRadius)return null;
+  if(Math.hypot(p.x-start[0],p.z-start[1])>maxWorldRadius ||
+    p.x<Math.min(start[0],end[0])-searchMargin ||
+    p.x>Math.max(start[0],end[0])+searchMargin ||
+    p.z<Math.min(start[1],end[1])-searchMargin ||
+    p.z>Math.max(start[1],end[1])+searchMargin)return null;
   // We cannot use a floor without a real IFC supporting slab/tread.
   const floor=ground(p.x,p.z,alt);
   const item=floor?{...p,y:floor.y,key:k}:null;
@@ -98,8 +102,18 @@ export function findPhysicalRoute(options){
    open.push({...next,g,f:g+dist(next,to)});
   }
  }
+ const partialPath=[];let backKey=closest.key;
+ while(backKey&&partialPath.length<160){
+  const p=seen.get(backKey);
+  if(!p)break;
+  partialPath.push([+p.x.toFixed(2),+p.y.toFixed(2),+p.z.toFixed(2)]);
+  backKey=parents.get(backKey);
+ }
+ partialPath.reverse();
  return {ok:false,reason:'no continuous route through source-backed floor and collisions',
   visited:visited.size,closestDistanceMetres:+close.toFixed(2),
-  closestToDestination:[closest.x,closest.y,closest.z],points:[],
-  edges,blockedEdges,levelEdges};
+  originalStart:start,originalEnd:end,
+  resolvedStart:[from.x,from.y,from.z],resolvedEnd:[to.x,to.y,to.z],
+  closestToDestination:[closest.x,closest.y,closest.z],
+  partialPath,points:[],edges,blockedEdges,levelEdges};
 }

@@ -1063,6 +1063,43 @@ function updateDoorHint(){
  $('doorActionBtn').textContent=open?'CLOSE DOOR':'OPEN DOOR';
 }
 
+function diagnoseRouteGridPassages(){
+ if(!state.initialReady||!state.planCirculation)return [];
+ const saved=state.doorSystem?.doors.map(d=>({d,current:d.current,target:d.target}))??[];
+ const prev={floor:state.floor,section:state.sectionEnabled};
+ try{
+  state.floor='all';state.sectionEnabled=false;refreshVisibility();
+  for(const {d} of saved){d.current=1;d.target=1;}
+  state.doorSystem?.update(.01);
+  const step=.16,result=[];
+  for(const opening of state.planCirculation.apertures){
+   const points=[];
+   const localX=opening.cx;
+   for(let iz=-6;iz<=6;iz++){
+    const z=Math.round((opening.cz+iz*.08)/step)*step;
+    const checks=[];
+    for(let ix=-4;ix<=4;ix++){
+     const x=Math.round((localX+ix*.16)/step)*step;
+     const flo=sampleGround(x,z,0,.40,.68);
+     const next=sampleGround(x+step,z,0,.40,.68);
+     const blocked=Boolean(flo&&next&&detectObstacle(x,z,x+step,z,flo.y));
+     checks.push({x:+(x+state.origin.x).toFixed(2),
+       a:!!flo,b:!!next,blocked,
+       reason:blocked?state.lastCollisionBlocker?.kind:null,
+       detail:blocked?state.lastCollisionBlocker?.name:null});
+    }
+    if(!points.some(p=>Math.abs(p.z-(z+state.origin.z))<.001)){
+      points.push({z:+(z+state.origin.z).toFixed(2),checks});
+    }
+   }
+   result.push({id:opening.id,points});
+  }
+  return result;
+ }finally{
+  for(const {d,current,target} of saved){d.current=current;d.target=target;}
+  state.doorSystem?.update(.01);state.floor=prev.floor;state.sectionEnabled=prev.section;refreshVisibility();
+ }
+}
 function diagnoseS1Openings(){
  if(!state.planCirculation||!state.initialReady)return [];
  const saved=state.doorSystem?.doors.map(d=>({d,current:d.current,target:d.target}))??[];
@@ -1105,7 +1142,7 @@ function checkPlanCirculation(){
     const xy=a=>[a[0]-state.origin.x,a[1]-state.origin.z];
     const start=xy(t.start),end=xy(t.end);
     const route=findPhysicalRoute({
-      start,end,level:t.level,gridStep:.24,maxVisited:2400,
+      start,end,level:t.level,gridStep:.16,maxVisited:5600,
       ground:(x,z,y)=>sampleGround(x,z,y,.40,.68),
       blocked:(x,z,nx,nz,y)=>detectObstacle(x,z,nx,nz,y)
     });
@@ -1496,6 +1533,7 @@ if(isLocalQA){
   checkPlanCirculation:()=>checkPlanCirculation(),
   balconySummary:()=>state.balconies?.summary??null,
   diagnoseS1Openings:()=>diagnoseS1Openings(),
+  diagnoseRouteGridPassages:()=>diagnoseRouteGridPassages(),
   lightingStatus:()=>state.lightingSystem?.status()??null,
   doorCrossings:(ids=[21,25,27],bothSides=true)=>{
    if(!state.doorSystem||!state.doorApertureAudit)return {error:'IFC doors still loading'};

@@ -107,6 +107,14 @@ try{
    circulation=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkPlanCirculation())"));
    const openingProbes=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.diagnoseS1Openings())"));
    console.log('PHASE7_OPENING_PROBES',JSON.stringify(openingProbes));
+   if(circulation.passed!==circulation.total){
+     const grid=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.diagnoseRouteGridPassages())"));
+     console.log('PHASE7_ROUTE_GRID_DIAGNOSTICS',JSON.stringify(grid));
+     console.log('PHASE7_FAILED_ROUTE_PARTIAL_PATHS',JSON.stringify(circulation.routes?.filter(r=>!r.ok).map(r=>({
+       id:r.id,resolvedStart:r.resolvedStart,resolvedEnd:r.resolvedEnd,
+       partialPath:r.partialPath,closest:r.closestToDestination
+     }))));
+   }
    console.log('PHASE7_CIRCULATION_ROUTES',JSON.stringify({
     passed:circulation.passed,total:circulation.total,
     routes:circulation.routes?.map(x=>({id:x.id,ok:x.ok,reason:x.reason,
@@ -138,6 +146,7 @@ try{
  if(exceptions.length)throw Error('Uncaught browser errors: '+exceptions.join('; '));
  if(obstructed.length)throw Error('Open doorway crossing failures: '+obstructed.map(x=>x.id).join(','));
  if(blockedWhenClosed.length)throw Error('Closed door crossings should not be permitted: '+blockedWhenClosed.join(','));
+ if(circulation&&circulation.passed!==circulation.total)throw Error('Continuous architectural routes incomplete: '+circulation.passed+'/'+circulation.total);
  console.log('BROWSER_QA_PASSED');
 }catch(e){
  report={...report,status:'failed',failure:String(e)};
