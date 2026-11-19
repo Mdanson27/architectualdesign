@@ -12,7 +12,9 @@
     "test:apertures": "node tests/verify-apertures.mjs",
     "test:scene": "node tests/verify-phase4-scene.mjs",
     "test:stairs": "node tests/verify-stair-safety.mjs",
-    "test:openings": "node tests/verify-source-openings.mjs"
+    "test:openings": "node tests/verify-source-openings.mjs",
+    "test:facade": "node tests/verify-facade-and-furniture.mjs",
+    "test:browser": "node tests/qa-production-browser.mjs"
   },
   "dependencies": {
     "three": "^0.181.0"

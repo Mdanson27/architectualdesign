@@ -7,6 +7,7 @@ import {buildBedroomDecorations} from './house-enhancements.js';
 import {createCuratedSiteContext,auditSourceContext} from './site-context.js';
 import {createIFCWindowGlazing} from './window-glazing.js';
 import {createSourceStairSafety} from './stair-safety.js';
+import {auditFacadeInfills} from './facade-infills.js';
 import {createDoorSystem} from './functional-doors.js';
 import {revealObstructedDoors} from './door-apertures.js';
 import {createPlanDiningFurniture} from './dining-furnishings.js';
@@ -83,7 +84,7 @@ const state={
  center:new THREE.Vector3(),bounds:new THREE.Box3(),architectureBounds:new THREE.Box3(),
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
- enhancedFurniture:true,decor:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,sourceContextAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
+ enhancedFurniture:true,decor:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -255,7 +256,9 @@ function refreshVisibility(){
   rec.mesh.visible=visible;
   if(state.doorSystem&&rec.mesh.userData.functionallyReplacedDoorId)rec.mesh.visible=false;
   if(state.windows?.sourceSet.has(rec))rec.mesh.visible=false;
+  if(rec.mesh.userData.facadeDuplicateHidden)rec.mesh.visible=false;
   if(state.decor?.sources.includes(rec)&&state.enhancedFurniture&&state.showFurniture)rec.mesh.visible=false;
+  if(state.dining?.sourceSet?.has(rec)&&state.showFurniture)rec.mesh.visible=false;
   if(rec.mesh.visible)count++;
  }
  if(state.decor)state.decor.group.visible=state.enhancedFurniture&&state.showFurniture;
@@ -403,6 +406,8 @@ function focusMainBuilding(){
 function setupEnhancements(){
  if(state.decor)return;
  state.decor=buildBedroomDecorations(state.meshes.filter(isResidenceRecord),scene);
+ state.facadeAudit=auditFacadeInfills(state.meshes,isResidenceRecord,state.origin);
+ console.info('[AutoMinds First-Floor Verified Glazing]',state.facadeAudit.summary);
  state.windows=createIFCWindowGlazing(state.meshes,scene,isResidenceRecord);
  console.info('[AutoMinds Window Audit]',state.windows.summary);
  state.stairSafety=createSourceStairSafety(state.meshes,scene,isResidenceRecord);
@@ -412,7 +417,7 @@ function setupEnhancements(){
   'Source-anchored flights and landing · handrails + upper void guard · concept only, not engineer certified':
   'Stair source incomplete. No unsupported safety geometry fabricated.';
  state.doorSystem=createDoorSystem(state.doors,scene,isResidenceRecord);
- state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows);
+ state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit);
  const details=state.doorSystem.doors.length;
  console.info('[AutoMinds Aperture Audit]',state.doorApertureAudit.obstructedCount,
   'door and',state.doorApertureAudit.windowObstructedCount,'window wall occlusions repaired visually');
@@ -426,7 +431,7 @@ function setupEnhancements(){
   'curated site components',state.siteContext.summary.approvedComponents);
  $('siteAuditStatus').textContent='S1 plan · 48.5 × 25 m · 3 bays, paving, grass, trees and a 4m gate. '+
   state.sourceContextAudit.suppressedSurroundings+' unrelated IFC pieces suppressed. Location is a visual alignment, not a survey.';
- state.dining=createPlanDiningFurniture(scene,state.origin);
+ state.dining=createPlanDiningFurniture(scene,state.origin,state.meshes.filter(isResidenceRecord));
  buildBedroomNavigator();
  buildDoorNavigator();
  refreshVisibility();
@@ -887,6 +892,9 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
  if(state.windows?.blocksTraversal(
   new THREE.Vector3(oldX,footY+1,oldZ),
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
+ if(state.facadeAudit?.blocksTraversal(
+  new THREE.Vector3(oldX,footY+1,oldZ),
+  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
  if(state.showStairSafety&&state.stairSafety?.blocksTraversal(
   new THREE.Vector3(oldX,footY+1,oldZ),
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
@@ -904,8 +912,7 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
  if(state.doorSystem)rayMeshes.push(...state.doorSystem.collisionMeshes());
  if(state.enhancedFurniture&&state.showFurniture&&state.decor){
   // Optional detailed beds retain real-geometry physical obstructions.
-  for(const furniture of state.decor.sources){
-   const b=furniture.box;
+  for(const b of state.decor.collisionBoxes??[]){
    if(footY+1.45<b.min.y||footY+.25>b.max.y)continue;
    if(nextX>b.min.x-visitorRadius && nextX<b.max.x+visitorRadius &&
       nextZ>b.min.z-visitorRadius && nextZ<b.max.z+visitorRadius)return true;
@@ -1135,7 +1142,7 @@ $('doorNavigatorBtn').addEventListener('click',()=>{$('doorPanel').classList.tog
 $('doorRevealToggle').addEventListener('change',e=>{
  state.repairDoorApertures=e.target.checked;
  if(e.target.checked){
-  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows);
+  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit);
  }else if(state.doorApertureAudit){
   state.doorApertureAudit.restore();
  }
@@ -1291,6 +1298,7 @@ if(isLocalQA){
     doorCount:state.doorSystem?.doors.length??0,apertures:state.doorApertureAudit?.obstructedCount??0,
     siteContext:state.siteContext?.summary??null,sourceContextAudit:state.sourceContextAudit??null,
     windows:state.windows?.summary??null,
+    verifiedFacadeGlazing:state.facadeAudit?.summary??null,
     stairSafety:state.stairSafety?.summary??null,
     stairSafetyShown:state.stairSafety?.root?.visible??false,
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,

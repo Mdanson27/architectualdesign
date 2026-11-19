@@ -40,11 +40,25 @@ jobs:
         run: npm run test:stairs
       - name: Verify matched IFC openings and door collisions
         run: npm run test:openings
+      - name: Check balcony glazing and fitted furniture
+        run: npm run test:facade
       - name: Build public GitHub Pages site
         run: npm run build
         env:
           GITHUB_PAGES: 'true'
           VITE_PUBLIC_PREVIEW: 'true'
+      - name: Real-browser architectural walkthrough QA
+        timeout-minutes: 7
+        run: |
+          command -v google-chrome
+          npm run test:browser
+      - name: Save browser QA diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autominds-architectural-qa
+          path: architecture-browser-qa.json
+          if-no-files-found: ignore
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

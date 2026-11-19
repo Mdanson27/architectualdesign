@@ -26,7 +26,7 @@ function makeChair(x,z,rotation,index){
  piece(chair,.41,.27,.073,0,.81,.16,cushion);
  return chair;
 }
-export function createPlanDiningFurniture(scene,origin){
+export function createPlanDiningFurniture(scene,origin,sourceRecords=[]){
  const root=new THREE.Group();
  root.name='PDF_DINING_ROOM_19M2_SIX_CHAIRS_PROVISIONAL';
  // Derived approximate position from ground-floor source coordinates and
@@ -60,7 +60,27 @@ export function createPlanDiningFurniture(scene,origin){
  scene.add(root);
  root.updateWorldMatrix(true,true);
  const collisionBoxes=furniture.map(o=>new THREE.Box3().setFromObject(o).clone());
+ // Identify the odd lone IFC furnishing that otherwise stands at the dining
+ // margin. Keep the original element available in the BIM records; hide its
+ // visual while the complete coordinated six-chair set is displayed.
+ const diningBox=new THREE.Box3(
+   new THREE.Vector3(root.position.x-2.05,-.04,root.position.z-1.65),
+   new THREE.Vector3(root.position.x+2.05,1.85,root.position.z+1.65)
+ );
+ const sourceSet=new Set(sourceRecords.filter(r=>{
+   if(r.layer?.level!=='ground'||!/^FU\s*-/i.test(r.mesh.userData.ifc?.name||''))return false;
+   if(r.box.intersectsBox(diningBox) &&
+     collisionBoxes.some(b=>b.clone().expandByScalar(.11).intersectsBox(r.box)))return true;
+   // A thin, tall, isolated FU - 005 at the east-side dining room threshold
+   // is not part of the planned six-seat set and obstructs the preview.
+   const c=r.box.getCenter(new THREE.Vector3()),s=r.box.getSize(new THREE.Vector3());
+   return /^FU\s*-\s*005$/i.test(r.mesh.userData.ifc?.name||'') &&
+     Math.abs(c.x-(112.30-origin.x))<.17 &&
+     Math.abs(c.z-(-.515-origin.z))<.18 &&s.x<.3&&s.z<.3;
+ }));
  root.userData={architecturalRoom:'Dining',area_m2:19,source:'Home.pdf ground-floor plan',
   chairs:6,tableDimensions_m:[2.17,1.10],placement:'provisional_pending_plan_registration'};
- return {root,collisionBoxes,chairs:6,source:'Home.pdf 19m² dining',provisional:true};
+ return {root,collisionBoxes,sourceSet,chairs:6,
+  source:'Home.pdf 19m² dining',provisional:true,
+  summary:{sixChairs:true,chairs:6,table3D:true,sourceOverlapsConcealed:sourceSet.size}};
 }

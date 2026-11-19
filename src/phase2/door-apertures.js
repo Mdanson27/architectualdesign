@@ -7,7 +7,7 @@ const isStructuralWall=record=>record.category==='walls'||/^SW\s*-/i.test(source
 /** Source-backed aperture geometry, shared by rendering and walking.
  * The source IFC geometry is never removed or modified.
  */
-export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSystem=null){
+export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSystem=null,facadeSystem=null){
  const structural=records.filter(r=>inside(r)&&isStructuralWall(r)&&
    r.box.getSize(new THREE.Vector3()).y>1.0);
  const cuts=[];
@@ -54,6 +54,12 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
     w.position.y-w.height/2,w.position.y+w.height/2,w.width,w.alongX,
     w.group.userData.sourceGUIDs);
  }
+ for(let i=0;i<(facadeSystem?.panels?.length??0)&&cuts.length<MAX_OPENINGS;i++){
+  const p=facadeSystem.panels[i];
+  append('window',1000+i,p.position.x,p.position.z,
+    p.position.y-p.height/2,p.position.y+p.height/2,
+    p.width,p.alongX,p.sourceGuids);
+ }
  function pointInsideCut(point,cut){
   const b=cut.box,h=cut.height;
   return point.x>b.x&&point.x<b.y&&point.z>b.z&&point.z<b.w&&
@@ -83,7 +89,7 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
   summary:{
    sourceAnchoredDoors:doorSystem?.doors.length??0,
    verifiedDoorWallCutouts:cuts.filter(c=>c.kind==='door').length,
-   sourceAnchoredWindows:windowSystem?.windows?.length??0,
+   sourceAnchoredWindows:(windowSystem?.windows?.length??0)+(facadeSystem?.panels?.length??0),
    verifiedWindowWallCutouts:cuts.filter(c=>c.kind==='window').length,
    noSourceVerticesModified:true
   }};
@@ -92,8 +98,8 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
 /** Non-destructive shader cuts through source-backed structural walls.
  * The SAME aperture registry is used by collision filtering.
  */
-export function revealObstructedDoors(wallMaterial,doorSystem,meshRecords,inside=()=>true,windowSystem=null){
- const registry=buildSourceApertures(doorSystem,meshRecords,inside,windowSystem);
+export function revealObstructedDoors(wallMaterial,doorSystem,meshRecords,inside=()=>true,windowSystem=null,facadeSystem=null){
+ const registry=buildSourceApertures(doorSystem,meshRecords,inside,windowSystem,facadeSystem);
  const cuts=registry.cuts;
  const vecBounds=Array.from({length:MAX_OPENINGS},(_,i)=>cuts[i]?.box||new THREE.Vector4(999999,999999,999999,999999));
  const vecHeights=Array.from({length:MAX_OPENINGS},(_,i)=>cuts[i]?.height||new THREE.Vector2(999999,999999));
@@ -135,7 +141,7 @@ export function revealObstructedDoors(wallMaterial,doorSystem,meshRecords,inside
  }));
  return {
   doorCount:doorSystem?.doors.length??0,
-  windowCount:windowSystem?.windows?.length??0,
+  windowCount:(windowSystem?.windows?.length??0)+(facadeSystem?.panels?.length??0),
   obstructedCount:registry.doorCutCount,
   windowObstructedCount:registry.windowCutCount,
   visualCuts:cuts,occlusionDetails,windowOcclusionDetails,

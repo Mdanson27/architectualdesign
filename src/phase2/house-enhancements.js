@@ -27,8 +27,10 @@ function createBed(record,wallRecords,index){
  const b=record.box,center=b.getCenter(new THREE.Vector3()),ext=b.getSize(new THREE.Vector3());
  // Use real IFC furniture x/z bounds to size and orient the model (metres).
  const w=Math.min(ext.x,ext.z),len=Math.max(ext.x,ext.z);
- const width=Math.max(1.15,Math.min(w,2.75));
- const length=Math.max(1.70,Math.min(len,2.35));
+ // Do not enlarge a source bed into an impassable block. Keep a compact
+ // realistic sleeping footprint so the original room remains accessible.
+ const width=Math.max(1.12,Math.min(w,1.68));
+ const length=Math.max(1.73,Math.min(len,2.06));
  const floor=record.layer.level==='first'?3.3:0;
  const group=new THREE.Group();group.name='REFERENCE_STYLED_BED_'+index;
  group.position.set(center.x,floor,center.z);
@@ -57,8 +59,9 @@ function createBed(record,wallRecords,index){
  cuboid(group,white,width-.09,.018,.16,0,.791,-.01,.008);
  // Legs: the feet only; no cheap billboard furniture or faux depth.
  for(const x of [-1,1])for(const z of [-1,1])cuboid(group,walnut,.11,.16,.11,x*(width/2-.09),.09,z*(length/2-.13),.015);
- // Keep bedside stands within verified wall clearance; don't force them through walls.
- for(const side of [-1,1]){
+ // Omit stands where circulation space is narrow or when the original source
+ // bed was oversized: floor access is more important than decoration.
+ if(w<=1.8&&len<=2.4)for(const side of [-1,1]){
   const nearX=center.x+Math.cos(group.rotation.y)*side*(width/2+.34);
   const nearZ=center.z-Math.sin(group.rotation.y)*side*(width/2+.34);
   if(nearestWallDistance(nearX,nearZ,floor+.6,wallRecords)<.52)continue;
@@ -87,7 +90,12 @@ export function buildBedroomDecorations(meshRecords,scene){
   parent.add(createBed(beds[i],walls,i));
  }
  scene.add(parent);
- return {group:parent,sources:beds,entries:beds.map((r,i)=>({id:i,level:r.layer.level,center:r.box.getCenter(new THREE.Vector3()),area:r.box.getSize(new THREE.Vector3())}))};
+ parent.updateMatrixWorld(true);
+ const visualBeds=parent.children;
+ const collisionBoxes=visualBeds.map(bed=>new THREE.Box3().setFromObject(bed));
+ return {group:parent,sources:beds,visualBeds,collisionBoxes,
+  entries:beds.map((r,i)=>({id:i,level:r.layer.level,center:r.box.getCenter(new THREE.Vector3()),area:r.box.getSize(new THREE.Vector3()),
+   styledFootprint:visualBeds[i]?.userData?.footprint_m??null}))};
 }
 function section(parent,w,h,d,x,y,z,material=black){
  return cuboid(parent,material,w,h,d,x,y,z,Math.min(w,h,d)*.07);
