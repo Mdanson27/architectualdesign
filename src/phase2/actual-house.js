@@ -882,6 +882,7 @@ renderer.domElement.addEventListener('click',()=>{
  if(state.mode==='walk'&&!fps.isLocked&&!matchMedia('(pointer:coarse)').matches)fps.lock();
 });
 function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
+ state.lastCollisionBlocker=null;
  const diff=new THREE.Vector3(nextX-oldX,0,nextZ-oldZ);
  const distance=diff.length();
  if(distance<.0001)return false;
@@ -891,13 +892,19 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
  if(state.windows?.blocksTraversal(
   new THREE.Vector3(oldX,footY+1,oldZ),
-  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
+  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius)){
+  state.lastCollisionBlocker={kind:'solid glazed window'};return true;
+ }
  if(state.facadeAudit?.blocksTraversal(
   new THREE.Vector3(oldX,footY+1,oldZ),
-  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
+  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius)){
+  state.lastCollisionBlocker={kind:'fixed facade glass'};return true;
+ }
  if(state.showStairSafety&&state.stairSafety?.blocksTraversal(
   new THREE.Vector3(oldX,footY+1,oldZ),
-  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
+  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius)){
+  state.lastCollisionBlocker={kind:'protected staircase guard'};return true;
+ }
  const candidates=nearby(state.solids,nextX,footY+1.05,nextZ,1.3);
  const rayMeshes=candidates.filter(r=>{
   if(!r.mesh.visible||r.mesh.userData.functionallyReplacedDoorId)return false;
@@ -949,7 +956,12 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
       state.doorApertureAudit?.permitsOpenDoorWallHit(hit,footY))return false;
    return true;
   });
-  if(blocking)return true;
+  if(blocking){
+    state.lastCollisionBlocker={kind:'IFC source mesh',name:blocking.object?.userData?.ifc?.name??blocking.object?.name??null,
+      guid:blocking.object?.userData?.ifc?.guid??null,
+      point:blocking.point.toArray().map(x=>+x.toFixed(3)),distance:+blocking.distance.toFixed(3)};
+    return true;
+  }
  }
  return false;
 }
@@ -1276,10 +1288,16 @@ function qaDoorWalk(door,side=1,opened=true){
    const nextX=THREE.MathUtils.lerp(start.x,finish.x,t);
    const nextZ=THREE.MathUtils.lerp(start.z,finish.z,t);
    if(detectObstacle(oldX,oldZ,nextX,nextZ,footY)){
-    return {ok:false,reason:'source or leaf collision',side,opened,progress:+t.toFixed(3),position:[+nextX.toFixed(3),+nextZ.toFixed(3)]};
+    return {ok:false,reason:'source or leaf collision',blocker:state.lastCollisionBlocker,side,opened,progress:+t.toFixed(3),position:[+nextX.toFixed(3),+nextZ.toFixed(3)]};
    }
    const ground=sampleGround(nextX,nextZ,footY,.32,.70);
-   if(!ground)return {ok:false,reason:'floor missing in crossing',side,opened,progress:+t.toFixed(3)};
+   if(!ground)return {ok:false,reason:'floor missing in crossing',side,opened,progress:+t.toFixed(3),
+     x:nextX,z:nextZ,footY,
+     nearbyFloorSlabs:nearby(state.floors,nextX,footY,nextZ,.32).slice(0,7)
+       .map(r=>({name:r.mesh.userData.ifc?.name,category:r.category,
+         y:[+r.box.min.y.toFixed(3),+r.box.max.y.toFixed(3)],
+         x:[+r.box.min.x.toFixed(2),+r.box.max.x.toFixed(2)],
+         z:[+r.box.min.z.toFixed(2),+r.box.max.z.toFixed(2)]}))};
    if(ground.y-footY>.30 || footY-ground.y>.7){
     return {ok:false,reason:'floor height discontinuity',side,opened,progress:+t.toFixed(3),height:ground.y};
    }
