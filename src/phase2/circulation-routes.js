@@ -37,13 +37,25 @@ export function findPhysicalRoute(options){
   return item;
  }
  function nearest(point){
-  const offsets=[[0,0],[0,1],[0,-1],[1,0],[-1,0],[1,1],[-1,1],[1,-1],[-1,-1],
-   [0,2],[0,-2],[2,0],[-2,0]];
-  for(const [ix,iz] of offsets){
+  // Source reference anchors can lie on a stair tread, sofa or plan annotation.
+  // Select a nearby *physically accessible* landing/floor point, not merely
+  // the first slab detected by an upward/downward raycast.
+  const choices=[];
+  for(let ix=-4;ix<=4;ix++)for(let iz=-4;iz<=4;iz++){
+   if(Math.hypot(ix,iz)>4.1)continue;
    const c=cell(point[0]+ix*gridStep,point[1]+iz*gridStep,level);
-   if(c&&Math.abs(c.y-level)<.44)return c;
+   if(!c||Math.abs(c.y-level)>.44)continue;
+   let accessible=0;
+   for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    const n=cell(c.x+dx*gridStep,c.z+dz*gridStep,c.y);
+    if(!n||Math.abs(n.y-c.y)>.29)continue;
+    if(!blocked(c.x,c.z,n.x,n.z,c.y))accessible++;
+   }
+   const distance=Math.hypot(c.x-point[0],c.z-point[1]);
+   if(accessible>=2)choices.push({c,distance,accessible});
   }
-  return null;
+  choices.sort((a,b)=>a.distance-b.distance||(b.accessible-a.accessible));
+  return choices[0]?.c??null;
  }
  const from=nearest(start),to=nearest(end);
  if(!from||!to)return {ok:false,reason:!from?'no source-supported starting floor':'no source-supported destination floor',visited:0,points:[]};
