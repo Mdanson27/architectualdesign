@@ -46,6 +46,8 @@ jobs:
         run: npm run test:phase7
       - name: Verify S1 drawing-confirmed ground-floor circulation openings
         run: npm run test:plan-circulation
+      - name: Verify continuous source-backed doorway portal navigation
+        run: npm run test:portal
       - name: Build public GitHub Pages site
         run: npm run build
         env:

@@ -1142,7 +1142,8 @@ function checkPlanCirculation(){
     const xy=a=>[a[0]-state.origin.x,a[1]-state.origin.z];
     const start=xy(t.start),end=xy(t.end);
     const route=findPhysicalRoute({
-      start,end,level:t.level,gridStep:.16,maxVisited:5600,
+      start,end,level:t.level,gridStep:.24,maxVisited:3500,
+      portals:state.planCirculation?.apertures??[],
       ground:(x,z,y)=>sampleGround(x,z,y,.40,.68),
       blocked:(x,z,nx,nz,y)=>detectObstacle(x,z,nx,nz,y)
     });

@@ -1,7 +1,9 @@
 /**
- * Real floor-and-collision-constrained route probes.
- * No synthetic shortcuts, traversable voids or invented room-to-room openings.
- * The callbacks are provided by the same raycast engine used by WASD walking.
+ * Strict IFC-backed route probes.
+ * A regular grid alone misses narrow openings when no grid column coincides
+ * with their clear centre. Add source-verified aperture waypoints, but test
+ * every walking edge with the exact same floor and obstacle functions as WASD.
+ * No through-wall graph edges, fabricated floors, or teleporting.
  */
 export const PLAN_ROUTE_TARGETS=[
  {id:'ground-stair-living',label:'Stair foyer → ground Sitting Room',level:0,
@@ -17,103 +19,140 @@ export const PLAN_ROUTE_TARGETS=[
   start:[110.15,-6.70],end:[114.7,-2.20],
   drawing:'S1 first floor stair / 19m² family room'}
 ];
-function dist(a,b){return Math.hypot(a.x-b.x,a.z-b.z);}
-function quantized(v,step){return Math.round(v/step);}
+const hyp=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+const snap=(n,step)=>Math.round(n/step)*step;
+function pathTo(last,seen,parents,max=240){
+ const result=[];let k=last.key;
+ while(k&&result.length<max){
+  const p=seen.get(k);if(!p)break;
+  result.push([+p.x.toFixed(3),+p.y.toFixed(3),+p.z.toFixed(3)]);
+  k=parents.get(k);
+ }
+ return result.reverse();
+}
 export function findPhysicalRoute(options){
- const {start,end,level,ground,blocked,gridStep=.48,maxVisited=1850,
-  maxWorldRadius=26,maxDeltaY=.29,searchMargin=5.2}=options;
- if(typeof ground!=='function'||typeof blocked!=='function')throw Error('Source floor and collision callbacks required');
- const cache=new Map(),dirs=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
- function pos(x,z){return {x:quantized(x,gridStep)*gridStep,z:quantized(z,gridStep)*gridStep};}
- function key(p){return quantized(p.x,gridStep)+','+quantized(p.z,gridStep);}
- function cell(x,z,alt=level){
-  const p=pos(x,z),k=key(p);
-  if(cache.has(k))return cache.get(k);
-  if(Math.hypot(p.x-start[0],p.z-start[1])>maxWorldRadius ||
-    p.x<Math.min(start[0],end[0])-searchMargin ||
-    p.x>Math.max(start[0],end[0])+searchMargin ||
-    p.z<Math.min(start[1],end[1])-searchMargin ||
-    p.z>Math.max(start[1],end[1])+searchMargin)return null;
-  // We cannot use a floor without a real IFC supporting slab/tread.
-  const floor=ground(p.x,p.z,alt);
-  const item=floor?{...p,y:floor.y,key:k}:null;
-  cache.set(k,item);
-  return item;
+ const {start,end,level,ground,blocked,portals=[],
+  gridStep=.24,maxVisited=3200,maxWorldRadius=26,maxDeltaY=.29,searchMargin=5.2}=options;
+ if(!Number.isFinite(gridStep)||gridStep<=0||
+  typeof ground!=='function'||typeof blocked!=='function')
+  throw Error('A valid grid, source floor and collision callbacks are required');
+ const cache=new Map(),dirs=[[1,0],[-1,0],[0,1],[0,-1],
+   [1,1],[1,-1],[-1,1],[-1,-1]];
+ const inside=(x,z)=>Math.hypot(x-start[0],z-start[1])<=maxWorldRadius &&
+   x>=Math.min(start[0],end[0])-searchMargin &&
+   x<=Math.max(start[0],end[0])+searchMargin &&
+   z>=Math.min(start[1],end[1])-searchMargin &&
+   z<=Math.max(start[1],end[1])+searchMargin;
+ function grid(x,z){
+  x=snap(x,gridStep);z=snap(z,gridStep);
+  const key='g:'+Math.round(x/gridStep)+','+Math.round(z/gridStep);
+  if(cache.has(key))return cache.get(key);
+  if(!inside(x,z)){cache.set(key,null);return null;}
+  const floor=ground(x,z,level);
+  const value=floor?{x,z,y:floor.y,key,kind:'grid'}:null;
+  cache.set(key,value);
+  return value;
+ }
+ const portalNodes=[];
+ for(let i=0;i<portals.length;i++){
+  const p=portals[i];
+  if(p.groundY!==undefined&&Math.abs(p.groundY-level)>.5)continue;
+  if(!Number.isFinite(p.cx)||!Number.isFinite(p.cz))continue;
+  // Keep the original S1 opening width and protect the source wall's piers.
+  // Centres are source-backed; no offset beyond ±0.72m along its normal.
+  for(let k=-6;k<=6;k++){
+   const x=p.cx+(p.alongX?0:k*.12),z=p.cz+(p.alongX?k*.12:0);
+   if(!inside(x,z))continue;
+   const fl=ground(x,z,level);
+   if(!fl||Math.abs(fl.y-level)>.44)continue;
+   portalNodes.push({x,z,y:fl.y,key:'p:'+i+':'+k,kind:'portal',portalId:p.id});
+  }
  }
  function nearest(point){
-  // Source reference anchors can lie on a stair tread, sofa or plan annotation.
-  // Select a nearby *physically accessible* landing/floor point, not merely
-  // the first slab detected by an upward/downward raycast.
   const choices=[];
   for(let ix=-4;ix<=4;ix++)for(let iz=-4;iz<=4;iz++){
    if(Math.hypot(ix,iz)>4.1)continue;
-   const c=cell(point[0]+ix*gridStep,point[1]+iz*gridStep,level);
+   const c=grid(point[0]+ix*gridStep,point[1]+iz*gridStep);
    if(!c||Math.abs(c.y-level)>.44)continue;
    let accessible=0;
    for(const [dx,dz] of [[1,0],[-1,0],[0,1],[0,-1]]){
-    const n=cell(c.x+dx*gridStep,c.z+dz*gridStep,c.y);
-    if(!n||Math.abs(n.y-c.y)>.29)continue;
-    if(!blocked(c.x,c.z,n.x,n.z,c.y))accessible++;
+    const n=grid(c.x+dx*gridStep,c.z+dz*gridStep);
+    if(n&&Math.abs(n.y-c.y)<=maxDeltaY&&
+      !blocked(c.x,c.z,n.x,n.z,c.y))accessible++;
    }
-   const distance=Math.hypot(c.x-point[0],c.z-point[1]);
-   if(accessible>=2)choices.push({c,distance,accessible});
+   if(accessible>=2)choices.push({c,dist:Math.hypot(c.x-point[0],c.z-point[1]),accessible});
   }
-  choices.sort((a,b)=>a.distance-b.distance||(b.accessible-a.accessible));
+  choices.sort((a,b)=>a.dist-b.dist||b.accessible-a.accessible);
   return choices[0]?.c??null;
  }
  const from=nearest(start),to=nearest(end);
- if(!from||!to)return {ok:false,reason:!from?'no source-supported starting floor':'no source-supported destination floor',visited:0,points:[]};
- const open=[{...from,g:0,f:dist(from,to)}],score=new Map([[from.key,0]]);
+ if(!from||!to)return {ok:false,reason:!from?'no source-supported starting floor':'no source-supported destination floor',
+  visited:0,points:[],sourcePortals:portalNodes.length};
+ const open=[{...from,g:0,f:hyp(from,to)}];
  const visited=new Set(),parents=new Map(),seen=new Map([[from.key,from]]);
- let close=Infinity,closest=from,edges=0,blockedEdges=0,levelEdges=0;
+ const score=new Map([[from.key,0]]);
+ let closest=from,close=hyp(from,to),edges=0,blockedEdges=0,levelEdges=0;
+ function candidates(curr){
+  const next=[];
+  if(curr.kind==='grid'){
+   for(const [dx,dz] of dirs){
+    const n=grid(curr.x+dx*gridStep,curr.z+dz*gridStep);
+    if(!n)continue;
+    // No diagonal passage through the corner of two structural barriers.
+    if(dx&&dz){
+     const p1=grid(curr.x+dx*gridStep,curr.z),p2=grid(curr.x,curr.z+dz*gridStep);
+     if(!p1||!p2||
+       blocked(curr.x,curr.z,p1.x,p1.z,curr.y)||
+       blocked(curr.x,curr.z,p2.x,p2.z,curr.y)){blockedEdges++;continue;}
+    }
+    next.push(n);
+   }
+  }else{
+   const x=snap(curr.x,gridStep),z=snap(curr.z,gridStep);
+   for(let ix=-1;ix<=1;ix++)for(let iz=-1;iz<=1;iz++){
+    const n=grid(x+ix*gridStep,z+iz*gridStep);
+    if(n&&hyp(curr,n)<=gridStep*1.30)next.push(n);
+   }
+  }
+  // A source aperture joins the grid *only* through short verified edges.
+  // With a 0.83m passage and 0.32m avatar radius, using only the grid's
+  // z=-7.10 sampling row can falsely collide with the jamb at z=-7.02.
+  for(const p of portalNodes)if(p.key!==curr.key&&
+    hyp(curr,p)<=Math.max(.185,gridStep*1.26))next.push(p);
+  return next;
+ }
  while(open.length&&visited.size<maxVisited){
   open.sort((a,b)=>a.f-b.f);
   const curr=open.shift();
   if(visited.has(curr.key))continue;
   visited.add(curr.key);
-  const dGoal=dist(curr,to);
-  if(dGoal<close){close=dGoal;closest=curr;}
-  if(curr.key===to.key||dGoal<=gridStep*.65){
-   const points=[];let k=curr.key;
-   while(k){const p=seen.get(k);points.push([p.x,p.y,p.z]);k=parents.get(k);}
-   points.reverse();
-   return {ok:true,reason:'source-backed continuous path found',visited:visited.size,
-     distanceMetres:+points.reduce((s,p,i)=>i?s+Math.hypot(p[0]-points[i-1][0],p[2]-points[i-1][2]):0,0).toFixed(2),
-     points,edges,blockedEdges,levelEdges};
+  const goal=hyp(curr,to);
+  if(goal<close){close=goal;closest=curr;}
+  if(curr.key===to.key||goal<=gridStep*.65){
+   const points=pathTo(curr,seen,parents);
+   return {ok:true,reason:'continuous path through source-supported floor and confirmed openings',
+    visited:visited.size,sourcePortals:portalNodes.length,edges,blockedEdges,levelEdges,
+    distanceMetres:+points.reduce((s,p,i)=>i?s+Math.hypot(p[0]-points[i-1][0],p[2]-points[i-1][2]):0,0).toFixed(2),
+    points};
   }
-  for(const [dx,dz] of dirs){
-   const next=cell(curr.x+dx*gridStep,curr.z+dz*gridStep,curr.y);
-   if(!next||visited.has(next.key))continue;
-   const rise=next.y-curr.y;
+  for(const n of candidates(curr)){
+   if(visited.has(n.key))continue;
+   const rise=n.y-curr.y;
    if(rise>maxDeltaY||rise<-.58){levelEdges++;continue;}
-   // A diagonal must not slip through the corner of two solid walls.
-   if(dx&&dz){
-    const p1=cell(curr.x+dx*gridStep,curr.z,curr.y);
-    const p2=cell(curr.x,curr.z+dz*gridStep,curr.y);
-    if(!p1||!p2||blocked(curr.x,curr.z,p1.x,p1.z,curr.y)||
-       blocked(curr.x,curr.z,p2.x,p2.z,curr.y)){blockedEdges++;continue;}
-   }
-   if(blocked(curr.x,curr.z,next.x,next.z,curr.y)){blockedEdges++;continue;}
+   if(blocked(curr.x,curr.z,n.x,n.z,curr.y)){blockedEdges++;continue;}
    edges++;
-   const increment=Math.hypot(dx,dz)*gridStep+Math.abs(rise)*.35;
-   const g=curr.g+increment;
-   if(g>=(score.get(next.key)??Infinity))continue;
-   score.set(next.key,g);parents.set(next.key,curr.key);seen.set(next.key,next);
-   open.push({...next,g,f:g+dist(next,to)});
+   const g=curr.g+hyp(curr,n)+Math.abs(rise)*.35;
+   if(g>=(score.get(n.key)??Infinity))continue;
+   score.set(n.key,g);parents.set(n.key,curr.key);seen.set(n.key,n);
+   open.push({...n,g,f:g+hyp(n,to)});
   }
  }
- const partialPath=[];let backKey=closest.key;
- while(backKey&&partialPath.length<160){
-  const p=seen.get(backKey);
-  if(!p)break;
-  partialPath.push([+p.x.toFixed(2),+p.y.toFixed(2),+p.z.toFixed(2)]);
-  backKey=parents.get(backKey);
- }
- partialPath.reverse();
- return {ok:false,reason:'no continuous route through source-backed floor and collisions',
-  visited:visited.size,closestDistanceMetres:+close.toFixed(2),
+ return {ok:false,reason:'no continuous source-backed floor/collision route',
+  visited:visited.size,sourcePortals:portalNodes.length,
   originalStart:start,originalEnd:end,
   resolvedStart:[from.x,from.y,from.z],resolvedEnd:[to.x,to.y,to.z],
   closestToDestination:[closest.x,closest.y,closest.z],
-  partialPath,points:[],edges,blockedEdges,levelEdges};
+  closestDistanceMetres:+close.toFixed(2),
+  partialPath:pathTo(closest,seen,parents),
+  points:[],edges,blockedEdges,levelEdges};
 }

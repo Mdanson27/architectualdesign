@@ -36,6 +36,7 @@
 !/tests/verify-room-clearance.mjs
 !/tests/verify-walkable-floor.mjs
 !/tests/verify-phase7-architecture.mjs
+!/tests/verify-source-portal-navigation.mjs
 !/tests/verify-plan-circulation.mjs
 !/tests/qa-production-browser.mjs
 !/tests/
