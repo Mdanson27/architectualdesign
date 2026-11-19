@@ -18,7 +18,10 @@ export const PLAN_ROUTE_TARGETS=[
   start:[114.65,-2.38],end:[109.65,-2.38],
   drawing:'S1 ground floor dining / 25m² kitchen'},
  {id:'first-stair-family',label:'Upper stair landing → first-floor Family Room',level:3.3,
-  start:[110.15,-6.70],end:[114.7,-2.20],
+  // Clear arrival point inside the west side of the 19m² Family Room.
+  // The earlier (-2.20m) centre target now falls within the organized sofa/
+  // coffee-table footprint; this source-tested point remains physically clear.
+  start:[110.15,-6.70],end:[113.02,-2.44],
   drawing:'S1 first floor stair / 19m² family room'}
 ];
 const hyp=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
