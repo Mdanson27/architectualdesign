@@ -77,7 +77,7 @@ try{
  if(!ready?.loaded||ready.loadedLayers!==ready.expected)throw Error('IFC not fully loaded (expected '+ready?.expected+', loaded '+ready?.loadedLayers+')');
  const summary=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.summary())"));
  const scene=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
- const ids=[6,12,14,15,21,25,26,27,28,29];
+ const ids=process.env.QA_ALL_DOORS==='1'?Array.from({length:29},(_,i)=>i+1):[6,12,14,15,21,25,26,27,28,29];
  const crossings=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.doorCrossings("+JSON.stringify(ids)+",true))"));
  const obstructed=crossings.filter(x=>!x.openFront?.ok||!x.openBack?.ok).map(x=>({
   id:x.id,level:x.level,sourceGuids:x.sourceGuids,front:x.openFront,back:x.openBack
