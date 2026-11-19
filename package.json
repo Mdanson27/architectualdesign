@@ -16,6 +16,7 @@
     "test:facade": "node tests/verify-facade-and-furniture.mjs",
     "test:thresholds": "node tests/verify-threshold-support.mjs",
     "test:clearance": "node tests/verify-room-clearance.mjs",
+    "test:floor": "node tests/verify-walkable-floor.mjs",
     "test:browser": "node tests/qa-production-browser.mjs"
   },
   "dependencies": {

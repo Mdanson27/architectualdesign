@@ -135,14 +135,25 @@ function fitBedToActualDoorways(group,source,doorRecords,wallRecords){
      return sum+(dy>.10?dx*dz:0);
    },0);
    const previous=overlapScore(boundary),starting=group.position.clone();
+   const otherDoorways=doorRecords.filter(d=>d.layer.level===source.layer.level&&d!==balconyDoor);
+   const conflictingDoors=b=>otherDoorways.filter(d=>{
+    const c=d.box.getCenter(new THREE.Vector3()),s=d.box.getSize(new THREE.Vector3());
+    if(s.y<1.65) return false;
+    if(b.max.y<c.y-s.y/2+.25||b.min.y>c.y+s.y/2-.15)return false;
+    const alongX=s.x>=s.z,half=Math.max(s.x,s.z)/2+.32;
+    return alongX?
+      b.min.x<c.x+half&&b.max.x>c.x-half&&b.min.z<c.z+.77&&b.max.z>c.z-.77:
+      b.min.z<c.z+half&&b.max.z>c.z-half&&b.min.x<c.x+.77&&b.max.x>c.x-.77;
+   });
    let best=null;
-   // Search progressively smaller realistic single-bed footprints only when the
-   // full-size preview cannot fit the source bedroom safely. Preserve walls.
-   for(const scale of [1,.92,.85,.78,.72]){
+   // A placement must clear ALL source doorways, including the adjacent
+   // upstairs interior bedroom door, not only the balcony door.
+   const scales=[[1,1],[.92,.92],[.85,.92],[.78,.9],[.72,.89]];
+   for(const [sx,sz] of scales){
     let fitting=null;
-    group.scale.set(scale,1,scale);
-    for(const dx of [0,-.25,-.5,-.75,.25,.5,.75,1.0,1.25,-1.0]){
-     for(const dz of [minShift,-.27,-.35,-.45,-.55,-.70,-.85,-1.0]){
+    group.scale.set(sx,1,sz);
+    for(const dx of [0,-.25,-.5,-.75,-1,-1.25,.25,.5,.75,1,1.25,1.5]){
+     for(const dz of [minShift,-.27,-.35,-.45,-.55,-.70,-.85,-1,-1.2]){
       group.position.copy(starting).add(new THREE.Vector3(dx,0,dz));
       group.updateMatrixWorld(true);
       const after=new THREE.Box3().setFromObject(group);
@@ -151,8 +162,9 @@ function fitBedToActualDoorways(group,source,doorRecords,wallRecords){
       const sideways=after.min.x>doorCenter.x+balconyDoor.box.getSize(new THREE.Vector3()).x/2+.34||
         after.max.x<doorCenter.x-balconyDoor.box.getSize(new THREE.Vector3()).x/2-.34;
       if((clearance<1.17&&!sideways)||overlap>previous+.013)continue;
+      if(conflictingDoors(after).length)continue;
       const score=overlap*15+Math.hypot(dx,dz)*.15;
-      if(!fitting||score<fitting.score)fitting={dx,dz,scale,score,overlap,clearance,sideways};
+      if(!fitting||score<fitting.score)fitting={dx,dz,sx,sz,score,overlap,clearance,sideways};
      }
     }
     if(fitting){best=fitting;break;}
@@ -160,16 +172,16 @@ function fitBedToActualDoorways(group,source,doorRecords,wallRecords){
    group.position.copy(starting);group.scale.set(1,1,1);
    if(best){
     group.position.add(new THREE.Vector3(best.dx,0,best.dz));
-    group.scale.set(best.scale,1,best.scale);
+    group.scale.set(best.sx,1,best.sz);
     const footprint=group.userData.footprint_m;
-    group.userData.footprint_m=footprint.map(v=>Number((v*best.scale).toFixed(3)));
+    group.userData.footprint_m=footprint.map((v,i)=>Number((v*(i===0?best.sx:best.sz)).toFixed(3)));
     group.userData.circulationCorrection={
       ...(group.userData.circulationCorrection||{}),
       sourceBalconyDoorGUID:balconyDoor.mesh.userData.ifc?.guid,
       balconyApproachShiftX:Number(best.dx.toFixed(3)),
       balconyApproachShiftZ:Number(best.dz.toFixed(3)),
       doorwayClearanceMetres:Number(best.clearance.toFixed(3)),
-      reducedBedScale:best.scale,
+      reducedBedScale:[best.sx,best.sz],
       wallOverlapBeforeSqM:Number(previous.toFixed(3)),
       wallOverlapAfterSqM:Number(best.overlap.toFixed(3)),
       originalIFCUnmodified:true

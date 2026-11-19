@@ -51,6 +51,8 @@ jobs:
         run: npm run test:thresholds
       - name: Verify IFC-preserving room circulation furniture
         run: npm run test:clearance
+      - name: Verify walkable IFC floor classification
+        run: npm run test:floor
       - name: Real-browser architectural walkthrough QA
         timeout-minutes: 7
         run: |

@@ -9,6 +9,7 @@ import {createIFCWindowGlazing} from './window-glazing.js';
 import {createSourceStairSafety} from './stair-safety.js';
 import {auditFacadeInfills} from './facade-infills.js';
 import {sourceSlabSeamSupport} from './threshold-support.js';
+import {isWalkableSourceSurface} from './walkable-floor.js';
 import {organizeSourceSittingFurniture} from './circulation-furniture.js';
 import {createDoorSystem} from './functional-doors.js';
 import {revealObstructedDoors} from './door-apertures.js';
@@ -772,7 +773,8 @@ function sampleGround(x,z,targetY,maxRise=.9,maxFall=1.25){
  const starts=new THREE.Vector3(x,targetY+maxRise,z);
  downcaster.set(starts,axisDown);
  downcaster.far=maxRise+maxFall;
- const candidates=nearby(state.floors,x,targetY,z,.15).map(r=>r.mesh);
+ const candidates=nearby(state.floors,x,targetY,z,.15)
+  .filter(isWalkableSourceSurface).map(r=>r.mesh);
  const stairDeck=state.stairSafety?.transitionDeck;
  const stairBox=state.stairSafety?.walkSurfaceBox;
  if(state.stairSafety?.root?.visible&&stairDeck?.visible&&stairBox&&
@@ -897,12 +899,16 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
  const distance=diff.length();
  if(distance<.0001)return false;
  const direction=diff.clone().normalize();
+ const passageDoor=state.doorSystem?.nearest(
+  new THREE.Vector3(nextX,footY+1,nextZ),footY,1.1);
+ const narrowOpenDoorRadius=passageDoor?.current>.85?
+   Math.min(visitorRadius,Math.max(.16,passageDoor.width/2-.10)):visitorRadius;
  if(state.doorSystem?.blocksTraversal(
   new THREE.Vector3(oldX,footY+1,oldZ),
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
  if(state.windows?.blocksTraversal(
   new THREE.Vector3(oldX,footY+1,oldZ),
-  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius)){
+  new THREE.Vector3(nextX,footY+1,nextZ),footY,narrowOpenDoorRadius)){
   state.lastCollisionBlocker={kind:'solid glazed window'};return true;
  }
  if(state.facadeAudit?.blocksTraversal(
@@ -952,10 +958,7 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
  // Narrow source door leaves can be only ~0.57 m across. Briefly tighten the
  // visitor's collision envelope while crossing an OPEN door; retain normal
  // comfortable clearance everywhere else without changing architect dimensions.
- const passageDoor=state.doorSystem?.nearest(new THREE.Vector3(nextX,footY+1,nextZ),footY,1.1);
- const clearanceRadius=passageDoor?.current>.85
-  ?Math.min(visitorRadius,Math.max(.16,passageDoor.width/2-.10))
-  :visitorRadius;
+ const clearanceRadius=narrowOpenDoorRadius;
  const cast=new THREE.Raycaster();
  cast.far=distance+.29;
  const sideways=new THREE.Vector3(-direction.z,0,direction.x);
