@@ -28,6 +28,7 @@
 !/src/phase2/balcony-restoration.js
 !/src/phase2/lighting-system.js
 !/src/phase2/circulation-routes.js
+!/src/phase2/plan-circulation.js
 !/tests/verify-stair-safety.mjs
 !/tests/verify-source-openings.mjs
 !/tests/verify-facade-and-furniture.mjs
@@ -35,6 +36,7 @@
 !/tests/verify-room-clearance.mjs
 !/tests/verify-walkable-floor.mjs
 !/tests/verify-phase7-architecture.mjs
+!/tests/verify-plan-circulation.mjs
 !/tests/qa-production-browser.mjs
 !/tests/
 !/tests/verify-site-context.mjs

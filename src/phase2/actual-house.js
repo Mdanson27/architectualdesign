@@ -17,6 +17,7 @@ import {createPlanDiningFurniture} from './dining-furnishings.js';
 import {createSourceBalconyRestoration} from './balcony-restoration.js';
 import {createHouseLighting} from './lighting-system.js';
 import {PLAN_ROUTE_TARGETS,findPhysicalRoute} from './circulation-routes.js';
+import {createPlanCirculationCorrections} from './plan-circulation.js';
 
 /**
  * Actual-house interactive viewer.
@@ -91,7 +92,7 @@ const state={
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
- night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
+ night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
 };
@@ -431,13 +432,15 @@ function setupEnhancements(){
   'Source-anchored flights and landing · handrails + upper void guard · concept only, not engineer certified':
   'Stair source incomplete. No unsupported safety geometry fabricated.';
  state.doorSystem=createDoorSystem(state.doors,scene,isResidenceRecord);
+ state.planCirculation=createPlanCirculationCorrections(state.meshes,scene,state.origin,isResidenceRecord);
+ console.info('[S1 ground-floor opening correction]',state.planCirculation.summary);
  state.balconies=createSourceBalconyRestoration(state.meshes,scene,state.origin,isResidenceRecord);
  state.lightingSystem=createHouseLighting(scene,state.origin);
  state.lightingSystem.update({night:state.night,enabled:state.houseLightsOn});
  console.info('[AutoMinds S1/S2 balcony presentation]',state.balconies.summary);
  const status=$('balconyAuditStatus');
  if(status)status.textContent=state.balconies.summary.restored+' source-supported balconies · '+state.balconies.summary.concealedOpaqueEdgeMeshes+' false outer enclosure meshes hidden';
- state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit);
+ state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit,state.planCirculation);
  const details=state.doorSystem.doors.length;
  console.info('[AutoMinds Aperture Audit]',state.doorApertureAudit.obstructedCount,
   'door and',state.doorApertureAudit.windowObstructedCount,'window wall occlusions repaired visually');
@@ -1251,7 +1254,7 @@ $('doorNavigatorBtn').addEventListener('click',()=>{$('doorPanel').classList.tog
 $('doorRevealToggle').addEventListener('change',e=>{
  state.repairDoorApertures=e.target.checked;
  if(e.target.checked){
-  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit);
+  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit,state.planCirculation);
  }else if(state.doorApertureAudit){
   state.doorApertureAudit.restore();
  }
@@ -1420,6 +1423,7 @@ if(isLocalQA){
     bedCirculationReviews:state.decor?.circulationReviews??[],
     stairSafety:state.stairSafety?.summary??null,
     balconies:state.balconies?.summary??null,
+    planCirculation:state.planCirculation?.summary??null,
     lighting:state.lightingSystem?.status()??null,
     circulation:state.lastRouteReport?{passed:state.lastRouteReport.passed,total:state.lastRouteReport.total}:null,
     stairSafetyShown:state.stairSafety?.root?.visible??false,

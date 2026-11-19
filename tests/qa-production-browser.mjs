@@ -78,6 +78,10 @@ try{
  const summary=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.summary())"));
  const scene=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
  const balcony=summary.balconies;
+ console.log('PHASE7_SOURCE_OPENINGS',JSON.stringify(summary.planCirculation));
+ if(summary.planCirculation?.sourceConfirmedOpenings!==3||
+   summary.openingRegistry?.planConfirmedCirculationOpenings!==3)
+   throw Error('S1 ground-floor circulation opening corrections absent');
  if(!balcony||balcony.restored!==3)
   throw Error('Phase 7 source-supported balcony restoration missing: '+JSON.stringify(balcony));
  const lightBefore=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.lightingStatus())"));

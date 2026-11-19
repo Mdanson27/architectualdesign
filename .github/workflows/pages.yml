@@ -44,6 +44,8 @@ jobs:
         run: npm run test:facade
       - name: Verify source-supported balconies, lighting and room route graph
         run: npm run test:phase7
+      - name: Verify S1 drawing-confirmed ground-floor circulation openings
+        run: npm run test:plan-circulation
       - name: Build public GitHub Pages site
         run: npm run build
         env:

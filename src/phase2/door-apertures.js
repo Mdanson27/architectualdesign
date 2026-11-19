@@ -7,7 +7,7 @@ const isStructuralWall=record=>record.category==='walls'||/^SW\s*-/i.test(source
 /** Source-backed aperture geometry, shared by rendering and walking.
  * The source IFC geometry is never removed or modified.
  */
-export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSystem=null,facadeSystem=null){
+export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSystem=null,facadeSystem=null,planCirculation=null){
  const structural=records.filter(r=>inside(r)&&isStructuralWall(r)&&
    r.box.getSize(new THREE.Vector3()).y>1.0);
  const cuts=[];
@@ -29,7 +29,7 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
   if(high-low<.30)return;
   // Wall cuts are applied only to genuine source-derived door/window positions.
   // The depth accounts for thicker IFC wall faces without cutting adjacent rooms.
-  const depth=Math.min(1.52,Math.max(.66,
+  const depth=kind==='plan'?.64:Math.min(1.52,Math.max(.66,
     ...closeWalls.map(w=>alongX?
       Math.max(Math.abs(cz-w.box.min.z),Math.abs(cz-w.box.max.z))*2+.045:
       Math.max(Math.abs(cx-w.box.min.x),Math.abs(cx-w.box.max.x))*2+.045)));
@@ -60,6 +60,11 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
     p.position.y-p.height/2,p.position.y+p.height/2,
     p.width,p.alongX,p.sourceGuids);
  }
+ for(const p of planCirculation?.apertures??[]){
+  if(cuts.length>=MAX_OPENINGS)break;
+  append('plan',p.id,p.cx,p.cz,p.groundY,p.groundY+p.height,
+    p.width,p.alongX,p.sourceWallGuids);
+ }
  function pointInsideCut(point,cut){
   const b=cut.box,h=cut.height;
   return point.x>b.x&&point.x<b.y&&point.z>b.z&&point.z<b.w&&
@@ -71,8 +76,10 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
  function permitsOpenDoorWallHit(hit,footY){
   if(!sourceWallSet.has(hit?.object))return false;
   for(const cut of cuts){
-   if(cut.kind!=='door'||!cut.door||cut.door.current<.85 ||
-     !cut.door.visual.visible||Math.abs(footY-cut.door.groundY)>1.22)continue;
+   if(cut.kind==='window')continue;
+   if(cut.kind==='door'&&(!cut.door||cut.door.current<.85 ||
+     !cut.door.visual.visible||Math.abs(footY-cut.door.groundY)>1.22))continue;
+   if(cut.kind==='plan'&&Math.abs(footY)>1.20)continue;
    if(!cut.sourceWallMeshes.has(hit.object))continue;
    // An IFC wall face can register below the actual first-floor surface.
    // Keep the source doorway rectangle exact in plan, allowing only 28cm
@@ -82,8 +89,10 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
      p.y>h.x-.28&&p.y<h.y))continue;
    // Restrict the ignored collision to the door's actual clear centre.
    const d=cut.door;
-   const lateral=d.alongX?hit.point.x-d.position.x:hit.point.z-d.position.z;
-   if(Math.abs(lateral)>d.width/2-.055)continue;
+   const lateral=d?
+    (d.alongX?hit.point.x-d.position.x:hit.point.z-d.position.z):
+    (cut.alongX?hit.point.x-(cut.box.x+cut.box.y)/2:hit.point.z-(cut.box.z+cut.box.w)/2);
+   if(Math.abs(lateral)>cut.width/2-.055)continue;
    return true;
   }
   return false;
@@ -91,11 +100,13 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
  return {cuts,structural,sourceWallSet,permitsOpenDoorWallHit,
   doorCutCount:cuts.filter(c=>c.kind==='door').length,
   windowCutCount:cuts.filter(c=>c.kind==='window').length,
+  planCutCount:cuts.filter(c=>c.kind==='plan').length,
   summary:{
    sourceAnchoredDoors:doorSystem?.doors.length??0,
    verifiedDoorWallCutouts:cuts.filter(c=>c.kind==='door').length,
    sourceAnchoredWindows:(windowSystem?.windows?.length??0)+(facadeSystem?.panels?.length??0),
    verifiedWindowWallCutouts:cuts.filter(c=>c.kind==='window').length,
+   planConfirmedCirculationOpenings:cuts.filter(c=>c.kind==='plan').length,
    noSourceVerticesModified:true
   }};
 }
@@ -103,8 +114,8 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
 /** Non-destructive shader cuts through source-backed structural walls.
  * The SAME aperture registry is used by collision filtering.
  */
-export function revealObstructedDoors(wallMaterial,doorSystem,meshRecords,inside=()=>true,windowSystem=null,facadeSystem=null){
- const registry=buildSourceApertures(doorSystem,meshRecords,inside,windowSystem,facadeSystem);
+export function revealObstructedDoors(wallMaterial,doorSystem,meshRecords,inside=()=>true,windowSystem=null,facadeSystem=null,planCirculation=null){
+ const registry=buildSourceApertures(doorSystem,meshRecords,inside,windowSystem,facadeSystem,planCirculation);
  const cuts=registry.cuts;
  const vecBounds=Array.from({length:MAX_OPENINGS},(_,i)=>cuts[i]?.box||new THREE.Vector4(999999,999999,999999,999999));
  const vecHeights=Array.from({length:MAX_OPENINGS},(_,i)=>cuts[i]?.height||new THREE.Vector2(999999,999999));
