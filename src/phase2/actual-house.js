@@ -6,6 +6,7 @@ import './actual-house.css';
 import {buildBedroomDecorations} from './house-enhancements.js';
 import {createCuratedSiteContext,auditSourceContext} from './site-context.js';
 import {createIFCWindowGlazing} from './window-glazing.js';
+import {createSourceStairSafety} from './stair-safety.js';
 import {createDoorSystem} from './functional-doors.js';
 import {revealObstructedDoors} from './door-apertures.js';
 import {createPlanDiningFurniture} from './dining-furnishings.js';
@@ -82,7 +83,7 @@ const state={
  center:new THREE.Vector3(),bounds:new THREE.Box3(),architectureBounds:new THREE.Box3(),
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
- enhancedFurniture:true,decor:null,windows:null,gatePreview:null,siteContext:null,sourceContextAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
+ enhancedFurniture:true,decor:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,sourceContextAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -260,6 +261,7 @@ function refreshVisibility(){
  if(state.decor)state.decor.group.visible=state.enhancedFurniture&&state.showFurniture;
  if(state.dining)state.dining.root.visible=state.showFurniture&&
   (state.floor==='ground'||state.floor==='all'||(state.mode==='walk'&&state.footY<1.5));
+ if(state.stairSafety?.root)state.stairSafety.root.visible=state.showStairSafety;
  if(state.windows)state.windows.updateVisibility({
   floor:state.floor,mode:state.mode,sectionEnabled:state.sectionEnabled
  });
@@ -403,6 +405,12 @@ function setupEnhancements(){
  state.decor=buildBedroomDecorations(state.meshes.filter(isResidenceRecord),scene);
  state.windows=createIFCWindowGlazing(state.meshes,scene,isResidenceRecord);
  console.info('[AutoMinds Window Audit]',state.windows.summary);
+ state.stairSafety=createSourceStairSafety(state.meshes,scene,isResidenceRecord);
+ console.info('[AutoMinds Stair Safety Concept]',state.stairSafety.summary);
+ const stairStatus=$('stairSafetyStatus');
+ if(stairStatus)stairStatus.textContent=state.stairSafety.sourceVerified?
+  'Source-anchored flights and landing · handrails + upper void guard · concept only, not engineer certified':
+  'Stair source incomplete. No unsupported safety geometry fabricated.';
  state.doorSystem=createDoorSystem(state.doors,scene,isResidenceRecord);
  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord);
  const details=state.doorSystem.doors.length;
@@ -546,7 +554,7 @@ function focusSourceStairs(){
  camera.lookAt(center);orbit.update();
  $('locationText').textContent='REAL IFC STAIRCASE · SOURCE TREADS';
  $('levelText').textContent='GROUND → FIRST FLOOR';
- toast('Actual IFC stair treads highlighted. Rotate and zoom to inspect both flights and the landing.');
+ toast('Source staircase highlighted. Guardrails and landing treatment are reversible safety concepts, not engineered details.');
 }
 
 function focusGatePreview(){
@@ -752,6 +760,11 @@ function sampleGround(x,z,targetY,maxRise=.9,maxFall=1.25){
  downcaster.set(starts,axisDown);
  downcaster.far=maxRise+maxFall;
  const candidates=nearby(state.floors,x,targetY,z,.15).map(r=>r.mesh);
+ const stairDeck=state.stairSafety?.transitionDeck;
+ const stairBox=state.stairSafety?.walkSurfaceBox;
+ if(state.stairSafety?.root?.visible&&stairDeck?.visible&&stairBox&&
+   x>=stairBox.min.x-.02&&x<=stairBox.max.x+.02&&
+   z>=stairBox.min.z-.02&&z<=stairBox.max.z+.02)candidates.push(stairDeck);
  if(!candidates.length)return null;
  const hits=downcaster.intersectObjects(candidates,false);
  for(const h of hits){
@@ -872,6 +885,9 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
   new THREE.Vector3(oldX,footY+1,oldZ),
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
  if(state.windows?.blocksTraversal(
+  new THREE.Vector3(oldX,footY+1,oldZ),
+  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
+ if(state.showStairSafety&&state.stairSafety?.blocksTraversal(
   new THREE.Vector3(oldX,footY+1,oldZ),
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
  const candidates=nearby(state.solids,nextX,footY+1.05,nextZ,1.3);
@@ -1084,6 +1100,11 @@ $('recenterBtn').addEventListener('click',()=>{
 });
 $('coreFocusBtn').addEventListener('click',()=>{clearStairHighlight();focusMainBuilding();});
 $('stairFocusBtn').addEventListener('click',focusSourceStairs);
+$('stairSafetyToggle').addEventListener('change',e=>{
+ state.showStairSafety=e.target.checked;
+ refreshVisibility();
+ toast(state.showStairSafety?'Stair guardrails and wall handrails shown · architectural concept':'Original IFC staircase without the proposed safety treatment');
+});
 $('measureBtn').addEventListener('click',beginMeasure);
 renderer.domElement.addEventListener('click',measureSourceClick);
 $('gateBtn').addEventListener('click',focusGatePreview);
@@ -1263,6 +1284,8 @@ if(isLocalQA){
     doorCount:state.doorSystem?.doors.length??0,apertures:state.doorApertureAudit?.obstructedCount??0,
     siteContext:state.siteContext?.summary??null,sourceContextAudit:state.sourceContextAudit??null,
     windows:state.windows?.summary??null,
+    stairSafety:state.stairSafety?.summary??null,
+    stairSafetyShown:state.stairSafety?.root?.visible??false,
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
     blockedCuts:state.doorApertureAudit?.occlusionDetails??[]}),
   sceneStatus:()=>({

@@ -20,6 +20,8 @@
 !/src/phase2/house-enhancements.js
 !/src/phase2/site-context.js
 !/src/phase2/window-glazing.js
+!/src/phase2/stair-safety.js
+!/tests/verify-stair-safety.mjs
 !/tests/
 !/tests/verify-site-context.mjs
 !/tests/verify-glazing.mjs
