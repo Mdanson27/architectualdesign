@@ -18,6 +18,8 @@ const src=[
  make('DOO - 003','proxies','first',[113.64,3.3,-.17,116.22,5.84,.07],'family-door'),
  make('SW - 024','walls','first',[112.17,3.17,1.18,119.18,6.6,1.4],'wrong-outer-wall'),
  make('SW - 021','walls','first',[112.4,3.3,-.15,117.12,6.6,.05],'correct-inner-wall'),
+ make('SW - 024','walls','first',[118.96,3.17,-1.79,119.18,6.6,1.4],'wrong-side-wraparound-wall'),
+ make('SW - 022','walls','first',[116.92,3.3,-4.49,117.12,6.6,.05],'correct-family-room-side-wall'),
  make('SLA - 005','proxies','first',[119.93,2.8,-9.45,122.63,3.2,-5.51],'east-slab'),
  make('DOO - 002','proxies','first',[119.71,3.3,-8.93,119.95,5.84,-5.86],'east-door'),
  make('SW - 024','walls','first',[122.41,3.17,-9.26,122.63,6.6,-5.51],'wrong-east-outer-wall'),
@@ -31,11 +33,15 @@ const original=src.map(r=>({geometry:r.mesh.geometry,
 const scene=new THREE.Scene();
 const restoration=createSourceBalconyRestoration(src,scene,new THREE.Vector3());
 assert.equal(restoration.summary.restored,3);
-assert.equal(restoration.summary.concealedOpaqueEdgeMeshes,4);
+assert.equal(restoration.summary.concealedOpaqueEdgeMeshes,5);
+const wrap=restoration.summary.balconies.find(x=>x.id==='front-family');
+assert(wrap.concealedOpaqueEdgeWallGuids.includes('wrong-side-wraparound-wall'));
+assert(restoration.root.children.find(x=>x.name==='SOURCE_BALCONY_front-family').children.some(x=>x.name.includes('GLAZED_BALCONY_GUARD')));
+assert(!restoration.concealed.has(src.find(x=>x.mesh.userData.ifc.guid==='correct-family-room-side-wall')));
 assert.equal(restoration.root.children.length,3);
 assert.equal(restoration.summary.expected,BALCONY_SPECS.length);
 assert(!restoration.concealed.has(src[5]),'valid inner structural wall must survive');
-assert(!restoration.concealed.has(src[11]),'stair/room boundary must survive');
+assert(!restoration.concealed.has(src.find(x=>x.mesh.userData.ifc.guid==='correct-door-wall')),'stair/room boundary must survive');
 assert.equal(restoration.summary.balconies.every(x=>x.verified&&x.sourceSlabCount>0&&x.sourceEntranceGuids.length>0),true);
 assert(restoration.root.children.every(x=>x.children.some(c=>c.name.startsWith('S2_GLAZED_BALCONY_GUARD_'))));
 const barrier=restoration.blocksTraversal(new THREE.Vector3(115,3.2,.85),

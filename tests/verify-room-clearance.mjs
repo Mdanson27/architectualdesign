@@ -13,6 +13,7 @@ function mockSource(name,category,level,center,size){
  records.push(record);return record;
 }
 const sofa=mockSource('FU - 007','furniture','first',[115.02,3.6,-1.445],[2.5,.6,1.65]);
+const coffee=mockSource('FU - 008','furniture','first',[114.44,3.55,-2.08],[1.2,.5,.6]);
 const groundSofa=mockSource('FU - 007','furniture','ground',[113.9,.3,-6.6],[1.65,.6,2.5]);
 const groundBefore=groundSofa.box.clone();
 const sofaSnapshot=sofa.mesh.matrixWorld.clone(),sofaBounds=sofa.box.clone();
@@ -20,10 +21,13 @@ const sofaBefore=sofa.box.getCenter(new THREE.Vector3());
 const moved=organizeSourceSittingFurniture(records,scene,new THREE.Vector3(),()=>true);
 assert.equal(moved.summary.sourceMatched,true);
 assert.equal(moved.sourceSet.has(sofa),true);
-assert.deepEqual(moved.summary.offsetMetres,[1.35,0,-.7]);
+assert(moved.summary.offsetMetres.every((v,i)=>Math.abs(v-[-.30,0,-1.745][i])<.0001));
+assert.equal(moved.summary.roomArrangementValid,true);
+assert(moved.summary.coffeeTableGapMetres>=.30);
+assert(moved.sourceSet.has(coffee));
 assert(sofaSnapshot.equals(sofa.mesh.matrixWorld));
 assert(sofaBounds.equals(sofa.box));
-assert.equal(moved.colliders.length,2);
+assert.equal(moved.colliders.length,3);
 assert.equal(moved.summary.groundSittingRoom?.sourceMatched,true);
 assert(moved.sourceSet.has(groundSofa));
 assert(groundBefore.equals(groundSofa.box),'original sitting-room sofa unchanged');
@@ -31,9 +35,9 @@ const groundPreview=moved.colliders.find(r=>r.layer.level==='ground');
 assert(groundPreview.box.min.x-groundSofa.box.min.x>.8-.001,'sitting entry unblocked');
 assert(moved.colliders[0].box.min.z<sofa.box.min.z-.65);
 const sofaAfter=moved.colliders[0].box.getCenter(new THREE.Vector3());
-assert(Math.abs(sofaAfter.x-sofaBefore.x-1.35)<.001);
-assert(Math.abs(sofaAfter.z-sofaBefore.z+.7)<.001);
-assert.equal(moved.root.children.length,2);
+assert(Math.abs(sofaAfter.x-sofaBefore.x+.30)<.001);
+assert(Math.abs(sofaAfter.z-sofaBefore.z+1.745)<.001);
+assert.equal(moved.root.children.length,3);
 
 const room=new THREE.Scene(),home=[];
 const bedGeometry=new THREE.BoxGeometry(1.45,.9,2.18);

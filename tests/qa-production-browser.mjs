@@ -84,6 +84,26 @@ try{
    throw Error('S1 ground-floor circulation opening corrections absent');
  if(!balcony||balcony.restored!==3)
   throw Error('Phase 7 source-supported balcony restoration missing: '+JSON.stringify(balcony));
+ // Focused regression: the family balcony must wrap around the right edge
+ // without its full-height SW-024 and the whole sofa grouping must remain
+ // inside the first-floor Family Room, not on the outer balcony.
+ const familyBalcony=balcony.balconies.find(b=>b.id==='front-family');
+ const furniture=summary.sittingRoomFurniture;
+ const sofa=furniture?.familyRoomSofa;
+ const table=furniture?.familyRoomCoffeeTable;
+ if(!familyBalcony?.verified ||
+   familyBalcony.concealedOpaqueEdgeWallGuids?.length<2 ||
+   familyBalcony.guardPanels<9)
+   throw Error('Family balcony wraparound wall or continuous side guard not repaired');
+ if(furniture?.roomArrangementValid!==true || !sofa?.insideRoom ||
+   !table?.insideRoom || furniture.coffeeTableGapMetres<.3)
+   throw Error('Family room sofa/coffee table are not arranged entirely inside');
+ console.log('BALCONY_WRAP_AND_SOFA',JSON.stringify({
+   concealedFamilyWallParts:familyBalcony.concealedOpaqueEdgeWallGuids.length,
+   guardedPanels:familyBalcony.guardPanels,
+   sofaInside:sofa.insideRoom,coffeeTableInside:table.insideRoom,
+   tableGapMetres:furniture.coffeeTableGapMetres
+ }));
  const lightBefore=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.lightingStatus())"));
  const lightsOff=JSON.parse(await evaluate("(()=>{document.querySelector('#houseLightsBtn').click();return JSON.stringify(window.__AutoMindsQA.lightingStatus());})()"));
  const nightOff=JSON.parse(await evaluate("(()=>{document.querySelector('#lightBtn').click();return JSON.stringify(window.__AutoMindsQA.lightingStatus());})()"));

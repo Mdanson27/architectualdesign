@@ -28,9 +28,16 @@ export const BALCONY_SPECS=Object.freeze([
     door:[114.93,-.05],floorY:3.2,
     segments:[
       [[112.38,1.35],[119.06,1.35]],
-      [[119.06,.10],[119.06,1.35]]
+      // The real IFC slab continues along this side; its exposed edge must
+      // be guarded all the way around rather than hidden by a full wall.
+      [[119.06,-1.70],[119.06,1.35]]
     ],
-    outerWall:[{name:'SW - 024',level:'first',x:[112.15,119.20],z:[1.16,1.44],y:[3.0,6.7],minYSpan:2.8}],
+    outerWall:[
+      {name:'SW - 024',level:'first',x:[112.15,119.20],z:[1.16,1.44],y:[3.0,6.7],minYSpan:2.8},
+      // S1/S2 wraparound outer balcony side: IFC SW-024 occupies the entire
+      // exposed 3.19m return and is not the living room's internal SW-022.
+      {name:'SW - 024',level:'first',x:[118.93,119.21],z:[-1.82,1.43],y:[3.0,6.7],minYSpan:2.8}
+    ],
     drawing:'S1 first-floor plan / S2 front elevation, family room balcony'
   },
   {
