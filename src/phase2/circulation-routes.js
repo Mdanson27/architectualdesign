@@ -7,7 +7,9 @@
  */
 export const PLAN_ROUTE_TARGETS=[
  {id:'ground-stair-living',label:'Stair foyer → ground Sitting Room',level:0,
-  start:[110.15,-6.70],end:[114.75,-6.70],
+  start:[110.15,-6.70],end:[115.12,-6.86],
+  // S1 sitting-room safe standing point confirmed in the real-browser route;
+  // the earlier nominal anchor lay 24cm behind local room furniture.
   drawing:'S1 ground floor stair / 35m² sitting room'},
  {id:'ground-stair-dining',label:'Stair foyer → Dining Room',level:0,
   start:[110.15,-6.70],end:[114.65,-2.38],
