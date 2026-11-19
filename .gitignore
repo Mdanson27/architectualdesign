@@ -19,9 +19,14 @@
 !/src/phase2/dining-furnishings.js
 !/src/phase2/house-enhancements.js
 !/src/phase2/site-context.js
+!/src/phase2/window-glazing.js
 !/tests/
 !/tests/verify-site-context.mjs
+!/tests/verify-glazing.mjs
+!/tests/verify-apertures.mjs
+!/tests/verify-phase4-scene.mjs
 !/public/
+!/public/favicon.svg
 !/public/ifc/
 !/public/ifc/house/
 !/public/ifc/house/*.glb

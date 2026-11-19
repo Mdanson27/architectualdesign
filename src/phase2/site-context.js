@@ -17,7 +17,8 @@ export const sitePlan = Object.freeze({
 
 const M=(color,roughness=.91,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
 const mat={
- turf:M('#749969'),turfLight:M('#83a878'),gravel:M('#a69d89'),
+ turf:M('#83a77b'),turfLight:M('#91b285'),gravel:M('#a69d89'),
+ mulch:M('#746352'),kerb:M('#bfb5a5'),road:M('#747a74'),
  boundary:M('#dcd7cb'),coping:M('#c2b9a8'),frame:M('#444e4b',.66,.32),
  trunk:M('#94704e'),leaf:M('#457f52'),leaf2:M('#5e9363'),
  paving:M('#d3c9b8'),mark:M('#f8f3e7'),stone:M('#b4aea2')
@@ -31,6 +32,19 @@ const tube=(p,r,h,x,y,z,material,sides=10)=>{
  const o=new THREE.Mesh(new THREE.CylinderGeometry(r,r,h,sides),material);
  o.position.set(x,y,z);p.add(o);return o;
 };
+function lawnTexture(){
+ const c=document.createElement('canvas');c.width=c.height=512;
+ const p=c.getContext('2d');p.fillStyle='#e2f2d9';p.fillRect(0,0,512,512);
+ for(let i=0;i<6000;i++){
+  const x=(i*127.41)%512,y=(i*217.37)%512;
+  p.fillStyle=i%4===0?'rgba(55,91,51,.17)':i%3===0?'rgba(248,255,242,.18)':'rgba(78,126,69,.08)';
+  p.fillRect(x,y,.7,3.8+(i%3));
+ }
+ const tex=new THREE.CanvasTexture(c);tex.colorSpace=THREE.SRGBColorSpace;
+ tex.wrapS=tex.wrapT=THREE.RepeatWrapping;
+ tex.repeat.set(9,5);tex.anisotropy=2;
+ return tex;
+}
 function paverTexture(){
  const c=document.createElement('canvas');c.width=c.height=512;
  const ctx=c.getContext('2d');ctx.fillStyle='#d2cabd';ctx.fillRect(0,0,512,512);
@@ -162,7 +176,8 @@ export function createCuratedSiteContext(scene,origin){
  houseHole.lineTo(house.maxX,-house.maxZ);
  houseHole.lineTo(house.minX,-house.maxZ);houseHole.closePath();
  turfShape.holes.push(houseHole);
- const turf=new THREE.Mesh(new THREE.ShapeGeometry(turfShape,12),mat.turf);
+ const lawnMat=mat.turf.clone();lawnMat.map=lawnTexture();
+ const turf=new THREE.Mesh(new THREE.ShapeGeometry(turfShape,12),lawnMat);
  turf.rotation.x=-Math.PI/2;turf.position.y=surface-.014;
  turf.name='S1_LAWN_EXCLUDING_HOUSE';root.add(turf);
 
@@ -180,6 +195,13 @@ export function createCuratedSiteContext(scene,origin){
  slab(root,mat.paving,gateCenterX,(parkFront+front)/2,6.5,front-parkFront,surface+.024,'S1_PAVED_GATE_ACCESS');
  // Short link along bay approach, flush with the main pavers.
  slab(root,mat.paving,parkX+parkW/2,parkFront-.42,parkW,.84,surface+.025,'S1_PARKING_APPROACH');
+ // Matching kerbs define a clear edge between paved parking and planted lawn.
+ const kerbY=surface+.029;
+ box(root,.115,.105,parkDepth+.10,parkX-.065,kerbY,(parkRear+parkFront)/2,mat.kerb,'PAVED_AREA_LEFT_KERB');
+ box(root,.115,.105,parkDepth+.10,parkX+parkW+.065,kerbY,(parkRear+parkFront)/2,mat.kerb,'PAVED_AREA_RIGHT_KERB');
+ box(root,parkW+.16,.105,.11,parkX+parkW/2,kerbY,parkRear-.06,mat.kerb,'PAVED_AREA_REAR_KERB');
+ box(root,.10,.103,front-parkFront,gateCenterX-3.26,kerbY,(parkFront+front)/2,mat.kerb,'DRIVEWAY_LEFT_KERB');
+ box(root,.10,.103,front-parkFront,gateCenterX+3.26,kerbY,(parkFront+front)/2,mat.kerb,'DRIVEWAY_RIGHT_KERB');
 
  // One 600x600x50mm splash apron row is explicitly required by note 9.
  const apron=.6,pad=.18;
@@ -196,6 +218,11 @@ export function createCuratedSiteContext(scene,origin){
  buildFence(root,[gateCenterX-gateHalf,front],boundary[4],base);
  buildFence(root,boundary[4],boundary[0],base);
  const gate=createSlideGate(root,gateCenterX,gateZ,base);
+ // S1 depicts an access road along the gate/front plot line. This unmarked
+ // external road strip is illustrative: its actual public-road width is not surveyed.
+ const roadWidth=5.0;
+ box(root,sitePlan.width-.4,.07,roadWidth,(left+right)/2,surface-.04,front+roadWidth/2+.17,mat.road,'S1_ACCESS_ROAD_REFERENCE');
+ box(root,sitePlan.width-.4,.13,.14,(left+right)/2,surface+.02,front+.18,mat.kerb,'S1_STREET_EDGE');
  // Landscape symbols are plan-indicated palms, not randomly scattered.
  const palmLocations=[
   [left+31.7,top+6.4,1.05],
@@ -205,13 +232,23 @@ export function createCuratedSiteContext(scene,origin){
   [left+7.8,top+23.4,.81]
  ];
  for(const [x,z,scale] of palmLocations)palm(root,x,z,surface,scale);
- // Smaller near-building planting appears on S1/architectural elevations.
- for(let i=0;i<8;i++){
-  const x=house.minX+1.2+i*1.75,z=house.maxZ+1.24;
-  if(x>parkX-.7)continue;
-  const plant=new THREE.Mesh(new THREE.SphereGeometry(.32+(i%2)*.05,8,6),i%2?mat.leaf2:mat.leaf);
-  plant.scale.y=.67;plant.position.set(x,surface+.27,z);plant.name='S1_FRONT_PLANTING';
-  root.add(plant);
+ // Small planting beside the front facade follows the elevations and approved
+ // landscape render; keep the bed beyond the required 600 mm splash apron.
+ const planterBands=[
+  {cx:house.minX+3.1,cz:house.maxZ+1.32,w:5.1,d:.74},
+  {cx:house.maxX-2.65,cz:house.maxZ+1.32,w:4.5,d:.74}
+ ];
+ for(const bedCfg of planterBands){
+  const bed=new THREE.Mesh(new THREE.PlaneGeometry(bedCfg.w,bedCfg.d),mat.mulch);
+  bed.rotation.x=-Math.PI/2;bed.position.set(bedCfg.cx,surface+.028,bedCfg.cz);
+  bed.name='ELEVATION_SUPPORTED_FRONT_PLANTER';root.add(bed);
+  box(root,bedCfg.w,.13,.075,bedCfg.cx,surface+.06,bedCfg.cz+bedCfg.d/2,mat.kerb,'FRONT_PLANTER_EDGE');
+  for(let i=0;i<4;i++){
+   const x=bedCfg.cx-bedCfg.w/2+(i+.5)*bedCfg.w/4,z=bedCfg.cz;
+   const plant=new THREE.Mesh(new THREE.SphereGeometry(.32+(i%2)*.05,8,6),i%2?mat.leaf2:mat.leaf);
+   plant.scale.y=.67;plant.position.set(x,surface+.27,z);plant.name='S1_FRONT_PLANTING';
+   root.add(plant);
+  }
  }
  // Plan symbols, presented discreetly and outside the parking driving lane.
  const binX=gateCenterX-5.8,binZ=front-1.8;

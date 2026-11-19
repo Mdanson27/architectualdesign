@@ -5,6 +5,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import './actual-house.css';
 import {buildBedroomDecorations} from './house-enhancements.js';
 import {createCuratedSiteContext,auditSourceContext} from './site-context.js';
+import {createIFCWindowGlazing} from './window-glazing.js';
 import {createDoorSystem} from './functional-doors.js';
 import {revealObstructedDoors} from './door-apertures.js';
 import {createPlanDiningFurniture} from './dining-furnishings.js';
@@ -81,7 +82,7 @@ const state={
  center:new THREE.Vector3(),bounds:new THREE.Box3(),architectureBounds:new THREE.Box3(),
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
- enhancedFurniture:true,decor:null,gatePreview:null,siteContext:null,sourceContextAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
+ enhancedFurniture:true,decor:null,windows:null,gatePreview:null,siteContext:null,sourceContextAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -152,8 +153,8 @@ const mat={
  wall:material('#f4e8da',.94,0),
  feature:material('#e8dcc9',.94,0),
  floor:material('#f4ede2',.29,0,maps.marble),
- roof:material('#baaa98',.86,0),
- structure:material('#e7ddd0',.91,0),
+ roof:material('#737c63',.88,0),
+ structure:material('#ded7cd',.91,0),
  oak:material('#d5b392',.75,0,maps.wood),
  walnut:material('#7f5036',.58,0,maps.wood),
  taupe:material('#ac9381',.88),
@@ -223,7 +224,9 @@ function interpretMaterial(meta,category){
  if(kind==='IFCWALLSTANDARDCASE'||kind==='IFCWALL'||category==='walls')return {material:mat.wall,projection:'wall'};
  if(kind==='IFCSLAB'||category==='slabs')return {material:mat.floor,projection:'floor'};
  if(kind==='IFCDOOR'||name.startsWith('DOO')||category==='doors')return {material:mat.walnut,projection:'wood'};
- if(kind==='IFCWINDOW'||name.startsWith('WD')||category==='windows')return {material:mat.glass,projection:'wall'};
+ if(kind==='IFCWINDOW'||category==='windows')return {material:mat.glass,projection:'wall'};
+ // Narrow IFC WD window frame pieces should not inherit opaque plaster.
+ if(/^WD\s*-/i.test(name))return {material:mat.steel,projection:'wall'};
  if(kind==='IFCRAILING'||category==='railings')return {material:mat.steel,projection:'wall'};
  if(kind==='IFCCOLUMN'||category==='columns')return {material:mat.structure,projection:'wall'};
  if(name.includes('STAIR')||name.includes('TREAD')||name.startsWith('STA -'))return {material:mat.oak,projection:'wood'};
@@ -250,12 +253,16 @@ function refreshVisibility(){
   const visible=visibleSourceRecord(rec);
   rec.mesh.visible=visible;
   if(state.doorSystem&&rec.mesh.userData.functionallyReplacedDoorId)rec.mesh.visible=false;
+  if(state.windows?.sourceSet.has(rec))rec.mesh.visible=false;
   if(state.decor?.sources.includes(rec)&&state.enhancedFurniture&&state.showFurniture)rec.mesh.visible=false;
   if(rec.mesh.visible)count++;
  }
  if(state.decor)state.decor.group.visible=state.enhancedFurniture&&state.showFurniture;
  if(state.dining)state.dining.root.visible=state.showFurniture&&
   (state.floor==='ground'||state.floor==='all'||(state.mode==='walk'&&state.footY<1.5));
+ if(state.windows)state.windows.updateVisibility({
+  floor:state.floor,mode:state.mode,sectionEnabled:state.sectionEnabled
+ });
  if(state.doorSystem)state.doorSystem.updateVisibility({
   floor:state.floor,mode:state.mode,sectionEnabled:state.sectionEnabled,
   showSurroundings:state.showSurroundings,inside:isResidenceRecord
@@ -265,6 +272,8 @@ function refreshVisibility(){
     (state.floor==='all'||state.floor==='ground'||!state.sectionEnabled);
  }
  grid.visible=!state.showSurroundings;
+ // Align the exterior reference ground to the compound, not 5m beneath it.
+ earth.position.y=state.showSurroundings?-.405:-5.75;
  state.visibleMeshes=count;
  setClipping();
  $('hudStatus').textContent=state.showSurroundings?
@@ -392,12 +401,14 @@ function focusMainBuilding(){
 function setupEnhancements(){
  if(state.decor)return;
  state.decor=buildBedroomDecorations(state.meshes.filter(isResidenceRecord),scene);
+ state.windows=createIFCWindowGlazing(state.meshes,scene,isResidenceRecord);
+ console.info('[AutoMinds Window Audit]',state.windows.summary);
  state.doorSystem=createDoorSystem(state.doors,scene,isResidenceRecord);
  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord);
  const details=state.doorSystem.doors.length;
- console.info('[AutoMinds Door Audit]',state.doorApertureAudit.obstructedCount,
-  'actual wall obstructions at door locations, using reversible visual cutouts');
- $('doorSystemCount').textContent=details+' interactive doorways · '+state.doorSystem.sourceCount+' IFC parts · '+state.doorApertureAudit.obstructedCount+' source wall obstructions checked';
+ console.info('[AutoMinds Aperture Audit]',state.doorApertureAudit.obstructedCount,
+  'door and',state.doorApertureAudit.windowObstructedCount,'window wall occlusions repaired visually');
+ $('doorSystemCount').textContent=details+' interactive doorways · '+state.doorSystem.sourceCount+' IFC parts · '+state.doorApertureAudit.obstructedCount+' door obstructions · '+state.doorApertureAudit.windowObstructedCount+' window occlusions checked';
  console.info('[AutoMinds Spaces Doors] source records',state.doorSystem.sourceCount,'interactive doorways',details);
  state.siteContext=createCuratedSiteContext(scene,state.origin);
  state.gatePreview=state.siteContext.gate;
@@ -405,8 +416,8 @@ function setupEnhancements(){
  console.info('[AutoMinds Site Audit] residence/source elements',state.sourceContextAudit.insideResidence,
   'suppressed unrelated source elements',state.sourceContextAudit.suppressedSurroundings,
   'curated site components',state.siteContext.summary.approvedComponents);
- $('siteAuditStatus').textContent='Plan S1 · 48.5 × 25 m · 3 paved parking bays, lawn, sliding gate and boundary. '+
-  state.sourceContextAudit.suppressedSurroundings+' unverified IFC source pieces excluded. Site alignment is provisional.';
+ $('siteAuditStatus').textContent='S1 plan · 48.5 × 25 m · 3 bays, paving, grass, trees and a 4m gate. '+
+  state.sourceContextAudit.suppressedSurroundings+' unrelated IFC pieces suppressed. Location is a visual alignment, not a survey.';
  state.dining=createPlanDiningFurniture(scene,state.origin);
  buildBedroomNavigator();
  buildDoorNavigator();
@@ -599,7 +610,9 @@ async function syncNewLayers(){
  state.sourceManifest=manifest;
  const entries=manifest.layers.filter(x=>x.glb && x.bounds)
   .sort((a,b)=>priority[a.category]-priority[b.category] || (sourceLevels[a.level]??10)-(sourceLevels[b.level]??10) || a.part-b.part);
- state.totalLayers=manifest.progress?.total??manifest.progress?.total_layers??manifest.progress?.total_batches_after_recovery??manifest.layers.length;
+ // The source includes three known conversion exclusions. These are not
+ // available GLB layers, so do not falsely report 76 of 79 loaded as incomplete.
+ state.totalLayers=entries.length;
  let newEntries=entries.filter(x=>!state.layers.has(x.name));
  if(!newEntries.length){
   if(!state.decor&&state.layers.size)setupEnhancements();
@@ -631,7 +644,7 @@ async function syncNewLayers(){
   if(hasStairs){state.stairPreviewDone=true;focusSourceStairs();}
  }
  $('hudStatus').textContent=state.visibleMeshes.toLocaleString()+' SOURCE ELEMENTS';
- console.info('[AutoMinds Source] loaded source layers',state.layers.size,'/',manifest.progress.total,
+ console.info('[AutoMinds Source] loaded source layers',state.layers.size,'/',manifest.layers.length,
   'conversion failures',manifest.missingOrFailed?.length||0);
 }
 function startIntro(){
@@ -856,6 +869,9 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
  if(distance<.0001)return false;
  const direction=diff.clone().normalize();
  if(state.doorSystem?.blocksTraversal(
+  new THREE.Vector3(oldX,footY+1,oldZ),
+  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
+ if(state.windows?.blocksTraversal(
   new THREE.Vector3(oldX,footY+1,oldZ),
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
  const candidates=nearby(state.solids,nextX,footY+1.05,nextZ,1.3);
@@ -1246,7 +1262,33 @@ if(isLocalQA){
   summary:()=>({meshes:state.meshes.length,loaded:state.loadedLayers,expected:state.totalLayers,
     doorCount:state.doorSystem?.doors.length??0,apertures:state.doorApertureAudit?.obstructedCount??0,
     siteContext:state.siteContext?.summary??null,sourceContextAudit:state.sourceContextAudit??null,
+    windows:state.windows?.summary??null,
+    repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
     blockedCuts:state.doorApertureAudit?.occlusionDetails??[]}),
+  sceneStatus:()=>({
+    loaded:state.initialReady,showSite:state.showSurroundings,
+    siteVisible:Boolean(state.siteContext?.root.visible),floor:state.floor,section:state.sectionEnabled,
+    outsideRawMeshesVisible:state.meshes.filter(r=>!isResidenceRecord(r)&&r.mesh.visible).length,
+    originalWindowProxiesStillVisible:state.windows?[...state.windows.sourceSet].filter(r=>r.mesh.visible).length:null,
+    visibleWindowAssemblies:state.windows?.windows.filter(w=>w.group.visible).length??0,
+    windowsTotal:state.windows?.summary.windowAssemblies??0,
+    gateVisible:Boolean(state.siteContext?.gate?.visible && state.siteContext?.root.visible),
+    cameraFinite:camera.position.toArray().every(Number.isFinite),
+    sceneIssues:state.siteContext?.root.children.filter(o=>o.position.toArray().some(n=>!Number.isFinite(n))).length??0,
+    uiLabel:$('surroundingsToggle').closest('label')?.innerText??null,
+    modelElements:state.visibleMeshes
+  }),
+  inspectWindow:(id=1,side=1)=>{
+    const w=state.windows?.windows[id-1];
+    if(!w)return {error:'Unknown IFC window'};
+    if(state.mode==='walk')exitWalk();
+    state.floor=w.level;state.sectionEnabled=true;refreshVisibility();
+    const look=w.position.clone(),eye=w.position.clone().add(
+      w.alongX?new THREE.Vector3(0,1,side*2.75):new THREE.Vector3(side*2.75,1,0));
+    look.y+=.2;orbit.enabled=true;orbit.target.copy(look);
+    camera.position.copy(eye);camera.lookAt(look);orbit.update();
+    return {id,level:w.level,width:w.width,height:w.height,visible:w.group.visible};
+  },
   inspectDoor:(id,side=1)=>{
    const door=state.doorSystem?.doors.find(d=>d.id===id);
    if(!door)return {error:'Unknown door ID'};

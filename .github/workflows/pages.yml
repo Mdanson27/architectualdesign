@@ -30,6 +30,12 @@ jobs:
         run: npm ci
       - name: Verify S1 site layout geometry
         run: npm run test:site
+      - name: Verify transparent glazing and navigation barriers
+        run: npm run test:windows
+      - name: Verify reversible window aperture cuts
+        run: npm run test:apertures
+      - name: Verify source geometry and scene integrity
+        run: npm run test:scene
       - name: Build public GitHub Pages site
         run: npm run build
         env:

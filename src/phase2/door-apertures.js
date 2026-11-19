@@ -1,17 +1,17 @@
 import * as THREE from 'three';
-const MAX=40;
+const MAX=60;
 /**
  * Reversible visual repair of confirmed wall occlusion over IFC door positions.
  * Only removes rendered wall pixels inside source-derived doorway rectangles.
  * The architect's IFC/GLB mesh vertices and metadata remain unchanged.
  */
-export function revealObstructedDoors(wallMaterial,doorSystem,meshRecords,inside=()=>true){
+export function revealObstructedDoors(wallMaterial,doorSystem,meshRecords,inside=()=>true,windowSystem=null){
  const wallRecords=meshRecords.filter(r=>
   inside(r)&&(r.category==='walls'||/^SW\s*-/i.test(r.mesh.userData.ifc?.name||'')) &&
   r.box.getSize(new THREE.Vector3()).y>1.5);
  const rays=new THREE.Raycaster();
  const origin=new THREE.Vector3();
- const cuts=[],occlusionDetails=[];
+ const cuts=[],occlusionDetails=[],windowOcclusionDetails=[];
  for(const rec of wallRecords)rec.mesh.updateWorldMatrix(true,false);
  for(const door of doorSystem.doors){
   const direction=door.alongX?new THREE.Vector3(0,0,1):new THREE.Vector3(1,0,0);
@@ -41,6 +41,37 @@ export function revealObstructedDoors(wallMaterial,doorSystem,meshRecords,inside
   occlusionDetails.push({doorId:door.id,sourceWallCount:candidates.length,rayHits:intersections});
   if(cuts.length>=MAX)break;
  }
+ // Phase 3: extend the same reversible shader cutouts to verified IFC-window
+ // openings. Using one shader avoids duplicated GLSL hooks and overdraw.
+ // Wall triangles and collision geometry are not modified by this treatment.
+ if(windowSystem?.windows){
+  for(const w of windowSystem.windows){
+   if(cuts.length>=MAX)break;
+   const axis=w.alongX?new THREE.Vector3(0,0,1):new THREE.Vector3(1,0,0);
+   const localWalls=wallRecords.filter(rec=>{
+    const b=rec.box;
+    return b.max.x>w.position.x-w.width/2-.32&&b.min.x<w.position.x+w.width/2+.32 &&
+      b.max.z>w.position.z-w.width/2-.32&&b.min.z<w.position.z+w.width/2+.32 &&
+      b.max.y>w.position.y-w.height/2+.15&&b.min.y<w.position.y+w.height/2-.15;
+   });
+   if(!localWalls.length)continue;
+   let hits=0;
+   for(const dy of [-.23,.16]){
+    origin.set(w.position.x-axis.x*.75,w.position.y+dy,w.position.z-axis.z*.75);
+    rays.set(origin,axis);rays.near=.03;rays.far=1.5;
+    if(rays.intersectObjects(localWalls.map(rec=>rec.mesh),false).some(hit=>hit.distance<1.48))hits++;
+   }
+   if(!hits)continue;
+   const width=w.width+.035,depth=.42;
+   const x=w.position.x,z=w.position.z;
+   const box=w.alongX?
+     new THREE.Vector4(x-width/2,x+width/2,z-depth/2,z+depth/2):
+     new THREE.Vector4(x-depth/2,x+depth/2,z-width/2,z+width/2);
+   cuts.push({box,height:new THREE.Vector2(w.position.y-w.height/2+.015,w.position.y+w.height/2-.015),
+    windowSourceGUIDs:w.group.userData.sourceGUIDs,kind:'window'});
+   windowOcclusionDetails.push({sourceGUIDs:w.group.userData.sourceGUIDs,sourceWallCount:localWalls.length,rayHits:hits});
+  }
+ }
  const bounds=Array.from({length:MAX},(_,i)=>cuts[i]?.box||new THREE.Vector4(999999,999999,999999,999999));
  const heights=Array.from({length:MAX},(_,i)=>cuts[i]?.height||new THREE.Vector2(999999,999999));
  const uniforms={uDoorBounds:{value:bounds},uDoorHeights:{value:heights},uDoorCount:{value:cuts.length}};
@@ -67,8 +98,10 @@ export function revealObstructedDoors(wallMaterial,doorSystem,meshRecords,inside
    'uniform vec2 uDoorHeights['+MAX+'];\n'+
    'uniform int uDoorCount;\n'+shader.fragmentShader.replace(hook,test);
  };
- wallMaterial.customProgramCacheKey=()=>('source-door-visibility-v1-'+cuts.length);
+ wallMaterial.customProgramCacheKey=()=>('source-opening-visibility-v2-'+cuts.length);
  wallMaterial.needsUpdate=true;
- return {doorCount:doorSystem.doors.length,obstructedCount:cuts.length,visualCuts:cuts,occlusionDetails,
+ return {doorCount:doorSystem.doors.length,obstructedCount:occlusionDetails.length,
+  windowCount:windowSystem?.windows.length??0,windowObstructedCount:windowOcclusionDetails.length,
+  visualCuts:cuts,occlusionDetails,windowOcclusionDetails,
   restore:()=>{wallMaterial.onBeforeCompile=old;wallMaterial.customProgramCacheKey=previousCache;wallMaterial.needsUpdate=true;}};
 }
