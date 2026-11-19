@@ -14,6 +14,9 @@ import {organizeSourceSittingFurniture} from './circulation-furniture.js';
 import {createDoorSystem} from './functional-doors.js';
 import {revealObstructedDoors} from './door-apertures.js';
 import {createPlanDiningFurniture} from './dining-furnishings.js';
+import {createSourceBalconyRestoration} from './balcony-restoration.js';
+import {createHouseLighting} from './lighting-system.js';
+import {PLAN_ROUTE_TARGETS,findPhysicalRoute} from './circulation-routes.js';
 
 /**
  * Actual-house interactive viewer.
@@ -88,7 +91,7 @@ const state={
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
- night:false,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
+ night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
 };
@@ -260,6 +263,7 @@ function refreshVisibility(){
   if(state.doorSystem&&rec.mesh.userData.functionallyReplacedDoorId)rec.mesh.visible=false;
   if(state.windows?.sourceSet.has(rec))rec.mesh.visible=false;
   if(rec.mesh.userData.facadeDuplicateHidden)rec.mesh.visible=false;
+  if(state.showBalconies&&state.balconies?.concealed.has(rec))rec.mesh.visible=false;
   if(state.decor?.sources.includes(rec)&&state.enhancedFurniture&&state.showFurniture)rec.mesh.visible=false;
   if(state.dining?.sourceSet?.has(rec)&&state.showFurniture)rec.mesh.visible=false;
   if(state.movedSofa?.sourceSet?.has(rec)&&state.showFurniture)rec.mesh.visible=false;
@@ -270,6 +274,7 @@ function refreshVisibility(){
  if(state.dining)state.dining.root.visible=state.showFurniture&&
   (state.floor==='ground'||state.floor==='all'||(state.mode==='walk'&&state.footY<1.5));
  if(state.stairSafety?.root)state.stairSafety.root.visible=state.showStairSafety;
+ if(state.balconies?.root)state.balconies.root.visible=state.showBalconies;
  if(state.windows)state.windows.updateVisibility({
   floor:state.floor,mode:state.mode,sectionEnabled:state.sectionEnabled
  });
@@ -426,6 +431,12 @@ function setupEnhancements(){
   'Source-anchored flights and landing · handrails + upper void guard · concept only, not engineer certified':
   'Stair source incomplete. No unsupported safety geometry fabricated.';
  state.doorSystem=createDoorSystem(state.doors,scene,isResidenceRecord);
+ state.balconies=createSourceBalconyRestoration(state.meshes,scene,state.origin,isResidenceRecord);
+ state.lightingSystem=createHouseLighting(scene,state.origin);
+ state.lightingSystem.update({night:state.night,enabled:state.houseLightsOn});
+ console.info('[AutoMinds S1/S2 balcony presentation]',state.balconies.summary);
+ const status=$('balconyAuditStatus');
+ if(status)status.textContent=state.balconies.summary.restored+' source-supported balconies · '+state.balconies.summary.concealedOpaqueEdgeMeshes+' false outer enclosure meshes hidden';
  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit);
  const details=state.doorSystem.doors.length;
  console.info('[AutoMinds Aperture Audit]',state.doorApertureAudit.obstructedCount,
@@ -921,6 +932,11 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius)){
   state.lastCollisionBlocker={kind:'protected staircase guard'};return true;
  }
+ if(state.showBalconies&&state.balconies?.blocksTraversal(
+  new THREE.Vector3(oldX,footY+1,oldZ),
+  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius)){
+  state.lastCollisionBlocker={kind:'balcony glass guard'};return true;
+ }
  const candidates=nearby(state.solids,nextX,footY+1.05,nextZ,1.3);
  const rayMeshes=candidates.filter(r=>{
   if(!r.mesh.visible||r.mesh.userData.functionallyReplacedDoorId)return false;
@@ -1044,17 +1060,56 @@ function updateDoorHint(){
  $('doorActionBtn').textContent=open?'CLOSE DOOR':'OPEN DOOR';
 }
 
+// S1 route verification: sample real source floor surfaces, obey actual
+// walls, doors, furniture and balcony guards. No teleport or invented path.
+function checkPlanCirculation(){
+ if(!state.initialReady||!state.doorSystem)return {error:'IFC source not loaded'};
+ if(state.mode==='walk')exitWalk();
+ const prev={floor:state.floor,section:state.sectionEnabled};
+ const saved=state.doorSystem.doors.map(d=>({d,current:d.current,target:d.target}));
+ try{
+  state.floor='all';state.sectionEnabled=false;refreshVisibility();
+  for(const {d} of saved){d.current=1;d.target=1;}
+  state.doorSystem.update(.01);
+  const result=PLAN_ROUTE_TARGETS.map(t=>{
+    const xy=a=>[a[0]-state.origin.x,a[1]-state.origin.z];
+    const start=xy(t.start),end=xy(t.end);
+    const route=findPhysicalRoute({
+      start,end,level:t.level,gridStep:.48,maxVisited:1200,
+      ground:(x,z,y)=>sampleGround(x,z,y,.40,.68),
+      blocked:(x,z,nx,nz,y)=>detectObstacle(x,z,nx,nz,y)
+    });
+    return {id:t.id,label:t.label,drawing:t.drawing,...route};
+  });
+  return {routes:result,passed:result.filter(r=>r.ok).length,total:result.length,
+    sourceGeometryUnchanged:true};
+ }finally{
+  for(const {d,current,target} of saved){d.current=current;d.target=target;}
+  state.doorSystem.update(.01);
+  state.floor=prev.floor;state.sectionEnabled=prev.section;refreshVisibility();
+ }
+}
 // ---------- Controls, references and interface ----------
 function toggleLighting(){
  state.night=!state.night;
- hemi.intensity=state.night?.50:1.55;
- sun.intensity=state.night?.18:2.25;
- fill.intensity=state.night?.42:.55;
+ hemi.intensity=state.night?.22:1.55;
+ sun.intensity=state.night?.08:2.25;
+ fill.intensity=state.night?.15:.55;
  scene.background.set(state.night?'#18323c':'#bcd8dd');
  scene.fog.color.set(state.night?'#18323c':'#bcd8dd');
- renderer.toneMappingExposure=state.night?1.10:1.02;
- $('lightBtn').querySelector('.long').textContent=state.night?'Evening':'Daylight';
- toast(state.night?'Evening lighting':'Daylight restored');
+ renderer.toneMappingExposure=state.night?1.08:1.02;
+ state.lightingSystem?.update({night:state.night});
+ $('lightBtn').querySelector('.long').textContent=state.night?'Night':'Daylight';
+ $('lightBtn').setAttribute('aria-pressed',String(state.night));
+ toast(state.night?'Night environment · house lights '+(state.houseLightsOn?'on':'off'):'Daylight restored');
+}
+function toggleHouseLights(){
+ state.houseLightsOn=!state.houseLightsOn;
+ state.lightingSystem?.update({enabled:state.houseLightsOn});
+ $('houseLightsBtn').setAttribute('aria-pressed',String(state.houseLightsOn));
+ $('houseLightsBtn').querySelector('.long').textContent=state.houseLightsOn?'Lights on':'Lights off';
+ $('houseLightsBtn').querySelector('.symbol').textContent=state.houseLightsOn?'✹':'○';
+ toast(state.houseLightsOn?'House lighting switched on':'House lighting switched off');
 }
 const clientDrawings=[
  {label:'Ground-floor plan',file:'Home-Ground-plan.jpg',floor:'ground'},
@@ -1123,6 +1178,29 @@ $('sectionToggle').addEventListener('change',e=>{
  toast(state.sectionEnabled?'Architectural section enabled: roof and upper floors cut away':'Complete structure restored');
 });
 $('lightBtn').addEventListener('click',toggleLighting);
+$('houseLightsBtn').addEventListener('click',toggleHouseLights);
+$('balconyToggle').addEventListener('change',e=>{
+ state.showBalconies=e.target.checked;refreshVisibility();
+ toast(state.showBalconies?'Plan-supported glazed balconies restored':'Comparing unmodified IFC balcony edges');
+});
+$('circulationBtn').addEventListener('click',()=>{
+ const button=$('circulationBtn'),status=$('circulationStatus');
+ button.disabled=true;
+ status.textContent='Checking real walkable floors and doorways from both stair landings...';
+ setTimeout(()=>{
+  try{
+   const report=checkPlanCirculation();
+   state.lastRouteReport=report;
+   if(report.error){status.textContent=report.error;return;}
+   const missing=report.routes.filter(r=>!r.ok).map(r=>r.label);
+   status.textContent='Continuous paths: '+report.passed+'/'+report.total+
+     (missing.length?' · Review: '+missing.join('; '):' · All source-backed routes connected');
+  }catch(e){
+   status.textContent='Route check error: '+e.message;
+   console.error('[Plan route verification]',e);
+  }finally{button.disabled=false;}
+ },20);
+});
 $('referenceBtn').addEventListener('click',()=>{showArchitecturalDrawing(false);showReference();});
 $('drawingsBtn').addEventListener('click',()=>showArchitecturalDrawing());
 $('closeDrawings').addEventListener('click',()=>showArchitecturalDrawing(false));
@@ -1341,6 +1419,9 @@ if(isLocalQA){
     bedCirculationAdjustments:state.decor?.circulationCorrections??[],
     bedCirculationReviews:state.decor?.circulationReviews??[],
     stairSafety:state.stairSafety?.summary??null,
+    balconies:state.balconies?.summary??null,
+    lighting:state.lightingSystem?.status()??null,
+    circulation:state.lastRouteReport?{passed:state.lastRouteReport.passed,total:state.lastRouteReport.total}:null,
     stairSafetyShown:state.stairSafety?.root?.visible??false,
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
     openingRegistry:state.doorApertureAudit?.summary??null,
@@ -1381,6 +1462,9 @@ if(isLocalQA){
    camera.position.copy(eye);camera.lookAt(look);orbit.update();
    return {id,level:door.level,look:look.toArray(),eye:eye.toArray(),visible:door.visual.visible};
   },
+  checkPlanCirculation:()=>checkPlanCirculation(),
+  balconySummary:()=>state.balconies?.summary??null,
+  lightingStatus:()=>state.lightingSystem?.status()??null,
   doorCrossings:(ids=[21,25,27],bothSides=true)=>{
    if(!state.doorSystem||!state.doorApertureAudit)return {error:'IFC doors still loading'};
    // Complete architecture: avoid section clipping a legitimate crossing.

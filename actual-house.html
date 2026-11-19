@@ -21,7 +21,8 @@
    </a>
    <div class="headerCenter"><span class="statusDot"></span><span>IFC SOURCE MODEL</span><i></i><span>REAL 3D GEOMETRY</span></div>
    <div class="headerActions">
-     <button id="lightBtn" title="Toggle day and night"><span class="symbol">☼</span><span class="long">Daylight</span></button>
+     <button id="lightBtn" title="Toggle daylight or night" aria-pressed="false"><span class="symbol">☼</span><span class="long">Daylight</span></button>
+     <button id="houseLightsBtn" title="Switch house and balcony lights on or off" aria-pressed="true"><span class="symbol">✹</span><span class="long">Lights on</span></button>
      <button id="referenceBtn" title="Compare with architectural renders"><span class="symbol">◫</span><span class="long">Design references</span></button>
      <button id="drawingsBtn" title="View the actual architectural PDF floor plans"><span class="symbol">▤</span><span class="long">Architectural plans</span></button>
      <button id="mapBtn" title="Open navigation map"><span class="symbol">▦</span><span class="long">Floor map</span></button>
@@ -46,8 +47,12 @@
      <label class="toggleLine"><span><b>Section / remove roof above floor</b><small>Reveal wall layout and rooms from above</small></span><input id="sectionToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
    </div>
    <button id="stairFocusBtn" class="structAction">↗ INSPECT REAL STAIRCASE</button>
+   <button id="circulationBtn" class="structAction" title="Source-floor and obstacle-aware test, not a teleporter">⌁ VERIFY STAIR → ROOM ACCESS</button>
+   <div id="circulationStatus" class="measureStatus">Stair-to-sitting, dining, kitchen and Family Room routes not yet tested.</div>
    <label class="toggleLine"><span><b>Stair handrails & guards</b><small>Source-anchored safety concept; compare with original IFC</small></span><input id="stairSafetyToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
    <div id="stairSafetyStatus" class="measureStatus">Checking source flights, landing and floor connection...</div>
+   <label class="toggleLine"><span><b>Glass balconies · architectural elevations</b><small>S1/S2 source-supported external decks and guards</small></span><input id="balconyToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
+   <div id="balconyAuditStatus" class="measureStatus">Locating verified balconies and external enclosure meshes...</div>
    <div id="siteAuditStatus" class="measureStatus">Loading plan-supported compound and IFC audit...</div>
  <button id="gateBtn" class="structAction">▣ INSPECT SLIDING GATE / BOUNDARY</button>
    <button id="measureBtn" class="structAction">⌁ MEASURE ROOM DISTANCE</button>

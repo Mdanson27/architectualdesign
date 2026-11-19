@@ -77,13 +77,38 @@ try{
  if(!ready?.loaded||ready.loadedLayers!==ready.expected)throw Error('IFC not fully loaded (expected '+ready?.expected+', loaded '+ready?.loadedLayers+')');
  const summary=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.summary())"));
  const scene=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
+ const balcony=summary.balconies;
+ if(!balcony||balcony.restored!==3)
+  throw Error('Phase 7 source-supported balcony restoration missing: '+JSON.stringify(balcony));
+ const lightBefore=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.lightingStatus())"));
+ const lightsOff=JSON.parse(await evaluate("(()=>{document.querySelector('#houseLightsBtn').click();return JSON.stringify(window.__AutoMindsQA.lightingStatus());})()"));
+ const nightOff=JSON.parse(await evaluate("(()=>{document.querySelector('#lightBtn').click();return JSON.stringify(window.__AutoMindsQA.lightingStatus());})()"));
+ const nightOn=JSON.parse(await evaluate("(()=>{document.querySelector('#houseLightsBtn').click();return JSON.stringify(window.__AutoMindsQA.lightingStatus());})()"));
+ const restoredLights=JSON.parse(await evaluate("(()=>{document.querySelector('#lightBtn').click();return JSON.stringify(window.__AutoMindsQA.lightingStatus());})()"));
+ if(lightBefore.activeEmitters!==14 || lightsOff.activeEmitters!==0 ||
+   nightOff.night!==true||nightOff.activeEmitters!==0 ||
+   nightOn.activeEmitters!==14||restoredLights.night!==false||
+   restoredLights.activeEmitters!==14)
+   throw Error('Independent night and house-light controls failed');
+ console.log('PHASE7_BALCONY_LIGHTS',JSON.stringify({restored:balcony.restored,concealed:balcony.concealedOpaqueEdgeMeshes,
+  lights:lightBefore.activeEmitters,nightIndependent:true}));
  const ids=process.env.QA_ALL_DOORS==='1'?Array.from({length:29},(_,i)=>i+1):[6,12,14,15,21,25,26,27,28,29];
  const crossings=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.doorCrossings("+JSON.stringify(ids)+",true))"));
  const obstructed=crossings.filter(x=>!x.openFront?.ok||!x.openBack?.ok).map(x=>({
   id:x.id,level:x.level,sourceGuids:x.sourceGuids,front:x.openFront,back:x.openBack
  }));
  const blockedWhenClosed=crossings.filter(x=>x.closedFront?.ok||x.closedBack?.ok).map(x=>x.id);
- report={status:'complete',ready,summary,scene,crossings,obstructed,blockedWhenClosed,exceptions};
+ let circulation=null;
+ if(process.env.QA_ALL_DOORS==='1'){
+   circulation=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkPlanCirculation())"));
+   console.log('PHASE7_CIRCULATION_ROUTES',JSON.stringify({
+    passed:circulation.passed,total:circulation.total,
+    routes:circulation.routes?.map(x=>({id:x.id,ok:x.ok,reason:x.reason,
+      visited:x.visited,closestDistanceMetres:x.closestDistanceMetres,
+      pathLengthMetres:x.distanceMetres}))
+   }));
+ }
+ report={status:'complete',ready,summary,scene,crossings,obstructed,blockedWhenClosed,circulation,exceptions};
  console.log('BROWSER_QA_SUMMARY',JSON.stringify({
   sourceLayers:ready.loadedLayers,doors:summary.doorCount,windows:summary.windows?.windowAssemblies,
   facade:summary.verifiedFacadeGlazing,

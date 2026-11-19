@@ -2,7 +2,7 @@ name: Deploy AutoMinds Spaces to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main, phase7-architecture-circulation-balconies-lighting]
   workflow_dispatch:
 
 permissions:
@@ -42,6 +42,8 @@ jobs:
         run: npm run test:openings
       - name: Check balcony glazing and fitted furniture
         run: npm run test:facade
+      - name: Verify source-supported balconies, lighting and room route graph
+        run: npm run test:phase7
       - name: Build public GitHub Pages site
         run: npm run build
         env:
@@ -78,6 +80,7 @@ jobs:
           path: ./dist
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     name: Publish GitHub Pages
     needs: build
     runs-on: ubuntu-latest
