@@ -126,23 +126,28 @@ function fitBedToActualDoorways(group,source,doorRecords,wallRecords){
   const gap=doorCenter.z-boundary.max.z;
   if(gap<1.17){
    const minShift=-Math.min(.92,1.19-gap);
-   const countOverlaps=b=>wallRecords.filter(w=>w.layer.level===source.layer.level &&
-     w.box.intersectsBox(b)).length;
-   const previous=countOverlaps(boundary),starting=group.position.clone();
+   const walls=wallRecords.filter(w=>w.layer.level===source.layer.level);
+   const overlapScore=b=>walls.reduce((sum,w)=>{
+     const u=w.box;
+     const dx=Math.max(0,Math.min(b.max.x,u.max.x)-Math.max(b.min.x,u.min.x));
+     const dz=Math.max(0,Math.min(b.max.z,u.max.z)-Math.max(b.min.z,u.min.z));
+     const dy=Math.max(0,Math.min(b.max.y,u.max.y)-Math.max(b.min.y,u.min.y));
+     return sum+(dy>.10?dx*dz:0);
+   },0);
+   const previous=overlapScore(boundary),starting=group.position.clone();
    let best=null;
-   // Search a small room-scale offset grid, never placing a bed through
-   // additional structural walls just to make a doorway appear clear.
-   for(const dx of [0,-.25,-.5,.25,.5]){
-    for(const dz of [minShift,-.30,-.45,-.60,-.75]){
+   // Minimise actual wall intersections as well as keeping the doorway clear.
+   for(const dx of [0,-.25,-.5,-.75,.25,.5,.75]){
+    for(const dz of [minShift,-.27,-.35,-.45,-.55,-.70,-.85,-1.0]){
      if(dz>minShift+.001)continue;
      group.position.copy(starting).add(new THREE.Vector3(dx,0,dz));
      group.updateMatrixWorld(true);
      const after=new THREE.Box3().setFromObject(group);
-     const count=countOverlaps(after);
+     const overlap=overlapScore(after);
      const clearance=doorCenter.z-after.max.z;
-     if(clearance<1.17||count>previous)continue;
-     const score=count*10+Math.hypot(dx,dz);
-     if(!best||score<best.score)best={dx,dz,score,count,clearance};
+     if(clearance<1.17||overlap>previous+.012)continue;
+     const score=overlap*15+Math.hypot(dx,dz)*.15;
+     if(!best||score<best.score)best={dx,dz,score,overlap,clearance};
     }
    }
    group.position.copy(starting);
@@ -154,8 +159,13 @@ function fitBedToActualDoorways(group,source,doorRecords,wallRecords){
       balconyApproachShiftX:Number(best.dx.toFixed(3)),
       balconyApproachShiftZ:Number(best.dz.toFixed(3)),
       doorwayClearanceMetres:Number(best.clearance.toFixed(3)),
+      wallOverlapBeforeSqM:Number(previous.toFixed(3)),
+      wallOverlapAfterSqM:Number(best.overlap.toFixed(3)),
       originalIFCUnmodified:true
     };
+   }else{
+    group.userData.circulationReview={reason:'source-wall-constrained-no-safe-placement',
+      doorwayGapMetres:Number(gap.toFixed(3)),wallOverlapSqM:Number(previous.toFixed(3))};
    }
    group.updateMatrixWorld(true);
   }
@@ -185,7 +195,10 @@ export function buildBedroomDecorations(meshRecords,scene){
   sourceGuid:b.userData.sourceGuid,...b.userData.circulationCorrection
  }));
  const collisionBoxes=visualBeds.map(bed=>new THREE.Box3().setFromObject(bed));
- return {group:parent,sources:beds,visualBeds,collisionBoxes,circulationCorrections,
+ const circulationReviews=visualBeds.filter(b=>b.userData.circulationReview).map(b=>({
+  sourceGuid:b.userData.sourceGuid,...b.userData.circulationReview
+ }));
+ return {group:parent,sources:beds,visualBeds,collisionBoxes,circulationCorrections,circulationReviews,
   entries:beds.map((r,i)=>({id:i,level:r.layer.level,center:r.box.getCenter(new THREE.Vector3()),area:r.box.getSize(new THREE.Vector3()),
    styledFootprint:visualBeds[i]?.userData?.footprint_m??null}))};
 }

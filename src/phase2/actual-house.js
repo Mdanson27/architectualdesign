@@ -1336,6 +1336,7 @@ if(isLocalQA){
     verifiedFacadeGlazing:state.facadeAudit?.summary??null,
     sittingRoomFurniture:state.movedSofa?.summary??null,
     bedCirculationAdjustments:state.decor?.circulationCorrections??[],
+    bedCirculationReviews:state.decor?.circulationReviews??[],
     stairSafety:state.stairSafety?.summary??null,
     stairSafetyShown:state.stairSafety?.root?.visible??false,
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,

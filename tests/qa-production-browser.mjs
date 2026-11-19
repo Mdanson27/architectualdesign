@@ -86,7 +86,10 @@ try{
  report={status:'complete',ready,summary,scene,crossings,obstructed,blockedWhenClosed,exceptions};
  console.log('BROWSER_QA_SUMMARY',JSON.stringify({
   sourceLayers:ready.loadedLayers,doors:summary.doorCount,windows:summary.windows?.windowAssemblies,
-  facade:summary.verifiedFacadeGlazing,doorCuts:summary.openingRegistry?.verifiedDoorWallCutouts,
+  facade:summary.verifiedFacadeGlazing,
+  bedAdjustments:summary.bedCirculationAdjustments,
+  bedReviews:summary.bedCirculationReviews,
+  doorCuts:summary.openingRegistry?.verifiedDoorWallCutouts,
   windowCuts:summary.openingRegistry?.verifiedWindowWallCutouts,
   outsideRawVisible:scene.outsideRawMeshesVisible,rawWindowProxiesVisible:scene.originalWindowProxiesStillVisible,
   testedDoorIds:ids,obstructed,closedDoorUnexpectedPass:blockedWhenClosed,
