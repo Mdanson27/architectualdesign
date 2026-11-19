@@ -41,6 +41,8 @@ const furnished=createPlanDiningFurniture(scene,origin,records);
 assert.equal(furnished.chairs,6);
 assert.equal(furnished.root.children.filter(x=>/^DINING_CHAIR_/.test(x.name)).length,6);
 assert.equal(furnished.collisionBoxes.length,7);
+assert(Math.abs(furnished.root.position.x-(115.05-origin.x))<.001,
+ 'six-seat dining group must be shifted east to clear kitchen entrance');
 assert(furnished.sourceSet.size>=1,'stray isolated source furnishing replaced');
 const [table,...chairs]=furnished.collisionBoxes;
 assert(chairs.every(chair=>!chair.intersectsBox(table)),'six chairs must not overlap table');

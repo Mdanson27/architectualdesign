@@ -1,38 +1,65 @@
 import * as THREE from 'three';
 
 /**
- * First-floor sitting-room circulation correction. IFC FU - 007 sits directly
- * behind the opening of the source sliding balcony doors (DOO - 003).
- * Preview the SAME IFC sofa mesh 1.35m farther right, .70m into the room.
- * Source mesh/GLB is never altered; the old presentation is only concealed.
+ * Preserve original IFC furniture and preview its placement off the
+ * source-confirmed internal circulation routes from Home(3).pdf.
+ * Actual 3D source meshes are cloned; original geometry, GUID and position
+ * stay unchanged and can be inspected with furniture previews disabled.
  */
+const CORRECTIONS=[
+ {key:'first-floor',label:'Upstairs family-room sofa',level:'first',
+  center:[115.02,-1.445],size:[2.15,3.3,1.3,2],
+  offset:[1.35,0,-.70],
+  reason:'DOO - 003 sliding balcony-door approach'},
+ {key:'ground-sitting',label:'Ground Sitting Room west-facing sofa',level:'ground',
+  center:[113.9,-6.6],size:[1.45,1.9,2.3,2.7],
+  offset:[.82,0,0],
+  reason:'Open access from stair bay into 35m² Sitting Room'}
+];
 export function organizeSourceSittingFurniture(records,scene,origin={x:0,z:0},inside=()=>true){
- const source=records.find(r=>{
-  if(!inside(r)||r.layer?.level!=='first'||r.category!=='furniture')return false;
-  if(String(r.mesh.userData.ifc?.name||'').toUpperCase().trim()!=='FU - 007')return false;
-  const c=r.box.getCenter(new THREE.Vector3()),sz=r.box.getSize(new THREE.Vector3());
-  return Math.abs(c.x+origin.x-115.02)<.32&&Math.abs(c.z+origin.z+1.445)<.37 &&
-   sz.x>2.15&&sz.x<3.3&&sz.z>1.3&&sz.z<2;
- });
- const root=new THREE.Group();root.name='SOURCE_ALIGNED_UPSTAIRS_SOFA_CIRCULATION_CORRECTION';
+ const root=new THREE.Group();root.name='IFC_SOURCE_SOFAS_REPOSITIONED_FOR_PLAN_CIRCULATION';
  scene.add(root);
- if(!source)return {root,sourceSet:new Set(),colliders:[],summary:{sourceMatched:false,originalUnmodified:true}};
- source.mesh.updateWorldMatrix(true,false);
- const preview=source.mesh.clone();
- // Bake the old world matrix before placing clone under the corrected scene root.
- preview.matrix.copy(source.mesh.matrixWorld);
- preview.matrix.decompose(preview.position,preview.quaternion,preview.scale);
- const correction=new THREE.Vector3(1.35,0,-.70);
- preview.position.add(correction);
- preview.name='SITTING_ROOM_SOFA_REPOSITIONED_FROM_IFC';
- preview.userData={...preview.userData,circulationPreview:true,originalGUID:source.mesh.userData.ifc?.guid};
- root.add(preview);
- root.updateMatrixWorld(true);
- const box=new THREE.Box3().setFromObject(preview);
- const sourceSet=new Set([source]);
- const moved={mesh:preview,box,category:'furniture',layer:source.layer};
- const summary={sourceMatched:true,sourceGUID:source.mesh.userData.ifc?.guid,
-  offsetMetres:correction.toArray(),originalUnmodified:true,previewFootprint:box.getSize(new THREE.Vector3()).toArray(),
-  rationale:'Allow passage past DOO - 003 into upstairs sitting room without crossing sofa'};
- return {root,sourceSet,colliders:[moved],summary};
+ const sourceSet=new Set(),colliders=[],placements=[];
+ for(const spec of CORRECTIONS){
+  const source=records.find(r=>{
+   if(!inside(r)||r.layer?.level!==spec.level||r.category!=='furniture')return false;
+   if(String(r.mesh.userData.ifc?.name||'').toUpperCase().trim()!=='FU - 007')return false;
+   const c=r.box.getCenter(new THREE.Vector3()),sz=r.box.getSize(new THREE.Vector3());
+   return Math.abs(c.x+origin.x-spec.center[0])<.32&&
+     Math.abs(c.z+origin.z-spec.center[1])<.37 &&
+     sz.x>spec.size[0]&&sz.x<spec.size[1]&&
+     sz.z>spec.size[2]&&sz.z<spec.size[3];
+  });
+  if(!source){
+   placements.push({id:spec.key,sourceMatched:false,
+     reason:'Missing source IFC FU - 007 at the expected location'});continue;
+  }
+  source.mesh.updateWorldMatrix(true,false);
+  const preview=source.mesh.clone();
+  preview.matrix.copy(source.mesh.matrixWorld);
+  preview.matrix.decompose(preview.position,preview.quaternion,preview.scale);
+  const delta=new THREE.Vector3(...spec.offset);
+  preview.position.add(delta);
+  preview.name='REPOSITIONED_IFC_SOFA_'+spec.key;
+  preview.userData={...preview.userData,circulationPreview:true,
+    originalGUID:source.mesh.userData.ifc?.guid,sourceRegion:spec.key};
+  root.add(preview);root.updateWorldMatrix(true);
+  const box=new THREE.Box3().setFromObject(preview);
+  sourceSet.add(source);
+  colliders.push({mesh:preview,box,category:'furniture',layer:source.layer});
+  placements.push({id:spec.key,label:spec.label,sourceMatched:true,
+    sourceGUID:source.mesh.userData.ifc?.guid,
+    offsetMetres:delta.toArray(),originalUnmodified:true,
+    previewFootprint:box.getSize(new THREE.Vector3()).toArray(),
+    rationale:spec.reason});
+ }
+ const upstairs=placements.find(p=>p.id==='first-floor');
+ return {root,sourceSet,colliders,placements,
+  summary:{sourceMatched:upstairs?.sourceMatched??false,
+   sourceGUID:upstairs?.sourceGUID,offsetMetres:upstairs?.offsetMetres,
+   originalUnmodified:true,
+   previewFootprint:upstairs?.previewFootprint,
+   rationale:upstairs?.rationale,
+   groundSittingRoom:placements.find(p=>p.id==='ground-sitting')??null,
+   presentations:placements}};
 }

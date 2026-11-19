@@ -13,6 +13,8 @@ function mockSource(name,category,level,center,size){
  records.push(record);return record;
 }
 const sofa=mockSource('FU - 007','furniture','first',[115.02,3.6,-1.445],[2.5,.6,1.65]);
+const groundSofa=mockSource('FU - 007','furniture','ground',[113.9,.3,-6.6],[1.65,.6,2.5]);
+const groundBefore=groundSofa.box.clone();
 const sofaSnapshot=sofa.mesh.matrixWorld.clone(),sofaBounds=sofa.box.clone();
 const sofaBefore=sofa.box.getCenter(new THREE.Vector3());
 const moved=organizeSourceSittingFurniture(records,scene,new THREE.Vector3(),()=>true);
@@ -21,12 +23,17 @@ assert.equal(moved.sourceSet.has(sofa),true);
 assert.deepEqual(moved.summary.offsetMetres,[1.35,0,-.7]);
 assert(sofaSnapshot.equals(sofa.mesh.matrixWorld));
 assert(sofaBounds.equals(sofa.box));
-assert.equal(moved.colliders.length,1);
+assert.equal(moved.colliders.length,2);
+assert.equal(moved.summary.groundSittingRoom?.sourceMatched,true);
+assert(moved.sourceSet.has(groundSofa));
+assert(groundBefore.equals(groundSofa.box),'original sitting-room sofa unchanged');
+const groundPreview=moved.colliders.find(r=>r.layer.level==='ground');
+assert(groundPreview.box.min.x-groundSofa.box.min.x>.8-.001,'sitting entry unblocked');
 assert(moved.colliders[0].box.min.z<sofa.box.min.z-.65);
 const sofaAfter=moved.colliders[0].box.getCenter(new THREE.Vector3());
 assert(Math.abs(sofaAfter.x-sofaBefore.x-1.35)<.001);
 assert(Math.abs(sofaAfter.z-sofaBefore.z+.7)<.001);
-assert.equal(moved.root.children.length,1);
+assert.equal(moved.root.children.length,2);
 
 const room=new THREE.Scene(),home=[];
 const bedGeometry=new THREE.BoxGeometry(1.45,.9,2.18);
@@ -54,7 +61,7 @@ assert(styled.collisionBoxes[0].max.z<bedBoxBefore.max.z);
 assert(originalTransform.equals(bedMesh.matrixWorld));
 assert(bedRecord.box.equals(bedBoxBefore));
 console.log(JSON.stringify({passed:true,sourceSofaUnmodified:true,
- sofaShift:moved.summary.offsetMetres,sourceBedUnmodified:true,
+ sofaShift:moved.summary.offsetMetres,groundSofaShift:moved.summary.groundSittingRoom.offsetMetres,sourceBedUnmodified:true,
  bedShift:styled.circulationCorrections[0].shiftMetres,
  bedDimensions:styled.visualBeds[0].userData.footprint_m,
  originalIFCGeometryPreserved:true}));
