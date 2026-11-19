@@ -135,12 +135,21 @@ function fitBedToActualDoorways(group,source,doorRecords,wallRecords){
      return sum+(dy>.10?dx*dz:0);
    },0);
    const previous=overlapScore(boundary),starting=group.position.clone();
-   const otherDoorways=doorRecords.filter(d=>d.layer.level===source.layer.level&&d!==balconyDoor);
+   // The adjacent first-floor 0.97m DOO - 002 is a second route out
+   // of the same bedroom. Ignore other remote doorway bounds in the model.
+   const otherDoorways=doorRecords.filter(d=>{
+    if(d.layer.level!==source.layer.level ||
+      !/^DOO\s*-\s*002$/i.test(d.mesh.userData.ifc?.name||''))return false;
+    const c=d.box.getCenter(new THREE.Vector3());
+    return c.x>sourceCenter.x+1.2&&c.x<sourceCenter.x+3.1&&
+      Math.abs(c.z-sourceCenter.z)<1.85;
+   });
    const conflictingDoors=b=>otherDoorways.filter(d=>{
     const c=d.box.getCenter(new THREE.Vector3()),s=d.box.getSize(new THREE.Vector3());
     if(s.y<1.65) return false;
     if(b.max.y<c.y-s.y/2+.25||b.min.y>c.y+s.y/2-.15)return false;
-    const alongX=s.x>=s.z,half=Math.max(s.x,s.z)/2+.32;
+    // Preserve a collision-free central route through this 0.97m doorway.
+    const alongX=s.x>=s.z,half=.36;
     return alongX?
       b.min.x<c.x+half&&b.max.x>c.x-half&&b.min.z<c.z+.77&&b.max.z>c.z-.77:
       b.min.z<c.z+half&&b.max.z>c.z-half&&b.min.x<c.x+.77&&b.max.x>c.x-.77;
