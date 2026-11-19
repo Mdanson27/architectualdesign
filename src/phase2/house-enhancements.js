@@ -61,7 +61,7 @@ function createBed(record,wallRecords,index){
  for(const x of [-1,1])for(const z of [-1,1])cuboid(group,walnut,.11,.16,.11,x*(width/2-.09),.09,z*(length/2-.13),.015);
  // Omit stands where circulation space is narrow or when the original source
  // bed was oversized: floor access is more important than decoration.
- if(w<=1.8&&len<=2.4)for(const side of [-1,1]){
+ if(w>1.95&&len>2.7)for(const side of [-1,1]){
   const nearX=center.x+Math.cos(group.rotation.y)*side*(width/2+.34);
   const nearZ=center.z-Math.sin(group.rotation.y)*side*(width/2+.34);
   if(nearestWallDistance(nearX,nearZ,floor+.6,wallRecords)<.52)continue;
@@ -109,6 +109,56 @@ function fitBedToActualDoorways(group,source,doorRecords,wallRecords){
   group.userData.circulationCorrection={doorSourceGUID:d.mesh.userData.ifc?.guid,
     axis,shiftMetres:Number(shift.toFixed(3)),originalIFCUnmodified:true};
   break;
+ }
+ // The first-floor balcony DOO - 003 lies in a narrow bedroom zone.
+ // A second source-specific clearance adjustment prevents the bed's end
+ // from covering the approach even if an earlier doorway was matched.
+ const sourceCenter=source.box.getCenter(new THREE.Vector3());
+ const balconyDoor=source.layer.level==='first'&&doorRecords.find(r=>{
+  if(r.layer.level!=='first'||!/^DOO\s*-\s*003$/i.test(r.mesh.userData.ifc?.name||''))return false;
+  const d=r.box.getCenter(new THREE.Vector3());
+  return Math.abs(d.x-sourceCenter.x)<1.1 &&
+    sourceCenter.z<d.z-.65 && sourceCenter.z>d.z-2.9;
+ });
+ if(balconyDoor){
+  const doorCenter=balconyDoor.box.getCenter(new THREE.Vector3());
+  const boundary=new THREE.Box3().setFromObject(group);
+  const gap=doorCenter.z-boundary.max.z;
+  if(gap<1.17){
+   const minShift=-Math.min(.92,1.19-gap);
+   const countOverlaps=b=>wallRecords.filter(w=>w.layer.level===source.layer.level &&
+     w.box.intersectsBox(b)).length;
+   const previous=countOverlaps(boundary),starting=group.position.clone();
+   let best=null;
+   // Search a small room-scale offset grid, never placing a bed through
+   // additional structural walls just to make a doorway appear clear.
+   for(const dx of [0,-.25,-.5,.25,.5]){
+    for(const dz of [minShift,-.30,-.45,-.60,-.75]){
+     if(dz>minShift+.001)continue;
+     group.position.copy(starting).add(new THREE.Vector3(dx,0,dz));
+     group.updateMatrixWorld(true);
+     const after=new THREE.Box3().setFromObject(group);
+     const count=countOverlaps(after);
+     const clearance=doorCenter.z-after.max.z;
+     if(clearance<1.17||count>previous)continue;
+     const score=count*10+Math.hypot(dx,dz);
+     if(!best||score<best.score)best={dx,dz,score,count,clearance};
+    }
+   }
+   group.position.copy(starting);
+   if(best){
+    group.position.add(new THREE.Vector3(best.dx,0,best.dz));
+    group.userData.circulationCorrection={
+      ...(group.userData.circulationCorrection||{}),
+      sourceBalconyDoorGUID:balconyDoor.mesh.userData.ifc?.guid,
+      balconyApproachShiftX:Number(best.dx.toFixed(3)),
+      balconyApproachShiftZ:Number(best.dz.toFixed(3)),
+      doorwayClearanceMetres:Number(best.clearance.toFixed(3)),
+      originalIFCUnmodified:true
+    };
+   }
+   group.updateMatrixWorld(true);
+  }
  }
 }
 export function buildBedroomDecorations(meshRecords,scene){

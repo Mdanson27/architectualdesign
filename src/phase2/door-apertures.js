@@ -74,7 +74,12 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
    if(cut.kind!=='door'||!cut.door||cut.door.current<.85 ||
      !cut.door.visual.visible||Math.abs(footY-cut.door.groundY)>1.22)continue;
    if(!cut.sourceWallMeshes.has(hit.object))continue;
-   if(!pointInsideCut(hit.point,cut))continue;
+   // An IFC wall face can register below the actual first-floor surface.
+   // Keep the source doorway rectangle exact in plan, allowing only 28cm
+   // below the visual sill for physical collisions (not for shader cuts).
+   const b=cut.box,h=cut.height,p=hit.point;
+   if(!(p.x>b.x&&p.x<b.y&&p.z>b.z&&p.z<b.w&&
+     p.y>h.x-.28&&p.y<h.y))continue;
    // Restrict the ignored collision to the door's actual clear centre.
    const d=cut.door;
    const lateral=d.alongX?hit.point.x-d.position.x:hit.point.z-d.position.z;

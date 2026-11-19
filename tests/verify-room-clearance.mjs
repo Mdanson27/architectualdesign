@@ -48,6 +48,8 @@ assert(styled.visualBeds[0].userData.footprint_m[0]<=1.68);
 assert(styled.visualBeds[0].userData.footprint_m[1]<=2.06);
 assert(styled.circulationCorrections.length>=1,'bed must be repositioned away from source doorway');
 assert(styled.circulationCorrections[0].shiftMetres<0);
+assert(styled.circulationCorrections[0].doorwayClearanceMetres>=1.17,
+ 'balcony-facing bedroom doorway must have over 1.17m of approach clearance');
 assert(styled.collisionBoxes[0].max.z<bedBoxBefore.max.z);
 assert(originalTransform.equals(bedMesh.matrixWorld));
 assert(bedRecord.box.equals(bedBoxBefore));
