@@ -196,8 +196,15 @@ function fitBedToActualDoorways(group,source,doorRecords,wallRecords){
       originalIFCUnmodified:true
     };
    }else{
-    group.userData.circulationReview={reason:'source-wall-constrained-no-safe-placement',
-      doorwayGapMetres:Number(gap.toFixed(3)),wallOverlapSqM:Number(previous.toFixed(3))};
+    // No feasible room-aware bed placement may obstruct either verified
+    // doorway. Conceal this one furnishing preview, not the source IFC.
+    group.visible=false;
+    group.userData.circulationReview={
+      reason:'Source bed withheld: cannot fit without blocking both doors or walls',
+      doorwayGapMetres:Number(gap.toFixed(3)),
+      wallOverlapSqM:Number(previous.toFixed(3)),
+      originalIFCUnmodified:true
+    };
    }
    group.updateMatrixWorld(true);
   }
@@ -226,7 +233,7 @@ export function buildBedroomDecorations(meshRecords,scene){
  const circulationCorrections=visualBeds.filter(b=>b.userData.circulationCorrection).map(b=>({
   sourceGuid:b.userData.sourceGuid,...b.userData.circulationCorrection
  }));
- const collisionBoxes=visualBeds.map(bed=>new THREE.Box3().setFromObject(bed));
+ const collisionBoxes=visualBeds.filter(bed=>bed.visible).map(bed=>new THREE.Box3().setFromObject(bed));
  const circulationReviews=visualBeds.filter(b=>b.userData.circulationReview).map(b=>({
   sourceGuid:b.userData.sourceGuid,...b.userData.circulationReview
  }));
