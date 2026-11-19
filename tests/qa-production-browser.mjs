@@ -105,6 +105,8 @@ try{
  let circulation=null;
  if(process.env.QA_ALL_DOORS==='1'){
    circulation=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkPlanCirculation())"));
+   const openingProbes=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.diagnoseS1Openings())"));
+   console.log('PHASE7_OPENING_PROBES',JSON.stringify(openingProbes));
    console.log('PHASE7_CIRCULATION_ROUTES',JSON.stringify({
     passed:circulation.passed,total:circulation.total,
     routes:circulation.routes?.map(x=>({id:x.id,ok:x.ok,reason:x.reason,

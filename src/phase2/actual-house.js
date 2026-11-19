@@ -1063,6 +1063,33 @@ function updateDoorHint(){
  $('doorActionBtn').textContent=open?'CLOSE DOOR':'OPEN DOOR';
 }
 
+function diagnoseS1Openings(){
+ if(!state.planCirculation||!state.initialReady)return [];
+ const saved=state.doorSystem?.doors.map(d=>({d,current:d.current,target:d.target}))??[];
+ for(const {d} of saved){d.current=1;d.target=1;}
+ state.doorSystem.update(.02);
+ const result=[];
+ for(const p of state.planCirculation.apertures){
+  const z=p.cz,x=p.cx;
+  const steps=[];
+  let footY=0;
+  for(let i=0;i<=16;i++){
+   const atX=x-.75+i*.10;
+   const floor=sampleGround(atX,z,footY,.40,.7);
+   const to=atX+.075;
+   const isBlocked=detectObstacle(atX,z,to,z,footY);
+   const item={x:+(atX+state.origin.x).toFixed(3),z:+(z+state.origin.z).toFixed(3),
+    floor:floor?+floor.y.toFixed(3):null,
+    blocked:isBlocked,reason:isBlocked?state.lastCollisionBlocker:null};
+   steps.push(item);
+   if(floor&&Math.abs(floor.y-footY)<.5)footY=floor.y;
+  }
+  result.push({id:p.id,sourceWallGuids:p.sourceWallGuids,steps});
+ }
+ for(const {d,current,target} of saved){d.current=current;d.target=target;}
+ state.doorSystem.update(.02);
+ return result;
+}
 // S1 route verification: sample real source floor surfaces, obey actual
 // walls, doors, furniture and balcony guards. No teleport or invented path.
 function checkPlanCirculation(){
@@ -1468,6 +1495,7 @@ if(isLocalQA){
   },
   checkPlanCirculation:()=>checkPlanCirculation(),
   balconySummary:()=>state.balconies?.summary??null,
+  diagnoseS1Openings:()=>diagnoseS1Openings(),
   lightingStatus:()=>state.lightingSystem?.status()??null,
   doorCrossings:(ids=[21,25,27],bothSides=true)=>{
    if(!state.doorSystem||!state.doorApertureAudit)return {error:'IFC doors still loading'};
