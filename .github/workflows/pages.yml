@@ -38,6 +38,8 @@ jobs:
         run: npm run test:scene
       - name: Verify source-based stair guards and safe floor egress
         run: npm run test:stairs
+      - name: Verify matched IFC openings and door collisions
+        run: npm run test:openings
       - name: Build public GitHub Pages site
         run: npm run build
         env:

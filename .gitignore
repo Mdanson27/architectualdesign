@@ -22,6 +22,7 @@
 !/src/phase2/window-glazing.js
 !/src/phase2/stair-safety.js
 !/tests/verify-stair-safety.mjs
+!/tests/verify-source-openings.mjs
 !/tests/
 !/tests/verify-site-context.mjs
 !/tests/verify-glazing.mjs

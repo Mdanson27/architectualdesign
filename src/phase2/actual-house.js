@@ -412,7 +412,7 @@ function setupEnhancements(){
   'Source-anchored flights and landing · handrails + upper void guard · concept only, not engineer certified':
   'Stair source incomplete. No unsupported safety geometry fabricated.';
  state.doorSystem=createDoorSystem(state.doors,scene,isResidenceRecord);
- state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord);
+ state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows);
  const details=state.doorSystem.doors.length;
  console.info('[AutoMinds Aperture Audit]',state.doorApertureAudit.obstructedCount,
   'door and',state.doorApertureAudit.windowObstructedCount,'window wall occlusions repaired visually');
@@ -933,8 +933,15 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
   const origin=new THREE.Vector3(oldX,footY+h,oldZ).addScaledVector(sideways,offset);
   cast.set(origin,direction);
   const hits=cast.intersectObjects(rayMeshes,false);
-  const blocking=hits.find(hit=>hit.distance<distance+.19 &&
-    (hit.object.userData.doorId || !state.doorSystem?.isOpenDoorway(hit.point,footY)));
+  const blocking=hits.find(hit=>{
+   if(hit.distance>=distance+.19)return false;
+   // An open IFC door is genuinely passable only through a wall aperture tied
+   // to THAT door's source location. Do not ignore arbitrary furniture or walls.
+   if(hit.object.userData.doorId)return true;
+   if(state.repairDoorApertures &&
+      state.doorApertureAudit?.permitsOpenDoorWallHit(hit,footY))return false;
+   return true;
+  });
   if(blocking)return true;
  }
  return false;
@@ -1128,7 +1135,7 @@ $('doorNavigatorBtn').addEventListener('click',()=>{$('doorPanel').classList.tog
 $('doorRevealToggle').addEventListener('change',e=>{
  state.repairDoorApertures=e.target.checked;
  if(e.target.checked){
-  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord);
+  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows);
  }else if(state.doorApertureAudit){
   state.doorApertureAudit.restore();
  }
@@ -1287,6 +1294,7 @@ if(isLocalQA){
     stairSafety:state.stairSafety?.summary??null,
     stairSafetyShown:state.stairSafety?.root?.visible??false,
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
+    openingRegistry:state.doorApertureAudit?.summary??null,
     blockedCuts:state.doorApertureAudit?.occlusionDetails??[]}),
   sceneStatus:()=>({
     loaded:state.initialReady,showSite:state.showSurroundings,
@@ -1323,6 +1331,22 @@ if(isLocalQA){
    orbit.enabled=true;orbit.target.copy(look);
    camera.position.copy(eye);camera.lookAt(look);orbit.update();
    return {id,level:door.level,look:look.toArray(),eye:eye.toArray(),visible:door.visual.visible};
+  },
+  doorCrossings:(ids=[21,25,27],bothSides=true)=>{
+   if(!state.doorSystem||!state.doorApertureAudit)return {error:'IFC doors still loading'};
+   // Complete architecture: avoid section clipping a legitimate crossing.
+   if(state.mode==='walk')exitWalk();
+   state.floor='all';state.sectionEnabled=false;refreshVisibility();
+   return ids.map(id=>{
+    const d=state.doorSystem.doors.find(x=>x.id===id);
+    if(!d)return {id,error:'Not in IFC door catalogue'};
+    const record={id,level:d.level,width:d.width,xyz:[d.position.x,d.groundY,d.position.z],
+      sourceGuids:d.source.map(r=>r.mesh.userData.ifc?.guid),
+      closedFront:qaDoorWalk(d,1,false),
+      openFront:qaDoorWalk(d,1,true)};
+    if(bothSides){record.closedBack=qaDoorWalk(d,-1,false);record.openBack=qaDoorWalk(d,-1,true);}
+    return record;
+   });
   },
   allDoorCrossings:()=>{
    if(!state.doorSystem)return {error:'IFC doors still loading'};

@@ -10,21 +10,21 @@ import * as THREE from 'three';
  * We do not invent new architectural openings or erase IFC geometry.
  */
 export const WINDOW_RULES=Object.freeze({
-  minWidth:.38,maxWidth:4.3,minHeight:.52,maxHeight:6.15,maxDepth:.38
+  minWidth:.38,maxWidth:4.3,minHeight:.25,maxHeight:6.15,maxDepth:.38
 });
 
 const glass=new THREE.MeshPhysicalMaterial({
- color:'#c0e6e9',
+ color:'#e8faff',
  metalness:0,
- roughness:.115,
+ roughness:.055,
  transparent:true,
- opacity:.29,
+ opacity:.19,
  side:THREE.DoubleSide,
  depthWrite:false,
- clearcoat:.72,
- clearcoatRoughness:.11
+ clearcoat:.92,
+ clearcoatRoughness:.065
 });
-const frame=new THREE.MeshStandardMaterial({color:'#424d50',metalness:.65,roughness:.38});
+const frame=new THREE.MeshStandardMaterial({color:'#55666b',metalness:.54,roughness:.27});
 const seal=new THREE.MeshStandardMaterial({color:'#303b3e',metalness:.24,roughness:.66});
 
 function getCandidate(rec){
@@ -68,6 +68,7 @@ function makeWindow(cluster,index){
  const paneW=Math.max(.12,width-.11),paneH=Math.max(.2,height-.11);
  const pane=sharedFrame(group,glass,paneW,paneH,.018,0,0,0,'TRANSPARENT_SOURCE_SIZED_GLAZING');
  pane.renderOrder=3;
+ pane.userData={actualThreeDimensionalGlass:true,sourceAligned:true,noOpaqueBacking:true};
  const rim=.048,edge=width/2-rim/2,top=height/2-rim/2;
  for(const side of [-1,1]){
   sharedFrame(group,frame,rim,height,.086,side*edge,0,0,'ALUMINIUM_VERTICAL_FRAME');
@@ -98,7 +99,9 @@ export function createIFCWindowGlazing(records,scene,isResidenceRecord){
  root.visible=true;scene.add(root);
  const sourceSet=new Set(windows.flatMap(w=>w.source));
  const summary={windowAssemblies:windows.length,replacedProxyComponents:sourceSet.size,
-  transparentGlass:true,sourceAligned:true,syntheticOpenings:0};
+  transparentGlass:true,sourceAligned:true,syntheticOpenings:0,
+  supportedNarrowTransomParts:windows.filter(w=>w.height<.55).length,
+  glassOpacity:glass.opacity};
  function updateVisibility({floor,mode,sectionEnabled}){
   for(const w of windows){
    w.group.visible=!sectionEnabled||mode==='walk'||floor==='all'||(floor==='ground'?w.level==='ground':true);
