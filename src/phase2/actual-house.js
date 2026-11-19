@@ -5,6 +5,7 @@ import { PointerLockControls } from 'three/addons/controls/PointerLockControls.j
 import './actual-house.css';
 import {buildBedroomDecorations} from './house-enhancements.js';
 import {createCuratedSiteContext,auditSourceContext} from './site-context.js';
+import {createSiteWalkSupport} from './site-walk-support.js';
 import {createIFCWindowGlazing} from './window-glazing.js';
 import {createSourceStairSafety} from './stair-safety.js';
 import {auditFacadeInfills} from './facade-infills.js';
@@ -91,7 +92,7 @@ const state={
  center:new THREE.Vector3(),bounds:new THREE.Box3(),architectureBounds:new THREE.Box3(),
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
- enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
+ enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -276,6 +277,8 @@ function refreshVisibility(){
   (state.floor==='ground'||state.floor==='all'||(state.mode==='walk'&&state.footY<1.5));
  if(state.stairSafety?.root)state.stairSafety.root.visible=state.showStairSafety;
  if(state.balconies?.root)state.balconies.root.visible=state.showBalconies;
+ if(state.planCirculation?.root)state.planCirculation.root.visible=
+  state.mode==='walk'||!state.sectionEnabled||state.floor==='all'||state.floor==='ground';
  if(state.windows)state.windows.updateVisibility({
   floor:state.floor,mode:state.mode,sectionEnabled:state.sectionEnabled
  });
@@ -284,8 +287,8 @@ function refreshVisibility(){
   showSurroundings:state.showSurroundings,inside:isResidenceRecord
  });
  if(state.siteContext){
-  state.siteContext.root.visible=state.showSurroundings &&
-    (state.floor==='all'||state.floor==='ground'||!state.sectionEnabled);
+  state.siteContext.root.visible=(state.showSurroundings||state.mode==='walk') &&
+    (state.mode==='walk'||state.floor==='all'||state.floor==='ground'||!state.sectionEnabled);
  }
  grid.visible=!state.showSurroundings;
  // Align the exterior reference ground to the compound, not 5m beneath it.
@@ -447,7 +450,9 @@ function setupEnhancements(){
  $('doorSystemCount').textContent=details+' interactive doorways · '+state.doorSystem.sourceCount+' IFC parts · '+state.doorApertureAudit.obstructedCount+' door obstructions · '+state.doorApertureAudit.windowObstructedCount+' window occlusions checked';
  console.info('[AutoMinds Spaces Doors] source records',state.doorSystem.sourceCount,'interactive doorways',details);
  state.siteContext=createCuratedSiteContext(scene,state.origin);
+ state.siteWalk=createSiteWalkSupport(state.siteContext,state.origin);
  state.gatePreview=state.siteContext.gate;
+ console.info('[AutoMinds outdoor first-person walk]',state.siteWalk.summary);
  state.sourceContextAudit=auditSourceContext(state.meshes,isResidenceRecord);
  console.info('[AutoMinds Site Audit] residence/source elements',state.sourceContextAudit.insideResidence,
   'suppressed unrelated source elements',state.sourceContextAudit.suppressedSurroundings,
@@ -789,12 +794,14 @@ function sampleGround(x,z,targetY,maxRise=.9,maxFall=1.25){
  downcaster.far=maxRise+maxFall;
  const candidates=nearby(state.floors,x,targetY,z,.15)
   .filter(isWalkableSourceSurface).map(r=>r.mesh);
+ const outdoor=()=>state.mode==='walk'?
+  state.siteWalk?.sample(x,z,targetY,maxRise,maxFall)??null:null;
  const stairDeck=state.stairSafety?.transitionDeck;
  const stairBox=state.stairSafety?.walkSurfaceBox;
  if(state.stairSafety?.root?.visible&&stairDeck?.visible&&stairBox&&
    x>=stairBox.min.x-.02&&x<=stairBox.max.x+.02&&
    z>=stairBox.min.z-.02&&z<=stairBox.max.z+.02)candidates.push(stairDeck);
- if(!candidates.length)return null;
+ if(!candidates.length)return outdoor();
  const hits=downcaster.intersectObjects(candidates,false);
  for(const h of hits){
   const y=h.point.y;
@@ -809,7 +816,7 @@ function sampleGround(x,z,targetY,maxRise=.9,maxFall=1.25){
  }
  const seam=sourceSlabSeamSupport(state.floors,x,z,targetY,maxRise,maxFall,isRecordVisible);
  if(seam)return {x,z,y:seam.y,object:seam.record.mesh,sourceSlabSeam:true};
- return null;
+ return outdoor();
 }
 function findSpawn(level=0,x=null,z=null,nearFurniture=false){
  const bounds=bestArchitecturalBounds('all');
@@ -876,6 +883,8 @@ function enterWalk(position=null,lookTarget=null){
  setWalkCamera(spawn);
  if(lookTarget)camera.lookAt(new THREE.Vector3(lookTarget.x,spawn.y+eyeHeight-.12,lookTarget.z));
  state.mode='walk';state.walkEnabled=true;orbit.enabled=false;
+ state.showSurroundings=true;
+ $('surroundingsToggle').checked=true;
  refreshVisibility(); // restore entire roof and source ceiling for full-height first person
  $('walkBtn').textContent='✕ EXIT WALK';
  if(!matchMedia('(pointer:coarse)').matches)fps.lock();
@@ -883,6 +892,20 @@ function enterWalk(position=null,lookTarget=null){
  $('locationText').textContent='INTERACTIVE WALKTHROUGH';
  updateDoorHint();
  toast('Walk with WASD · look around with your mouse · Esc releases the pointer.');
+}
+function enterOutdoorWalk(){
+ if(!state.initialReady||!state.siteWalk){toast('Compound geometry is still loading.');return null;}
+ const spawn=state.siteWalk.outdoorSpawn();
+ if(!spawn){toast('No verified open outdoor standing area was found.');return null;}
+ const house=state.siteContext.house;
+ enterWalk(spawn,new THREE.Vector3(
+  (house.minX+house.maxX)/2-state.origin.x,2.15,
+  (house.minZ+house.maxZ)/2-state.origin.z));
+ state.walkZone='compound';
+ $('levelText').textContent='COMPOUND';
+ $('locationText').textContent='FIRST PERSON · WALK OUTSIDE';
+ toast('Outdoor walk active · WASD around the house · use the entrance door to walk inside.');
+ return spawn;
 }
 function exitWalk(){
  if(state.mode!=='walk')return;
@@ -917,6 +940,14 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
   new THREE.Vector3(nextX,footY+1,nextZ),footY,1.1);
  const narrowOpenDoorRadius=passageDoor?.current>.85?
    Math.min(visitorRadius,Math.max(.16,passageDoor.width/2-.10)):visitorRadius;
+ if(state.mode==='walk'&&state.siteWalk?.blocksTraversal(oldX,oldZ,nextX,nextZ,footY)){
+  state.lastCollisionBlocker={kind:'S1 site boundary or fixed compound obstacle'};return true;
+ }
+ if(state.planCirculation?.kitchenDoor?.blocksTraversal(
+  new THREE.Vector3(oldX,footY+1,oldZ),
+  new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius)){
+  state.lastCollisionBlocker={kind:'closed kitchen/dining door'};return true;
+ }
  if(state.doorSystem?.blocksTraversal(
   new THREE.Vector3(oldX,footY+1,oldZ),
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius))return true;
@@ -1037,17 +1068,38 @@ function advanceWalk(dt){
  camera.position.y=THREE.MathUtils.lerp(camera.position.y,targetY,Math.min(1,dt*15));
  if(Math.hypot(camera.position.x-beforeX,camera.position.z-beforeZ)>.01){
   const alt=state.footY;
-  $('levelText').textContent=alt<1.5?'GROUND FLOOR':alt<4.75?'FIRST FLOOR':'ROOF LEVEL';
+  $('levelText').textContent=state.walkZone==='compound'?'COMPOUND':
+   alt<1.5?'GROUND FLOOR':alt<4.75?'FIRST FLOOR':'ROOF LEVEL';
+  $('locationText').textContent=state.walkZone==='compound'?
+    'FIRST PERSON · OUTDOOR WALK':'FIRST PERSON · ACTUAL GEOMETRY';
  }
 }
+function nearestInteractiveDoor(){
+ const kitchen=state.planCirculation?.kitchenDoor;
+ const planDoor=kitchen?.near(camera.position,state.footY,1.75)?kitchen:null;
+ const sourceDoor=state.doorSystem?.nearest(camera.position,state.footY,2.0);
+ if(planDoor && (!sourceDoor||planDoor.distanceTo(camera.position)<
+   Math.hypot(camera.position.x-sourceDoor.position.x,
+              camera.position.z-sourceDoor.position.z)))return {kind:'kitchen',door:planDoor};
+ return sourceDoor?{kind:'ifc',door:sourceDoor}:
+   planDoor?{kind:'kitchen',door:planDoor}:null;
+}
 function toggleNearestDoor(){
- if(!state.doorSystem){toast('Door geometry is still loading.');return;}
- const targeted=state.doorSystem.raycastDoorFromCamera(camera,2.8);
- const nearbyDoor=state.doorSystem.nearest(camera.position,state.footY,2.0);
- const chosen=(targeted&&Math.abs(state.footY-targeted.groundY)<1.24)?targeted:nearbyDoor;
- const result=state.doorSystem.toggle(chosen,camera.position);
- if(!result.ok){toast(result.reason);return;}
- toast((result.open?'Opening':'Closing')+' '+(result.door.style==='slide'?'sliding':'hinged')+' door '+result.door.id);
+ const candidate=nearestInteractiveDoor();
+ if(!candidate){toast('Move closer to an actual door.');return;}
+ if(candidate.kind==='kitchen'){
+  const result=candidate.door.toggle(camera.position,state.footY);
+  if(!result.ok){toast(result.reason);return;}
+  toast((result.open?'Opening':'Closing')+' Kitchen–Dining door');
+ }else{
+  const targeted=state.doorSystem.raycastDoorFromCamera(camera,2.8);
+  const chosen=(targeted&&Math.abs(state.footY-targeted.groundY)<1.24)?
+   targeted:candidate.door;
+  const result=state.doorSystem.toggle(chosen,camera.position);
+  if(!result.ok){toast(result.reason);return;}
+  toast((result.open?'Opening':'Closing')+' '+
+   (result.door.style==='slide'?'sliding':'hinged')+' door '+result.door.id);
+ }
  updateDoorHint();
 }
 function updateDoorHint(){
@@ -1055,11 +1107,14 @@ function updateDoorHint(){
  if(state.mode!=='walk'||!state.doorSystem){
   container.classList.add('hidden');return;
  }
- const door=state.doorSystem.nearest(camera.position,state.footY,1.9);
- if(!door){container.classList.add('hidden');return;}
- const open=door.target>.5;
+ const candidate=nearestInteractiveDoor();
+ if(!candidate){container.classList.add('hidden');return;}
+ const door=candidate.door,open=door.target>.5;
  container.classList.remove('hidden');
- $('doorHint').textContent='Door '+door.id+' · '+(open?'Open':'Closed')+' · Press E to '+(open?'close':'open')+' · '+(door.style==='slide'?'sliding':door.style==='double'?'double':'hinged');
+ $('doorHint').textContent=candidate.kind==='kitchen'?
+  'Kitchen–Dining door · '+(open?'Open':'Closed')+' · Press E to '+(open?'close':'open')+' · hinged':
+  'Door '+door.id+' · '+(open?'Open':'Closed')+' · Press E to '+
+   (open?'close':'open')+' · '+(door.style==='slide'?'sliding':door.style==='double'?'double':'hinged');
  $('doorActionBtn').textContent=open?'CLOSE DOOR':'OPEN DOOR';
 }
 
@@ -1134,7 +1189,10 @@ function checkPlanCirculation(){
  if(state.mode==='walk')exitWalk();
  const prev={floor:state.floor,section:state.sectionEnabled};
  const saved=state.doorSystem.doors.map(d=>({d,current:d.current,target:d.target}));
+ const kitchen=state.planCirculation?.kitchenDoor;
+ const kitchenWasOpen=kitchen?.target>.5;
  try{
+  kitchen?.setOpenForQA(true);
   state.floor='all';state.sectionEnabled=false;refreshVisibility();
   for(const {d} of saved){d.current=1;d.target=1;}
   state.doorSystem.update(.01);
@@ -1154,6 +1212,7 @@ function checkPlanCirculation(){
  }finally{
   for(const {d,current,target} of saved){d.current=current;d.target=target;}
   state.doorSystem.update(.01);
+  kitchen?.setOpenForQA(kitchenWasOpen);
   state.floor=prev.floor;state.sectionEnabled=prev.section;refreshVisibility();
  }
 }
@@ -1329,9 +1388,16 @@ $('doorRevealToggle').addEventListener('change',e=>{
 $('closeDoorPanel').addEventListener('click',()=>{$('doorPanel').classList.add('hidden');});
 $('closeBedroomPanel').addEventListener('click',()=>{$('bedroomPanel').classList.add('hidden');state.roomListVisible=false;});
 $('walkBtn').addEventListener('click',()=>state.mode==='walk'?exitWalk():enterWalk());
+$('walkOutsideBtn').addEventListener('click',enterOutdoorWalk);
 $('doorActionBtn').addEventListener('click',toggleNearestDoor);
 renderer.domElement.addEventListener('click',()=>{
  if(state.mode!=='walk'||!fps.isLocked||!state.doorSystem)return;
+ const kitchen=state.planCirculation?.kitchenDoor;
+ if(kitchen?.near(camera.position,state.footY,1.75)){
+  const direction=new THREE.Vector3();camera.getWorldDirection(direction);
+  const ray=new THREE.Raycaster(camera.position,direction,0,2.65);
+  if(ray.intersectObject(kitchen.root,true).length){toggleNearestDoor();return;}
+ }
  const target=state.doorSystem.raycastDoorFromCamera(camera,2.4);
  if(target&&Math.abs(state.footY-target.groundY)<1.24)toggleNearestDoor();
 });
@@ -1419,6 +1485,7 @@ renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===lookPo
 function animate(){
  const dt=Math.min(clock.getDelta(),.06);
  if(state.doorSystem)state.doorSystem.update(dt);
+ state.planCirculation?.kitchenDoor?.update(dt);
  if(state.mode==='walk')advanceWalk(dt);
  else if(orbit.enabled)orbit.update();
  if(state.mapOpen){lastMapUpdate+=dt;if(lastMapUpdate>.12){mapDraw();lastMapUpdate=0;}}
@@ -1489,6 +1556,8 @@ if(isLocalQA){
     stairSafety:state.stairSafety?.summary??null,
     balconies:state.balconies?.summary??null,
     planCirculation:state.planCirculation?.summary??null,
+    kitchenDoor:state.planCirculation?.kitchenDoor?.status()??null,
+    outdoorWalk:state.siteWalk?.summary??null,
     lighting:state.lightingSystem?.status()??null,
     circulation:state.lastRouteReport?{passed:state.lastRouteReport.passed,total:state.lastRouteReport.total}:null,
     stairSafetyShown:state.stairSafety?.root?.visible??false,
@@ -1532,6 +1601,43 @@ if(isLocalQA){
    return {id,level:door.level,look:look.toArray(),eye:eye.toArray(),visible:door.visual.visible};
   },
   checkPlanCirculation:()=>checkPlanCirculation(),
+  checkKitchenDoor:()=>{
+   const d=state.planCirculation?.kitchenDoor;if(!d)return {ready:false};
+   const initial=d.target>.5,at=d.root.position;
+   const from=new THREE.Vector3(at.x-.42,1.0,at.z);
+   const to=new THREE.Vector3(at.x+.42,1.0,at.z);
+   d.setOpenForQA(false);
+   const closedBlocks=d.blocksTraversal(from,to,0,.32);
+   d.setOpenForQA(true);
+   const openAllows=!d.blocksTraversal(from,to,0,.32);
+   const leafRotation=d.root.getObjectByName('HINGED_KITCHEN_LEAF_PIVOT')?.rotation.y;
+   d.setOpenForQA(initial);
+   return {ready:true,closedBlocks,openAllows,leafRotation,
+    functional:true,visualDoorNotStatic:true};
+  },
+  checkOutdoorWalking:()=>{
+   const walk=state.siteWalk,site=state.siteContext;
+   if(!walk||!site)return {ready:false};
+   const spawn=walk.outdoorSpawn();
+   const x=spawn?.x,z=spawn?.z;
+   const outdoorGround=spawn?walk.sample(x,z,0,.40,.7):null;
+   const previousMode=state.mode;
+   state.mode='walk';
+   let actualFirstPersonGround=null;
+   try{actualFirstPersonGround=spawn?sampleGround(x,z,0,.40,.7):null;}
+   finally{state.mode=previousMode;}
+   const withinHouse=walk.sample(114.76-state.origin.x,-.05-state.origin.z,0,.4,.7);
+   const outsidePlot=walk.sample(site.bounds.max.x+5,site.bounds.max.z+5,0,.4,.7);
+   const across=spawn?new THREE.Vector3(x,spawn.y,z+.38):null;
+   return {ready:true,hasSpawn:Boolean(spawn),groundHeight:outdoorGround?.y??null,
+    firstPersonGroundMatchesCompound:Boolean(actualFirstPersonGround&&
+      Math.abs(actualFirstPersonGround.y-outdoorGround.y)<.01),
+    interiorNotFabricated:withinHouse===null,
+    boundaryBlocks:Boolean(walk.blocksTraversal(x,z,site.bounds.max.x+3,site.bounds.max.z+3,-.255)),
+    outsideGroundRejected:outsidePlot===null,
+    stepAroundCompound:across?Boolean(walk.sample(across.x,across.z,0,.4,.7)):false,
+    spawn:spawn?.toArray()};
+  },
   balconySummary:()=>state.balconies?.summary??null,
   diagnoseS1Openings:()=>diagnoseS1Openings(),
   diagnoseRouteGridPassages:()=>diagnoseRouteGridPassages(),

@@ -29,6 +29,7 @@
 !/src/phase2/lighting-system.js
 !/src/phase2/circulation-routes.js
 !/src/phase2/plan-circulation.js
+!/src/phase2/site-walk-support.js
 !/tests/verify-stair-safety.mjs
 !/tests/verify-source-openings.mjs
 !/tests/verify-facade-and-furniture.mjs
@@ -38,6 +39,7 @@
 !/tests/verify-phase7-architecture.mjs
 !/tests/verify-source-portal-navigation.mjs
 !/tests/verify-plan-circulation.mjs
+!/tests/verify-kitchen-outdoor.mjs
 !/tests/qa-production-browser.mjs
 !/tests/
 !/tests/verify-site-context.mjs

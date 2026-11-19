@@ -78,6 +78,16 @@ try{
  const summary=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.summary())"));
  const scene=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
  const balcony=summary.balconies;
+ const kitchen=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkKitchenDoor())"));
+ const outside=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkOutdoorWalking())"));
+ if(!kitchen.ready||!kitchen.functional||!kitchen.visualDoorNotStatic||
+    !kitchen.closedBlocks||!kitchen.openAllows||kitchen.leafRotation<1.25)
+   throw Error('Kitchen/Dining door must swing visibly and be collidable when closed: '+JSON.stringify(kitchen));
+ if(!outside.ready||!outside.hasSpawn||outside.groundHeight===null||
+    !outside.firstPersonGroundMatchesCompound||!outside.interiorNotFabricated||
+    !outside.boundaryBlocks||!outside.outsideGroundRejected||!outside.stepAroundCompound)
+   throw Error('Compound first-person walk, house cut-out or plot boundary invalid: '+JSON.stringify(outside));
+ console.log('KITCHEN_DOOR_OUTDOOR_WALK',JSON.stringify({kitchen, outside}));
  console.log('PHASE7_SOURCE_OPENINGS',JSON.stringify(summary.planCirculation));
  if(summary.planCirculation?.sourceConfirmedOpenings!==3||
    summary.openingRegistry?.planConfirmedCirculationOpenings!==3)

@@ -48,6 +48,8 @@ jobs:
         run: npm run test:plan-circulation
       - name: Verify continuous source-backed doorway portal navigation
         run: npm run test:portal
+      - name: Verify functional kitchen leaf and compound first-person walking
+        run: npm run test:kitchen-outdoor
       - name: Build public GitHub Pages site
         run: npm run build
         env:

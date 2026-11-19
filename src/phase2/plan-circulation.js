@@ -30,8 +30,80 @@ function planarBounds(b,origin){
  return {minX:b.min.x+origin.x,maxX:b.max.x+origin.x,
   minZ:b.min.z+origin.z,maxZ:b.max.z+origin.z};
 }
+/**
+ * The 0.93m Kitchen / Dining door is a drawing-backed S1 opening rather than
+ * one of the 29 source-model door records. It needs an independently animated
+ * leaf and actual CLOSED/OPEN collision behavior, not a permanently offset
+ * brown slab. It never changes the source IFC vertex buffers.
+ */
+export function createFunctionalKitchenDoor(plan,origin={x:0,z:0}){
+ const root=new THREE.Group();
+ root.name='S1_FUNCTIONAL_KITCHEN_DINING_DOOR';
+ root.position.set(plan.center[0]-origin.x,0,plan.center[1]-origin.z);
+ const h=plan.height,w=plan.width,post=.065;
+ const trim=(sx,sy,sz,x,y,z,name)=>{
+  const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),edgeMat);
+  m.position.set(x,y,z);m.name=name;root.add(m);return m;
+ };
+ trim(.10,h+.05,post,0,(h+.05)/2,-w/2,'KITCHEN_DOOR_FRAME_LEFT');
+ trim(.10,h+.05,post,0,(h+.05)/2,w/2,'KITCHEN_DOOR_FRAME_RIGHT');
+ trim(.10,.09,w+.08,0,h+.025,0,'KITCHEN_DOOR_HEADER');
+ const pivot=new THREE.Group();
+ pivot.name='HINGED_KITCHEN_LEAF_PIVOT';
+ pivot.position.set(0,0,-w/2+.055);
+ root.add(pivot);
+ const leaf=new THREE.Mesh(new THREE.BoxGeometry(.052,h-.13,w-.11),oak);
+ leaf.position.set(0,(h-.13)/2,(w-.11)/2);
+ leaf.name='S1_KITCHEN_DINING_PROPER_HINGED_WOOD_DOOR';
+ pivot.add(leaf);
+ const handle=new THREE.Mesh(new THREE.SphereGeometry(.033,10,8),
+  new THREE.MeshStandardMaterial({color:0xd7c29d,metalness:.55,roughness:.36}));
+ handle.position.set(.055,1.02,w-.20);
+ handle.name='KITCHEN_DOOR_HANDLE';
+ pivot.add(handle);
+ let current=0,target=0;
+ function update(dt=.016){
+  current=THREE.MathUtils.damp(current,target,8,Math.min(.10,Math.max(0,dt)));
+  if(Math.abs(current-target)<.002)current=target;
+  // Open into the dining side, away from the kitchen cabinetry.
+  pivot.rotation.y=current*Math.PI*.49;
+  root.updateMatrixWorld(true);
+ }
+ function distanceTo(viewer){
+  const x=viewer.x-root.position.x,z=viewer.z-root.position.z;
+  return Math.hypot(x,Math.max(0,Math.abs(z)-w/2));
+ }
+ function near(viewer,footY,max=1.75){
+  return Math.abs(footY)<1.05&&distanceTo(viewer)<max;
+ }
+ function toggle(viewer,footY){
+  if(!near(viewer,footY))return {ok:false,reason:'Move closer to the kitchen door'};
+  const dx=viewer.x-root.position.x,dz=viewer.z-root.position.z;
+  if(target>.5&&Math.abs(dx)<.48&&Math.abs(dz)<w/2+.32)
+   return {ok:false,reason:'Move away from the kitchen doorway before closing'};
+  target=target>.5?0:1;
+  return {ok:true,open:target>.5,style:'hinge',name:'Kitchen–Dining door'};
+ }
+ function blocksTraversal(from,to,footY,radius=.32){
+  if(current>=.85||Math.abs(footY)>1.05)return false;
+  const ax=from.x-root.position.x,bx=to.x-root.position.x;
+  const az=from.z-root.position.z,bz=to.z-root.position.z;
+  if(Math.min(Math.abs(az),Math.abs(bz))>w/2+radius*.35)return false;
+  return (Math.abs(bx)<.052+radius&&Math.abs(bx)<=Math.abs(ax)+.00001) ||
+   (ax*bx<=0&&Math.abs(az)<w/2+radius*.1&&Math.abs(bz)<w/2+radius*.1);
+ }
+ function status(){return {open:target>.5,current,target,
+  centre:[plan.center[0],plan.center[1]],width:w,height:h,
+  functional:true,source:'S1 Kitchen / Dining door-swing'};}
+ update(.01);
+ return {root,update,near,toggle,blocksTraversal,status,distanceTo,
+  get current(){return current;},get target(){return target;},
+  setOpenForQA(v){current=target=v?1:0;update(0);}};
+}
+
 export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},inside=()=>true){
  const supported=[];
+ let kitchenDoor=null;
  const root=new THREE.Group();root.name='S1_CONFIRMED_OPEN_ROOM_CIRCULATION';scene.add(root);
  for(const plan of S1_GROUND_OPENINGS){
   const walls=records.filter(r=>{
@@ -51,26 +123,16 @@ export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},
    drawing:plan.drawing,sourceWallGuids:sourceGuids,sourceWallMeshes:new Set(walls.map(w=>w.mesh)),
    autoOpen:true
   });
-  // Draw clean doorway edges for the Kitchen-to-Dining door, not a painted
-  // rectangle on a solid wall. The leaf is shown open as a viewer concept.
+  // Build the real swinging display door at the source-backed plan opening,
+  // with live keyboard interaction and solid closed-door collision.
   if(plan.id==='kitchen-dining-door'){
-   const frame=new THREE.Group();frame.name='S1_KITCHEN_DINING_OPEN_DOOR';
-   frame.position.set(localX,0,localZ);
-   root.add(frame);
-   for(const z of [-plan.width/2,plan.width/2]){
-    const post=new THREE.Mesh(new THREE.BoxGeometry(.065,plan.height,.065),edgeMat);
-    post.position.set(0,plan.height/2,z);post.name='DOORWAY_SIDE_TRIM';frame.add(post);
-   }
-   const lintel=new THREE.Mesh(new THREE.BoxGeometry(.075,.065,plan.width+.1),edgeMat);
-   lintel.position.set(0,plan.height,0);lintel.name='DOORWAY_HEAD_TRIM';frame.add(lintel);
-   const leaf=new THREE.Mesh(new THREE.BoxGeometry(.044,plan.height-.15,plan.width-.11),oak);
-   leaf.position.set(-.51,(plan.height-.15)/2,-plan.width/2+.055);
-   leaf.name='KITCHEN_DINING_OPEN_LEAF_PLAN_VISUAL';frame.add(leaf);
-   frame.userData={visualConceptOnly:true,notAnOriginalIfcDoor:true};
+   kitchenDoor=createFunctionalKitchenDoor(plan,origin);
+   root.add(kitchenDoor.root);
   }
  }
- return {root,apertures:supported.filter(r=>r.verified),
+ return {root,kitchenDoor,apertures:supported.filter(r=>r.verified),
   summary:{sourceConfirmedOpenings:supported.filter(x=>x.verified).length,
+   kitchenDoorFunctional:Boolean(kitchenDoor),
    expected:S1_GROUND_OPENINGS.length,
    connections:supported.map(({sourceWallMeshes,...rest})=>rest),
    noStructuralWallMeshModified:true}};
