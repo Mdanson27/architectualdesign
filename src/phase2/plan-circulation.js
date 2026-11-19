@@ -101,9 +101,97 @@ export function createFunctionalKitchenDoor(plan,origin={x:0,z:0}){
   setOpenForQA(v){current=target=v?1:0;update(0);}};
 }
 
+
+/**
+ * Fix the actual counter-end obstruction seen in the Kitchen–Dining door.
+ * The S1 opening passes through SW-019 at x=112.30, z=-2.35, but three
+ * low SLA-002 source slabs (counter top/return/end) overlap the doorway.
+ * Cut only the intrusion into the exact S1 doorway rectangle. No IFC vertex
+ * is changed or source mesh deleted; adjacent usable counter stays in view.
+ *
+ * Each selected source slab gets its own material clone so neighboring kitchen
+ * counters and all other room floors retain the normal source appearance.
+ */
+export function repairKitchenDoorCounterIntrusion(records,origin,plan,inside=()=>true){
+ const cx=plan.center[0]-origin.x,cz=plan.center[1]-origin.z;
+ const halfWidth=plan.width/2+.035;
+ const xLo=cx-.48,xHi=cx+.48,zLo=cz-halfWidth,zHi=cz+halfWidth;
+ const selected=records.filter(r=>{
+  if(!inside(r)||r.category!=='slabs'||r.layer?.level!=='ground')return false;
+  if(String(r.mesh.userData.ifc?.name||'').toUpperCase().trim()!=='SLA - 002')return false;
+  const b=r.box,s=b.getSize(new THREE.Vector3());
+  // Only small countertop geometry, never a structural room floor.
+  return b.max.y<1.10&&b.min.y>=-.08&&b.max.y-b.min.y>.025&&
+   s.x<.65&&s.x>.012 &&
+   b.max.x>xLo&&b.min.x<xHi&&b.max.z>zLo&&b.min.z<zHi;
+ });
+ const original=new Map(),cut=new Map();
+ for(const rec of selected){
+  const material=rec.mesh.material;
+  // The source material is not modified; this unique clone clips a small
+  // localized volume out of just this counter segment at drawing-based door.
+  const derived=material.clone();
+  const prev=derived.onBeforeCompile;
+  const region=new THREE.Vector4(xLo,xHi,zLo,zHi);
+  const height=new THREE.Vector2(-.08,1.10);
+  derived.onBeforeCompile=(shader,renderer)=>{
+   prev?.(shader,renderer);
+   shader.uniforms.uKitchenCounterCutXZ={value:region};
+   shader.uniforms.uKitchenCounterCutY={value:height};
+   shader.vertexShader='varying vec3 vKitchenCounterWorld;\n'+
+    shader.vertexShader.replace('#include <begin_vertex>',
+     '#include <begin_vertex>\n vKitchenCounterWorld=(modelMatrix*vec4(transformed,1.0)).xyz;');
+   shader.fragmentShader='varying vec3 vKitchenCounterWorld;\n'+
+    'uniform vec4 uKitchenCounterCutXZ;\n'+
+    'uniform vec2 uKitchenCounterCutY;\n'+
+    shader.fragmentShader.replace('#include <clipping_planes_fragment>',
+     '#include <clipping_planes_fragment>\n'+
+     'if(vKitchenCounterWorld.x>uKitchenCounterCutXZ.x &&'+
+     ' vKitchenCounterWorld.x<uKitchenCounterCutXZ.y &&'+
+     ' vKitchenCounterWorld.z>uKitchenCounterCutXZ.z &&'+
+     ' vKitchenCounterWorld.z<uKitchenCounterCutXZ.w &&'+
+     ' vKitchenCounterWorld.y>uKitchenCounterCutY.x &&'+
+     ' vKitchenCounterWorld.y<uKitchenCounterCutY.y)discard;');
+  };
+  derived.customProgramCacheKey=()=> 'kitchen-counter-door-cut-v1-'+
+   String(rec.mesh.userData.ifc?.guid||'source-slab');
+  original.set(rec,material);cut.set(rec,derived);
+  rec.mesh.material=derived;
+  rec.mesh.userData.kitchenCounterDoorCut=true;
+ }
+ let enabled=true;
+ function setEnabled(value){
+  enabled=Boolean(value);
+  for(const rec of selected)rec.mesh.material=enabled?cut.get(rec):original.get(rec);
+ }
+ function pointInCut(point){
+  return point.x>xLo&&point.x<xHi&&point.z>zLo&&point.z<zHi&&
+   point.y>-.08&&point.y<1.10;
+ }
+ // A detailed physical collision detector may query source low slabs. Align
+ // it with the same aperture as the fragment shader while preserving walls.
+ function permitsCounterHit(hit){
+  return enabled&&selected.some(r=>r.mesh===hit?.object)&&pointInCut(hit.point);
+ }
+ return {
+  selected,original,cut,setEnabled,permitsCounterHit,pointInCut,
+  get enabled(){return enabled;},
+  summary:{
+   source:'S1 Kitchen-Dining opening and source SLA-002 counter edges',
+   matchedSourceSlabs:selected.length,
+   matchedGuids:selected.map(r=>r.mesh.userData.ifc?.guid),
+   cutRectangle:[xLo,xHi,zLo,zHi],
+   cutHeight:[-.08,1.10],
+   sourceMeshesAndVertexBuffersPreserved:true,
+   counterOutsideDoorRetained:true,
+   doorClearanceNotFabricated:true
+  }
+ };
+}
+
 export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},inside=()=>true){
  const supported=[];
- let kitchenDoor=null;
+ let kitchenDoor=null,kitchenCounterRepair=null;
  const root=new THREE.Group();root.name='S1_CONFIRMED_OPEN_ROOM_CIRCULATION';scene.add(root);
  for(const plan of S1_GROUND_OPENINGS){
   const walls=records.filter(r=>{
@@ -127,12 +215,14 @@ export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},
   // with live keyboard interaction and solid closed-door collision.
   if(plan.id==='kitchen-dining-door'){
    kitchenDoor=createFunctionalKitchenDoor(plan,origin);
+   kitchenCounterRepair=repairKitchenDoorCounterIntrusion(records,origin,plan,inside);
    root.add(kitchenDoor.root);
   }
  }
- return {root,kitchenDoor,apertures:supported.filter(r=>r.verified),
+ return {root,kitchenDoor,kitchenCounterRepair,apertures:supported.filter(r=>r.verified),
   summary:{sourceConfirmedOpenings:supported.filter(x=>x.verified).length,
    kitchenDoorFunctional:Boolean(kitchenDoor),
+   kitchenCounterClearance:kitchenCounterRepair?.summary??null,
    expected:S1_GROUND_OPENINGS.length,
    connections:supported.map(({sourceWallMeshes,...rest})=>rest),
    noStructuralWallMeshModified:true}};

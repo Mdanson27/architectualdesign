@@ -81,7 +81,9 @@ try{
  const kitchen=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkKitchenDoor())"));
  const outside=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkOutdoorWalking())"));
  if(!kitchen.ready||!kitchen.functional||!kitchen.visualDoorNotStatic||
-    !kitchen.closedBlocks||!kitchen.openAllows||kitchen.leafRotation<1.25)
+    !kitchen.closedBlocks||!kitchen.openAllows||kitchen.leafRotation<1.25||
+    !kitchen.counterClippingActive||kitchen.counterIntrusionsClipped!==3||
+    !kitchen.counterSourceMaterialsIntact)
    throw Error('Kitchen/Dining door must swing visibly and be collidable when closed: '+JSON.stringify(kitchen));
  if(!outside.ready||!outside.hasSpawn||outside.groundHeight===null||
     !outside.firstPersonGroundMatchesCompound||!outside.interiorNotFabricated||

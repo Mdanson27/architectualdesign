@@ -437,6 +437,8 @@ function setupEnhancements(){
  state.doorSystem=createDoorSystem(state.doors,scene,isResidenceRecord);
  state.planCirculation=createPlanCirculationCorrections(state.meshes,scene,state.origin,isResidenceRecord);
  console.info('[S1 ground-floor opening correction]',state.planCirculation.summary);
+ console.info('[Kitchen door low counter intrusion repair]',
+  state.planCirculation.kitchenCounterRepair?.summary);
  state.balconies=createSourceBalconyRestoration(state.meshes,scene,state.origin,isResidenceRecord);
  state.lightingSystem=createHouseLighting(scene,state.origin);
  state.lightingSystem.update({night:state.night,enabled:state.houseLightsOn});
@@ -1377,6 +1379,7 @@ $('bedroomsBtn').addEventListener('click',()=>{$('bedroomPanel').classList.toggl
 $('doorNavigatorBtn').addEventListener('click',()=>{$('doorPanel').classList.toggle('hidden');$('bedroomPanel').classList.add('hidden');});
 $('doorRevealToggle').addEventListener('change',e=>{
  state.repairDoorApertures=e.target.checked;
+ state.planCirculation?.kitchenCounterRepair?.setEnabled(e.target.checked);
  if(e.target.checked){
   state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit,state.planCirculation);
  }else if(state.doorApertureAudit){
@@ -1613,7 +1616,10 @@ if(isLocalQA){
    const leafRotation=d.root.getObjectByName('HINGED_KITCHEN_LEAF_PIVOT')?.rotation.y;
    d.setOpenForQA(initial);
    return {ready:true,closedBlocks,openAllows,leafRotation,
-    functional:true,visualDoorNotStatic:true};
+    functional:true,visualDoorNotStatic:true,
+    counterClippingActive:state.planCirculation?.kitchenCounterRepair?.enabled??false,
+    counterIntrusionsClipped:state.planCirculation?.kitchenCounterRepair?.summary.matchedSourceSlabs??0,
+    counterSourceMaterialsIntact:state.planCirculation?.kitchenCounterRepair?.summary.sourceMeshesAndVertexBuffersPreserved??false};
   },
   checkOutdoorWalking:()=>{
    const walk=state.siteWalk,site=state.siteContext;

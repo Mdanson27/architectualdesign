@@ -50,6 +50,8 @@ jobs:
         run: npm run test:portal
       - name: Verify functional kitchen leaf and compound first-person walking
         run: npm run test:kitchen-outdoor
+      - name: Verify clean Kitchen-Dining doorway below the counter
+        run: npm run test:kitchen-clearance
       - name: Build public GitHub Pages site
         run: npm run build
         env:

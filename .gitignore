@@ -40,6 +40,7 @@
 !/tests/verify-source-portal-navigation.mjs
 !/tests/verify-plan-circulation.mjs
 !/tests/verify-kitchen-outdoor.mjs
+!/tests/verify-kitchen-door-clearance.mjs
 !/tests/qa-production-browser.mjs
 !/tests/
 !/tests/verify-site-context.mjs
