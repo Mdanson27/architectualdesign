@@ -136,29 +136,40 @@ function fitBedToActualDoorways(group,source,doorRecords,wallRecords){
    },0);
    const previous=overlapScore(boundary),starting=group.position.clone();
    let best=null;
-   // Minimise actual wall intersections as well as keeping the doorway clear.
-   for(const dx of [0,-.25,-.5,-.75,.25,.5,.75]){
-    for(const dz of [minShift,-.27,-.35,-.45,-.55,-.70,-.85,-1.0]){
-     if(dz>minShift+.001)continue;
-     group.position.copy(starting).add(new THREE.Vector3(dx,0,dz));
-     group.updateMatrixWorld(true);
-     const after=new THREE.Box3().setFromObject(group);
-     const overlap=overlapScore(after);
-     const clearance=doorCenter.z-after.max.z;
-     if(clearance<1.17||overlap>previous+.012)continue;
-     const score=overlap*15+Math.hypot(dx,dz)*.15;
-     if(!best||score<best.score)best={dx,dz,score,overlap,clearance};
+   // Search progressively smaller realistic single-bed footprints only when the
+   // full-size preview cannot fit the source bedroom safely. Preserve walls.
+   for(const scale of [1,.92,.85,.78,.72]){
+    let fitting=null;
+    group.scale.set(scale,1,scale);
+    for(const dx of [0,-.25,-.5,-.75,.25,.5,.75,1.0,1.25,-1.0]){
+     for(const dz of [minShift,-.27,-.35,-.45,-.55,-.70,-.85,-1.0]){
+      group.position.copy(starting).add(new THREE.Vector3(dx,0,dz));
+      group.updateMatrixWorld(true);
+      const after=new THREE.Box3().setFromObject(group);
+      const overlap=overlapScore(after);
+      const clearance=doorCenter.z-after.max.z;
+      const sideways=after.min.x>doorCenter.x+balconyDoor.box.getSize(new THREE.Vector3()).x/2+.34||
+        after.max.x<doorCenter.x-balconyDoor.box.getSize(new THREE.Vector3()).x/2-.34;
+      if((clearance<1.17&&!sideways)||overlap>previous+.013)continue;
+      const score=overlap*15+Math.hypot(dx,dz)*.15;
+      if(!fitting||score<fitting.score)fitting={dx,dz,scale,score,overlap,clearance,sideways};
+     }
     }
+    if(fitting){best=fitting;break;}
    }
-   group.position.copy(starting);
+   group.position.copy(starting);group.scale.set(1,1,1);
    if(best){
     group.position.add(new THREE.Vector3(best.dx,0,best.dz));
+    group.scale.set(best.scale,1,best.scale);
+    const footprint=group.userData.footprint_m;
+    group.userData.footprint_m=footprint.map(v=>Number((v*best.scale).toFixed(3)));
     group.userData.circulationCorrection={
       ...(group.userData.circulationCorrection||{}),
       sourceBalconyDoorGUID:balconyDoor.mesh.userData.ifc?.guid,
       balconyApproachShiftX:Number(best.dx.toFixed(3)),
       balconyApproachShiftZ:Number(best.dz.toFixed(3)),
       doorwayClearanceMetres:Number(best.clearance.toFixed(3)),
+      reducedBedScale:best.scale,
       wallOverlapBeforeSqM:Number(previous.toFixed(3)),
       wallOverlapAfterSqM:Number(best.overlap.toFixed(3)),
       originalIFCUnmodified:true
