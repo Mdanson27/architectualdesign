@@ -110,7 +110,9 @@ try{
    console.log('PHASE7_CIRCULATION_ROUTES',JSON.stringify({
     passed:circulation.passed,total:circulation.total,
     routes:circulation.routes?.map(x=>({id:x.id,ok:x.ok,reason:x.reason,
-      visited:x.visited,closestDistanceMetres:x.closestDistanceMetres,
+      visited:x.visited,blockedEdges:x.blockedEdges,levelEdges:x.levelEdges,
+      nearestWalkable:x.closestToDestination,
+      closestDistanceMetres:x.closestDistanceMetres,
       pathLengthMetres:x.distanceMetres}))
    }));
  }
