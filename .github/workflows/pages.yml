@@ -47,6 +47,8 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           VITE_PUBLIC_PREVIEW: 'true'
+      - name: Verify source-supported balcony floor seams
+        run: npm run test:thresholds
       - name: Real-browser architectural walkthrough QA
         timeout-minutes: 7
         run: |

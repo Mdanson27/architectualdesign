@@ -22,9 +22,11 @@
 !/src/phase2/window-glazing.js
 !/src/phase2/stair-safety.js
 !/src/phase2/facade-infills.js
+!/src/phase2/threshold-support.js
 !/tests/verify-stair-safety.mjs
 !/tests/verify-source-openings.mjs
 !/tests/verify-facade-and-furniture.mjs
+!/tests/verify-threshold-support.mjs
 !/tests/qa-production-browser.mjs
 !/tests/
 !/tests/verify-site-context.mjs

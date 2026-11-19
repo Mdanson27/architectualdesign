@@ -14,6 +14,7 @@
     "test:stairs": "node tests/verify-stair-safety.mjs",
     "test:openings": "node tests/verify-source-openings.mjs",
     "test:facade": "node tests/verify-facade-and-furniture.mjs",
+    "test:thresholds": "node tests/verify-threshold-support.mjs",
     "test:browser": "node tests/qa-production-browser.mjs"
   },
   "dependencies": {

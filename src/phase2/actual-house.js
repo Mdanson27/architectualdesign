@@ -8,6 +8,7 @@ import {createCuratedSiteContext,auditSourceContext} from './site-context.js';
 import {createIFCWindowGlazing} from './window-glazing.js';
 import {createSourceStairSafety} from './stair-safety.js';
 import {auditFacadeInfills} from './facade-infills.js';
+import {sourceSlabSeamSupport} from './threshold-support.js';
 import {createDoorSystem} from './functional-doors.js';
 import {revealObstructedDoors} from './door-apertures.js';
 import {createPlanDiningFurniture} from './dining-furnishings.js';
@@ -783,6 +784,8 @@ function sampleGround(x,z,targetY,maxRise=.9,maxFall=1.25){
   }
   return {x:h.point.x,z:h.point.z,y,object:h.object};
  }
+ const seam=sourceSlabSeamSupport(state.floors,x,z,targetY,maxRise,maxFall,isRecordVisible);
+ if(seam)return {x,z,y:seam.y,object:seam.record.mesh,sourceSlabSeam:true};
  return null;
 }
 function findSpawn(level=0,x=null,z=null,nearFurniture=false){
@@ -922,14 +925,20 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
   for(const b of state.decor.collisionBoxes??[]){
    if(footY+1.45<b.min.y||footY+.25>b.max.y)continue;
    if(nextX>b.min.x-visitorRadius && nextX<b.max.x+visitorRadius &&
-      nextZ>b.min.z-visitorRadius && nextZ<b.max.z+visitorRadius)return true;
+      nextZ>b.min.z-visitorRadius && nextZ<b.max.z+visitorRadius){
+      state.lastCollisionBlocker={kind:'resized bedroom furniture',bounds:[b.min.toArray(),b.max.toArray()]};
+      return true;
+    }
   }
  }
  if(state.dining?.root.visible){
   const boxes=state.dining.collisionBoxes;
   if(boxes.some(b=>footY+.9>b.min.y&&footY+.22<b.max.y &&
    nextX>b.min.x-visitorRadius && nextX<b.max.x+visitorRadius &&
-   nextZ>b.min.z-visitorRadius && nextZ<b.max.z+visitorRadius))return true;
+   nextZ>b.min.z-visitorRadius && nextZ<b.max.z+visitorRadius)){
+   state.lastCollisionBlocker={kind:'six-seat dining furniture'};
+   return true;
+  }
  }
  if(!rayMeshes.length)return false;
  const headHeights=[.37,.86,1.35,1.57];
@@ -1269,15 +1278,16 @@ function animate(){
 }
 // Browser-only acceptance diagnostics. Available only on a locally hosted ?qa preview.
 // This is intentionally not installed on public review URLs or normal client sessions.
-function qaDoorWalk(door,side=1,opened=true){
+function qaDoorWalk(door,side=1,opened=true,lateral=0){
  const prev={current:door.current,target:door.target};
  const floorY=door.level==='first'?3.3:0;
  try{
   door.current=opened?1:0;door.target=door.current;
   state.doorSystem.update(.016);
   door.visual.updateWorldMatrix(true,false);
-  const start=door.visual.localToWorld(new THREE.Vector3(0,0,-side*1.08));
-  const finish=door.visual.localToWorld(new THREE.Vector3(0,0,side*1.08));
+  const distanceFromOpening=.56;
+  const start=door.visual.localToWorld(new THREE.Vector3(lateral,0,-side*distanceFromOpening));
+  const finish=door.visual.localToWorld(new THREE.Vector3(lateral,0,side*distanceFromOpening));
   let footY=floorY;
   const startFloor=sampleGround(start.x,start.z,floorY,.75,1.15);
   if(!startFloor)return {ok:false,reason:'start has no source floor',side,opened};
@@ -1366,11 +1376,18 @@ if(isLocalQA){
    return ids.map(id=>{
     const d=state.doorSystem.doors.find(x=>x.id===id);
     if(!d)return {id,error:'Not in IFC door catalogue'};
+    const offsets=[0,.24,-.24,.48,-.48,.72,-.72,1.0,-1.0,1.3,-1.3]
+      .filter(offset=>Math.abs(offset)<=Math.max(0,d.width/2-.28));
+    const testClearRoute=side=>{
+      const attempts=offsets.map(offset=>({...qaDoorWalk(d,side,true,offset),lateral:offset}));
+      const success=attempts.find(x=>x.ok);
+      return success||{...attempts[0],attempts};
+    };
     const record={id,level:d.level,width:d.width,xyz:[d.position.x,d.groundY,d.position.z],
       sourceGuids:d.source.map(r=>r.mesh.userData.ifc?.guid),
       closedFront:qaDoorWalk(d,1,false),
-      openFront:qaDoorWalk(d,1,true)};
-    if(bothSides){record.closedBack=qaDoorWalk(d,-1,false);record.openBack=qaDoorWalk(d,-1,true);}
+      openFront:testClearRoute(1)};
+    if(bothSides){record.closedBack=qaDoorWalk(d,-1,false);record.openBack=testClearRoute(-1);}
     return record;
    });
   },
