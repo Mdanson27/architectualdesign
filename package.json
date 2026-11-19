@@ -15,6 +15,7 @@
     "test:openings": "node tests/verify-source-openings.mjs",
     "test:facade": "node tests/verify-facade-and-furniture.mjs",
     "test:thresholds": "node tests/verify-threshold-support.mjs",
+    "test:clearance": "node tests/verify-room-clearance.mjs",
     "test:browser": "node tests/qa-production-browser.mjs"
   },
   "dependencies": {

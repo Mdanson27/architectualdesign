@@ -9,6 +9,7 @@ import {createIFCWindowGlazing} from './window-glazing.js';
 import {createSourceStairSafety} from './stair-safety.js';
 import {auditFacadeInfills} from './facade-infills.js';
 import {sourceSlabSeamSupport} from './threshold-support.js';
+import {organizeSourceSittingFurniture} from './circulation-furniture.js';
 import {createDoorSystem} from './functional-doors.js';
 import {revealObstructedDoors} from './door-apertures.js';
 import {createPlanDiningFurniture} from './dining-furnishings.js';
@@ -85,7 +86,7 @@ const state={
  center:new THREE.Vector3(),bounds:new THREE.Box3(),architectureBounds:new THREE.Box3(),
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
- enhancedFurniture:true,decor:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
+ enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -260,9 +261,11 @@ function refreshVisibility(){
   if(rec.mesh.userData.facadeDuplicateHidden)rec.mesh.visible=false;
   if(state.decor?.sources.includes(rec)&&state.enhancedFurniture&&state.showFurniture)rec.mesh.visible=false;
   if(state.dining?.sourceSet?.has(rec)&&state.showFurniture)rec.mesh.visible=false;
+  if(state.movedSofa?.sourceSet?.has(rec)&&state.showFurniture)rec.mesh.visible=false;
   if(rec.mesh.visible)count++;
  }
  if(state.decor)state.decor.group.visible=state.enhancedFurniture&&state.showFurniture;
+ if(state.movedSofa)state.movedSofa.root.visible=state.showFurniture;
  if(state.dining)state.dining.root.visible=state.showFurniture&&
   (state.floor==='ground'||state.floor==='all'||(state.mode==='walk'&&state.footY<1.5));
  if(state.stairSafety?.root)state.stairSafety.root.visible=state.showStairSafety;
@@ -407,6 +410,10 @@ function focusMainBuilding(){
 function setupEnhancements(){
  if(state.decor)return;
  state.decor=buildBedroomDecorations(state.meshes.filter(isResidenceRecord),scene);
+ state.movedSofa=organizeSourceSittingFurniture(state.meshes,scene,state.origin,isResidenceRecord);
+ state.solids.push(...state.movedSofa.colliders);
+ console.info('[AutoMinds Sitting Room Access]',state.movedSofa.summary,
+  'bed adjustments',state.decor.circulationCorrections);
  state.facadeAudit=auditFacadeInfills(state.meshes,isResidenceRecord,state.origin);
  console.info('[AutoMinds First-Floor Verified Glazing]',state.facadeAudit.summary);
  state.windows=createIFCWindowGlazing(state.meshes,scene,isResidenceRecord);
@@ -1327,6 +1334,8 @@ if(isLocalQA){
     siteContext:state.siteContext?.summary??null,sourceContextAudit:state.sourceContextAudit??null,
     windows:state.windows?.summary??null,
     verifiedFacadeGlazing:state.facadeAudit?.summary??null,
+    sittingRoomFurniture:state.movedSofa?.summary??null,
+    bedCirculationAdjustments:state.decor?.circulationCorrections??[],
     stairSafety:state.stairSafety?.summary??null,
     stairSafetyShown:state.stairSafety?.root?.visible??false,
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,

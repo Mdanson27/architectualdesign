@@ -75,8 +75,45 @@ function createBed(record,wallRecords,index){
  group.userData={sourceGuid:record.mesh.userData.ifc?.guid,visualEstimate:true,fromIFCFurniture:'FU - 010',floor:record.layer.level,footprint_m:[Math.round(width*100)/100,Math.round(length*100)/100]};
  return group;
 }
+function fitBedToActualDoorways(group,source,doorRecords,wallRecords){
+ group.updateMatrixWorld(true);
+ for(const d of doorRecords){
+  if(d.layer?.level!==source.layer.level)continue;
+  const center=d.box.getCenter(new THREE.Vector3()),size=d.box.getSize(new THREE.Vector3());
+  if(size.y<1.65)continue;
+  const alongX=size.x>=size.z;
+  const axis=alongX?'z':'x',across=alongX?'x':'z';
+  const boundary=new THREE.Box3().setFromObject(group);
+  const span=size[alongX?'x':'z']/2;
+  if(boundary.max[across]<center[across]-span-.12||
+    boundary.min[across]>center[across]+span+.12)continue;
+  const bedCenter=boundary.getCenter(new THREE.Vector3());
+  const delta=bedCenter[axis]-center[axis];
+  if(Math.abs(delta)>3||Math.abs(delta)<.08)continue;
+  const sign=Math.sign(delta);
+  const nearEdge=sign<0?boundary.max[axis]:boundary.min[axis];
+  const clearance=Math.abs(nearEdge-center[axis]);
+  if(clearance>=.97)continue;
+  const shift=sign*Math.min(.72,1.02-clearance);
+  const overlaps=b=>wallRecords.filter(w=>w.layer.level===source.layer.level&&
+    w.box.intersectsBox(b)).length;
+  const oldCount=overlaps(boundary);
+  group.position[axis]+=shift;
+  group.updateMatrixWorld(true);
+  const movedBox=new THREE.Box3().setFromObject(group);
+  if(overlaps(movedBox)>oldCount){
+    group.position[axis]-=shift;
+    group.updateMatrixWorld(true);
+    continue;
+  }
+  group.userData.circulationCorrection={doorSourceGUID:d.mesh.userData.ifc?.guid,
+    axis,shiftMetres:Number(shift.toFixed(3)),originalIFCUnmodified:true};
+  break;
+ }
+}
 export function buildBedroomDecorations(meshRecords,scene){
  const walls=meshRecords.filter(x=>x.category==='walls');
+ const sourceDoors=meshRecords.filter(x=>/^DOO\s*-/i.test(x.mesh.userData.ifc?.name||''));
  const beds=meshRecords.filter(x=>{
   if(x.category!=='furniture')return false;
   const meta=x.mesh.userData.ifc||{};
@@ -87,13 +124,18 @@ export function buildBedroomDecorations(meshRecords,scene){
  const parent=new THREE.Group();parent.name='PROPOSED_STYLED_BEDS';
  for(let i=0;i<beds.length;i++){
   beds[i].mesh.userData.styledBedSource=true;
-  parent.add(createBed(beds[i],walls,i));
+  const bed=createBed(beds[i],walls,i);
+  fitBedToActualDoorways(bed,beds[i],sourceDoors,walls);
+  parent.add(bed);
  }
  scene.add(parent);
  parent.updateMatrixWorld(true);
  const visualBeds=parent.children;
+ const circulationCorrections=visualBeds.filter(b=>b.userData.circulationCorrection).map(b=>({
+  sourceGuid:b.userData.sourceGuid,...b.userData.circulationCorrection
+ }));
  const collisionBoxes=visualBeds.map(bed=>new THREE.Box3().setFromObject(bed));
- return {group:parent,sources:beds,visualBeds,collisionBoxes,
+ return {group:parent,sources:beds,visualBeds,collisionBoxes,circulationCorrections,
   entries:beds.map((r,i)=>({id:i,level:r.layer.level,center:r.box.getCenter(new THREE.Vector3()),area:r.box.getSize(new THREE.Vector3()),
    styledFootprint:visualBeds[i]?.userData?.footprint_m??null}))};
 }
