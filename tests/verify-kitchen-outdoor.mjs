@@ -14,6 +14,25 @@ assert.equal(door.status().width,.93);
 assert.equal(door.status().open,false);
 assert(!door.root.getObjectByName('KITCHEN_DINING_OPEN_LEAF_PLAN_VISUAL'));
 assert(door.root.getObjectByName('S1_KITCHEN_DINING_PROPER_HINGED_WOOD_DOOR'));
+const doorParts=[];
+door.root.traverse(o=>{if(o.isMesh)doorParts.push(o);});
+const byName=name=>doorParts.filter(o=>o.name===name);
+const geometry=door.status().physicalDoorModel;
+assert.equal(door.root.userData.real3DKitchenDoor,true);
+assert.equal(geometry.panelCount,4,'door requires two decorative recessed panels on both faces');
+assert.equal(geometry.hingeCount,3,'door must have three visible metal hinges');
+assert.equal(geometry.handleCount,2,'door must have a handle on both faces');
+assert(geometry.leafThicknessMetres>=.06,'the leaf needs actual 3D thickness');
+assert.equal(byName('KITCHEN_DOOR_RECESSED_WOOD_PANEL').length,4);
+assert.equal(byName('KITCHEN_DOOR_HINGE_BARREL').length,3);
+assert.equal(byName('KITCHEN_DOOR_LEVER_HANDLE').length,2);
+assert(byName('KITCHEN_DOOR_RAISED_PANEL_MOULDING').length>=16);
+assert.equal(byName('KITCHEN_DOOR_TIMBER_STILE').length,4);
+const mainLeaf=door.root.getObjectByName('S1_KITCHEN_DINING_PROPER_HINGED_WOOD_DOOR');
+assert(mainLeaf.geometry.parameters.depth>.75&&mainLeaf.geometry.parameters.width>=.06,
+ 'the kitchen leaf is a thick 3D timber door, not a surface or static brown rectangle');
+const pivotChildren=door.root.getObjectByName('HINGED_KITCHEN_LEAF_PIVOT');
+assert(pivotChildren.children.includes(mainLeaf),'door geometry must follow the hinge pivot');
 const x=plan.center[0]-origin.x,z=plan.center[1]-origin.z;
 const from=new THREE.Vector3(x-.55,1,z);
 const to=new THREE.Vector3(x+.55,1,z);
@@ -51,7 +70,7 @@ assert(!walk.blocksTraversal(spawn.x,spawn.z,spawn.x+.2,spawn.z,ground.y),
 assert(!walk.sample(spawn.x,spawn.z,3.3,.4,.7),
  'no fake first floor hovering over the lawn');
 assert.equal(walk.summary.preservesIFC,true);
-console.log(JSON.stringify({passed:true,kitchenDoorFunctional:true,
+console.log(JSON.stringify({passed:true,real3DPaneledKitchenDoor:true,physicalHinges:3,doubleSidedLevers:2,kitchenDoorFunctional:true,
  kitchenClosedBlocks:true,kitchenOpenWalks:true,doorAnimated:true,
  outsideSpawn:spawn.toArray(),compoundWalkable:true,boundarySolid:true,
  interiorSourceFloorPreserved:true}));
