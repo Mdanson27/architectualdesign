@@ -40,27 +40,122 @@ export function createFunctionalKitchenDoor(plan,origin={x:0,z:0}){
  const root=new THREE.Group();
  root.name='S1_FUNCTIONAL_KITCHEN_DINING_DOOR';
  root.position.set(plan.center[0]-origin.x,0,plan.center[1]-origin.z);
- const h=plan.height,w=plan.width,post=.065;
- const trim=(sx,sy,sz,x,y,z,name)=>{
-  const m=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),edgeMat);
-  m.position.set(x,y,z);m.name=name;root.add(m);return m;
+ const h=plan.height,w=plan.width;
+ // Physically model only this Kitchen–Dining leaf: full-depth frame, a
+ // hinged timber body, recessed double-sided panels and real lock hardware.
+ // The original S1 aperture, IFC walls and 29 source doors are untouched.
+ const timber=new THREE.MeshStandardMaterial({
+  color:0x895637,roughness:.56,metalness:0
+ });
+ const stileWood=new THREE.MeshStandardMaterial({
+  color:0xa4754d,roughness:.48,metalness:0
+ });
+ const panelWood=new THREE.MeshStandardMaterial({
+  color:0x74452d,roughness:.63,metalness:0
+ });
+ const brass=new THREE.MeshStandardMaterial({
+  color:0xc3a46f,metalness:.79,roughness:.27
+ });
+ const frameWood=new THREE.MeshStandardMaterial({
+  color:0xe5d5c1,roughness:.53,metalness:0
+ });
+ const trim=(sx,sy,sz,x,y,z,name,material=frameWood,parent=root)=>{
+  const mesh=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),material);
+  mesh.position.set(x,y,z);
+  mesh.name=name;
+  mesh.castShadow=false;
+  mesh.receiveShadow=true;
+  parent.add(mesh);
+  return mesh;
  };
- trim(.10,h+.05,post,0,(h+.05)/2,-w/2,'KITCHEN_DOOR_FRAME_LEFT');
- trim(.10,h+.05,post,0,(h+.05)/2,w/2,'KITCHEN_DOOR_FRAME_RIGHT');
- trim(.10,.09,w+.08,0,h+.025,0,'KITCHEN_DOOR_HEADER');
+ // The jamb spans the real 200mm partition depth, not a painted rectangle.
+ trim(.23,h+.065,.084,0,(h+.065)/2,-w/2,'KITCHEN_DOOR_FRAME_LEFT');
+ trim(.23,h+.065,.084,0,(h+.065)/2,w/2,'KITCHEN_DOOR_FRAME_RIGHT');
+ trim(.23,.105,w+.09,0,h+.022,0,'KITCHEN_DOOR_HEADER');
+ for(const face of [-1,1]){
+  const x=face*.124;
+  trim(.024,h+.095,.076,x,(h+.095)/2,-w/2,'KITCHEN_DOOR_CASING');
+  trim(.024,h+.095,.076,x,(h+.095)/2,w/2,'KITCHEN_DOOR_CASING');
+  trim(.024,.082,w+.14,x,h+.052,0,'KITCHEN_DOOR_CASING_HEADER');
+ }
  const pivot=new THREE.Group();
  pivot.name='HINGED_KITCHEN_LEAF_PIVOT';
- pivot.position.set(0,0,-w/2+.055);
+ pivot.position.set(0,0,-w/2+.052);
  root.add(pivot);
- const leaf=new THREE.Mesh(new THREE.BoxGeometry(.052,h-.13,w-.11),oak);
- leaf.position.set(0,(h-.13)/2,(w-.11)/2);
+ const thickness=.068;
+ const leafWidth=w-.102;
+ const leafHeight=h-.105;
+ const bottom=.047;
+ const faceX=thickness/2;
+ const leaf=new THREE.Mesh(new THREE.BoxGeometry(thickness,leafHeight,leafWidth),timber);
+ leaf.position.set(0,bottom+leafHeight/2,leafWidth/2);
  leaf.name='S1_KITCHEN_DINING_PROPER_HINGED_WOOD_DOOR';
+ leaf.castShadow=false;
+ leaf.receiveShadow=true;
  pivot.add(leaf);
- const handle=new THREE.Mesh(new THREE.SphereGeometry(.033,10,8),
-  new THREE.MeshStandardMaterial({color:0xd7c29d,metalness:.55,roughness:.36}));
- handle.position.set(.055,1.02,w-.20);
- handle.name='KITCHEN_DOOR_HANDLE';
- pivot.add(handle);
+ // The stiles and cross-rails make the leaf visibly three-dimensional from
+ // either room and from above; panels are inset into the door body.
+ const panelWidths=leafWidth-.23;
+ const panels=[
+  {middle:.565,height:.71},
+  {middle:1.690,height:.82}
+ ];
+ for(const side of [-1,1]){
+  for(const panel of panels){
+   const inset=trim(.009,panel.height,panelWidths,
+    side*(faceX+.004),panel.middle,leafWidth/2,
+    'KITCHEN_DOOR_RECESSED_WOOD_PANEL',panelWood,pivot);
+   inset.userData.isRecessedTimberPanel=true;
+   const edgeY=panel.height/2+.018;
+   const edgeZ=panelWidths/2+.018;
+   const borderX=side*(faceX+.017);
+   // Individual profile beads catch light and show actual joinery depth.
+   for(const dy of [-edgeY,edgeY]){
+    trim(.023,.033,panelWidths+.07,borderX,panel.middle+dy,leafWidth/2,
+     'KITCHEN_DOOR_RAISED_PANEL_MOULDING',stileWood,pivot);
+   }
+   for(const dz of [-edgeZ,edgeZ]){
+    trim(.023,panel.height+.07,.034,borderX,panel.middle,leafWidth/2+dz,
+     'KITCHEN_DOOR_RAISED_PANEL_MOULDING',stileWood,pivot);
+   }
+  }
+  // Three-dimensional outer rails and stiles retain their texture from both
+  // sides; they do not extend into the clear door jamb.
+  for(const z of [.052,leafWidth-.052]){
+   trim(.018,leafHeight,.098,side*(faceX+.01),bottom+leafHeight/2,z,
+    'KITCHEN_DOOR_TIMBER_STILE',stileWood,pivot);
+  }
+  for(const y of [bottom+.065,bottom+1.12,bottom+leafHeight-.065]){
+   trim(.018,.102,leafWidth-.12,side*(faceX+.01),y,leafWidth/2,
+    'KITCHEN_DOOR_TIMBER_RAIL',stileWood,pivot);
+  }
+  // Working-looking lever hardware is attached to the rotating leaf on BOTH
+  // faces rather than a fixed spherical dot on an unmodeled flat panel.
+  const handleZ=leafWidth-.13;
+  trim(.013,.212,.066,side*(faceX+.015),1.035,handleZ,
+   'KITCHEN_DOOR_BRASS_ESCUTCHEON',brass,pivot);
+  const spindle=new THREE.Mesh(new THREE.SphereGeometry(.032,12,10),brass);
+  spindle.position.set(side*(faceX+.046),1.035,handleZ);
+  spindle.name='KITCHEN_DOOR_HANDLE_SPINDLE';
+  pivot.add(spindle);
+  trim(.022,.026,.127,side*(faceX+.072),1.035,handleZ-.051,
+   'KITCHEN_DOOR_LEVER_HANDLE',brass,pivot);
+ }
+ // Three genuine visible hinge barrels rotate with the leaf; fixed frame
+ // straps remain on the jamb. The hinge axis is at the leaf's pivot.
+ for(const y of [.30,1.20,2.08]){
+  const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.024,.024,.095,14),brass);
+  barrel.position.set(0,y,0);
+  barrel.name='KITCHEN_DOOR_HINGE_BARREL';
+  pivot.add(barrel);
+  trim(.016,.098,.075,-.080,y,0,'KITCHEN_DOOR_FRAME_HINGE',brass);
+ }
+ root.userData.real3DKitchenDoor=true;
+ root.userData.doorModel={
+  panelCount:4,hingeCount:3,handleCount:2,leafThicknessMetres:thickness,
+  openingWidthMetres:w,leafWidthMetres:leafWidth,
+  reversibleSourceOnly:true
+ };
  let current=0,target=0;
  function update(dt=.016){
   current=THREE.MathUtils.damp(current,target,8,Math.min(.10,Math.max(0,dt)));
@@ -94,7 +189,8 @@ export function createFunctionalKitchenDoor(plan,origin={x:0,z:0}){
  }
  function status(){return {open:target>.5,current,target,
   centre:[plan.center[0],plan.center[1]],width:w,height:h,
-  functional:true,source:'S1 Kitchen / Dining door-swing'};}
+  functional:true,physicalDoorModel:root.userData.doorModel,
+  source:'S1 Kitchen / Dining door-swing'};}
  update(.01);
  return {root,update,near,toggle,blocksTraversal,status,distanceTo,
   get current(){return current;},get target(){return target;},
