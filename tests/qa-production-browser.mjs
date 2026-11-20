@@ -80,6 +80,11 @@ try{
  const balcony=summary.balconies;
  const kitchen=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkKitchenDoor())"));
  const outside=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkOutdoorWalking())"));
+ const kitchenLeaf=summary.kitchenDoor?.physicalDoorModel;
+ if(!kitchenLeaf||kitchenLeaf.panelCount!==4||kitchenLeaf.hingeCount!==3||
+    kitchenLeaf.handleCount!==2||kitchenLeaf.leafThicknessMetres<.06)
+   throw Error('Kitchen door is still a flat panel, not a modeled two-sided hinged wooden door: '+JSON.stringify(kitchenLeaf));
+ console.log('KITCHEN_REAL_3D_DOOR',JSON.stringify(kitchenLeaf));
  if(!kitchen.ready||!kitchen.functional||!kitchen.visualDoorNotStatic||
     !kitchen.closedBlocks||!kitchen.openAllows||kitchen.leafRotation<1.25||
     !kitchen.counterClippingActive||kitchen.counterIntrusionsClipped!==3||
