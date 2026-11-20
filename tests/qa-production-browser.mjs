@@ -80,6 +80,18 @@ try{
  const balcony=summary.balconies;
  const openPlan=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkOpenPlanAccess())"));
  const outside=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkOutdoorWalking())"));
+ const stairCorrection=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkStairWindowAndOpening())"));
+ console.log('STAIR_WINDOW_AND_OPEN_SITTING_CORRECTION',JSON.stringify(stairCorrection));
+ if(!stairCorrection.ready||stairCorrection.removedWallParts!==3||
+   !stairCorrection.allThreeWallPiecesInvisible||
+   !stairCorrection.groundWindowSourceHidden||
+   !stairCorrection.glazingSourceWD008||
+   Math.abs(stairCorrection.glazingLowestY-1.76)>.02||
+   Math.abs(stairCorrection.glazingTopY-5.78)>.03||
+   stairCorrection.apertureLowestY<1.70||
+   !stairCorrection.lowerStairExteriorWallVisible||
+   !stairCorrection.guardsRetained||!stairCorrection.sourceIFCPreserved)
+   throw Error('Ground-level stair window or open stair-to-sitting wall not corrected: '+JSON.stringify(stairCorrection));
  if(!openPlan.ready||!openPlan.openConcept||openPlan.internalPlanDoors!==0||
     openPlan.planBays.length!==3||openPlan.planBays.some(p=>!p.verified||p.sourceWallMeshes<1)||
     !openPlan.disabledDoorIds.includes(22)||!openPlan.disabledDoorIds.includes(25)||

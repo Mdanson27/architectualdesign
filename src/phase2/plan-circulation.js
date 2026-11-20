@@ -12,10 +12,10 @@ import * as THREE from 'three';
  // End piers / structural columns are retained, but NO door leaves or full
  // enclosure walls occur between Stair, Sitting, Dining and Kitchen.
 export const S1_GROUND_OPENINGS=Object.freeze([
- {id:'stair-sitting-open',label:'Stair to Sitting Room · continuous open bay',
-  name:'SW - 017',center:[112.30,-6.545],alongX:false,width:1.69,height:3.29,
-  drawing:'Client-corrected S1 · no stair-to-sitting door',
-  wallZ:[-7.54,-5.56]},
+ {id:'stair-sitting-open',label:'Stair to Sitting Room · whole wall removed',
+  name:'SW - 017',center:[112.30,-7.505],alongX:false,width:3.60,height:3.29,
+  drawing:'Client-corrected S1 · SW-017 ground stair/sitting divider fully open',
+  wallZ:[-9.45,-5.56]},
  {id:'sitting-dining-open',label:'Sitting Room to Dining · fully open',
   name:'SW - 023',center:[114.76,-4.39],alongX:true,width:4.28,height:3.29,
   drawing:'Client-corrected S1 · remove DOO-001 sliding leaf between Sitting and Dining'},
@@ -117,8 +117,36 @@ export function repairKitchenDoorCounterIntrusion(records,origin,plan,inside=()=
  };
 }
 
+/** The original ground-level SW-017 partition comprises three wall pieces.
+ * Conceal all three instead of cutting two narrow holes. Source IFC geometry
+ * remains untouched; source piers/columns and upper-floor walls are retained.
+ */
+export function removeStairSittingWall(records,origin={x:0,z:0},inside=()=>true){
+ const matched=records.filter(r=>{
+  if(!inside(r)||r.category!=='walls'||r.layer?.level!=='ground')return false;
+  if(String(r.mesh.userData.ifc?.name||'').trim().toUpperCase()!=='SW - 017')return false;
+  const b=planarBounds(r.box,origin);
+  return b.minX>=112.15&&b.maxX<=112.45&&
+   b.minZ>=-9.48&&b.maxZ<=-5.53&&
+   r.box.min.y>=-.05&&r.box.max.y<=3.35&&
+   r.box.max.y-r.box.min.y>=3.20;
+ });
+ if(matched.length!==3)throw Error('Expected exactly three S1 stair/sitting divider wall pieces, found '+matched.length);
+ for(const r of matched){
+  r.mesh.userData.clientStairSittingWallRemoved=true;
+  r.mesh.visible=false;
+ }
+ return {
+  concealed:new Set(matched),
+  sourceGuids:matched.map(r=>r.mesh.userData.ifc?.guid),
+  count:matched.length,from:[112.2,-9.45],to:[112.4,-5.56],
+  groundFloorOnly:true,columnsKept:true,sourceIFCUnmodified:true
+ };
+}
+
 export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},inside=()=>true){
  const supported=[];
+ const openStairWall=removeStairSittingWall(records,origin,inside);
  let kitchenCounterRepair=null;
  const root=new THREE.Group();root.name='S1_CONFIRMED_OPEN_ROOM_CIRCULATION';scene.add(root);
  for(const plan of S1_GROUND_OPENINGS){
@@ -147,10 +175,13 @@ export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},
    kitchenCounterRepair=repairKitchenDoorCounterIntrusion(records,origin,plan,inside);
   }
  }
- return {root,kitchenDoor:null,kitchenCounterRepair,apertures:supported.filter(r=>r.verified),
+ return {root,kitchenDoor:null,kitchenCounterRepair,openStairWall,apertures:supported.filter(r=>r.verified),
   summary:{sourceConfirmedOpenings:supported.filter(x=>x.verified).length,
    kitchenDoorFunctional:false,openConcept:true,internalDoorCount:0,
    structuralEndPiersPreserved:true,
+   stairSittingWallRemoved:openStairWall.count,
+   removedStairWallGuids:openStairWall.sourceGuids,
+   stairOriginalIFCPreserved:openStairWall.sourceIFCUnmodified,
    kitchenCounterClearance:kitchenCounterRepair?.summary??null,
    expected:S1_GROUND_OPENINGS.length,
    connections:supported.map(({sourceWallMeshes,...rest})=>rest),

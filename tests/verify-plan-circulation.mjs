@@ -14,7 +14,8 @@ const walls=[
  rec('SW - 017',[112.2,0,-6.53],[112.4,3.3,-5.56],'stair-lower'),
  rec('SW - 019',[112.2,0,-5.56],[112.4,3.3,.59],'kitchen'),
  rec('SW - 023',[112.4,0,-4.49],[117.12,3.3,-4.29],'sitting-dining'),
- rec('SW - 019',[115.2,0,-5.56],[115.4,3.3,.59],'other-wall')
+ rec('SW - 019',[115.2,0,-5.56],[115.4,3.3,.59],'other-wall'),
+ rec('SW - 017',[112.2,0,-9.45],[112.4,3.3,-7.54],'stair-third-wall')
 ];
 const originals=walls.map(r=>r.mesh.geometry);
 const source=createPlanCirculationCorrections(walls,new THREE.Scene(),new THREE.Vector3());
@@ -22,6 +23,12 @@ assert.equal(S1_GROUND_OPENINGS.length,3);
 assert.equal(source.summary.sourceConfirmedOpenings,3);
 assert.equal(source.summary.internalDoorCount,0);
 assert.equal(source.summary.openConcept,true);
+assert.equal(source.openStairWall.count,3);
+assert.equal(source.summary.stairSittingWallRemoved,3);
+assert(source.openStairWall.sourceIFCUnmodified);
+assert(source.openStairWall.concealed.size===3);
+for(const r of source.openStairWall.concealed)
+ assert(r.mesh.userData.clientStairSittingWallRemoved&&!r.mesh.visible);
 assert.equal(source.kitchenDoor,null);
 assert.equal(source.apertures.length,3);
 assert(source.apertures.every(p=>p.width>1.6));
@@ -45,6 +52,8 @@ for(const plan of S1_GROUND_OPENINGS){
 assert.equal(registry.permitsOpenDoorWallHit(
  {object:walls[4].mesh,point:new THREE.Vector3(115.3,1,-2.35)},0),false);
 assert.deepEqual(walls.map(r=>r.mesh.geometry),originals);
+assert.equal(walls[4].mesh.userData.clientStairSittingWallRemoved,undefined,
+ 'nearby kitchen wall must stay untouched');
 function mockDoor(id,x,z,level='ground'){
  const m=new THREE.Mesh(new THREE.BoxGeometry(1,2.5,.2));
  m.userData.ifc={guid:'door-'+id};
@@ -64,5 +73,6 @@ assert.equal(maid.summary.activeDoorCount,2);
 assert.equal(maid.summary.originalIFCUnmodified,true);
 assert.equal(maid.maidWall.geometry.parameters.width,1.02);
 console.log(JSON.stringify({passed:true,openZones:source.apertures.length,
- noInteriorDoors:true,maidDoorSealed:true,maidExteriorAccessPreserved:true,
+ noInteriorDoors:true,stairSittingWallPiecesRemoved:3,
+ maidDoorSealed:true,maidExteriorAccessPreserved:true,
  structuralEndPiersRetained:true,originalIfcUntouched:true}));

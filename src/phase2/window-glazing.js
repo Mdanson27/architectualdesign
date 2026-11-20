@@ -12,6 +12,12 @@ import * as THREE from 'three';
 export const WINDOW_RULES=Object.freeze({
   minWidth:.38,maxWidth:4.3,minHeight:.25,maxHeight:6.15,maxDepth:.38
 });
+// Client-reviewed stairwell glazing WD-008 starts at the source's intermediate
+// stair landing (about +1.72m), NOT at the ground stair base.
+export const S1_STAIR_WINDOW=Object.freeze({
+  sourceName:'WD - 008',x:107.06,z:-6.975,
+  sourceBottomY:.32,firstFlightLandingY:1.72,visibleBottomY:1.76
+});
 
 const glass=new THREE.MeshPhysicalMaterial({
  color:'#e8faff',
@@ -27,7 +33,7 @@ const glass=new THREE.MeshPhysicalMaterial({
 const frame=new THREE.MeshStandardMaterial({color:'#55666b',metalness:.54,roughness:.27});
 const seal=new THREE.MeshStandardMaterial({color:'#303b3e',metalness:.24,roughness:.66});
 
-function getCandidate(rec){
+function getCandidate(rec,origin={x:0,z:0}){
  const meta=rec.mesh.userData.ifc||{};
  const name=String(meta.name||'').toUpperCase();
  const kind=String(meta.ifcType||'').toUpperCase();
@@ -37,7 +43,20 @@ function getCandidate(rec){
  if(width<WINDOW_RULES.minWidth||width>WINDOW_RULES.maxWidth||
    sz.y<WINDOW_RULES.minHeight||sz.y>WINDOW_RULES.maxHeight||
    depth>WINDOW_RULES.maxDepth)return null;
- return {rec,center:c,width,height:sz.y,depth,alongX:sz.x>=sz.z,level:rec.layer.level};
+ const isStairWindow=name===S1_STAIR_WINDOW.sourceName&&
+  rec.layer.level==='ground'&&
+  Math.abs(c.x+origin.x-S1_STAIR_WINDOW.x)<.12&&
+  Math.abs(c.z+origin.z-S1_STAIR_WINDOW.z)<.12&&
+  b.min.y<.50&&b.max.y>5.50;
+ // Derive a shorter *replacement* window, preserving original source bounds.
+ // The lower wall becomes opaque again as the window aperture uses this height.
+ const bottomY=isStairWindow?S1_STAIR_WINDOW.visibleBottomY:b.min.y;
+ const visibleHeight=b.max.y-bottomY;
+ if(visibleHeight<WINDOW_RULES.minHeight)return null;
+ if(isStairWindow)c.y=(bottomY+b.max.y)/2;
+ return {rec,center:c,width,height:visibleHeight,depth,alongX:sz.x>=sz.z,
+  level:rec.layer.level,correctedStairWindow:isStairWindow,
+  sourceBottomY:b.min.y,displayBottomY:bottomY};
 }
 
 function matching(a,b){
@@ -86,8 +105,8 @@ function makeWindow(cluster,index){
  return {group,position,width,height,alongX,level,source:cluster.map(x=>x.rec)};
 }
 
-export function createIFCWindowGlazing(records,scene,isResidenceRecord){
- const candidates=records.filter(isResidenceRecord).map(getCandidate).filter(Boolean);
+export function createIFCWindowGlazing(records,scene,isResidenceRecord,origin={x:0,z:0}){
+ const candidates=records.filter(isResidenceRecord).map(r=>getCandidate(r,origin)).filter(Boolean);
  const clusters=[];
  for(const c of candidates){
   const found=clusters.find(g=>matching(g[0],c));
@@ -98,10 +117,18 @@ export function createIFCWindowGlazing(records,scene,isResidenceRecord){
  for(const w of windows)root.add(w.group);
  root.visible=true;scene.add(root);
  const sourceSet=new Set(windows.flatMap(w=>w.source));
+ const stair=clusters.flat().find(c=>c.correctedStairWindow);
  const summary={windowAssemblies:windows.length,replacedProxyComponents:sourceSet.size,
   transparentGlass:true,sourceAligned:true,syntheticOpenings:0,
   supportedNarrowTransomParts:windows.filter(w=>w.height<.55).length,
-  glassOpacity:glass.opacity};
+  glassOpacity:glass.opacity,
+  stairWindow:stair?{
+   sourceName:S1_STAIR_WINDOW.sourceName,
+   sourceBottomY:stair.sourceBottomY,displayBottomY:stair.displayBottomY,
+   firstFlightLandingY:S1_STAIR_WINDOW.firstFlightLandingY,
+   topY:stair.rec.box.max.y,groundLevelGlassRemoved:true,
+   originalIFCUnmodified:true,sourceGuid:stair.rec.mesh.userData.ifc?.guid
+  }:null};
  function updateVisibility({floor,mode,sectionEnabled}){
   for(const w of windows){
    w.group.visible=!sectionEnabled||mode==='walk'||floor==='all'||(floor==='ground'?w.level==='ground':true);

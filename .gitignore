@@ -40,6 +40,7 @@
 !/tests/verify-phase7-architecture.mjs
 !/tests/verify-source-portal-navigation.mjs
 !/tests/verify-plan-circulation.mjs
+!/tests/verify-stair-window-open-wall.mjs
 !/tests/verify-kitchen-outdoor.mjs
 !/tests/verify-kitchen-door-clearance.mjs
 !/tests/qa-production-browser.mjs

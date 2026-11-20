@@ -263,6 +263,7 @@ function refreshVisibility(){
  for(const rec of state.meshes){
   const visible=visibleSourceRecord(rec);
   rec.mesh.visible=visible;
+  if(rec.mesh.userData.clientStairSittingWallRemoved)rec.mesh.visible=false;
   if(state.doorSystem&&rec.mesh.userData.functionallyReplacedDoorId)rec.mesh.visible=false;
   if(state.windows?.sourceSet.has(rec))rec.mesh.visible=false;
   if(rec.mesh.userData.facadeDuplicateHidden)rec.mesh.visible=false;
@@ -429,7 +430,7 @@ function setupEnhancements(){
   'bed adjustments',state.decor.circulationCorrections);
  state.facadeAudit=auditFacadeInfills(state.meshes,isResidenceRecord,state.origin);
  console.info('[AutoMinds First-Floor Verified Glazing]',state.facadeAudit.summary);
- state.windows=createIFCWindowGlazing(state.meshes,scene,isResidenceRecord);
+ state.windows=createIFCWindowGlazing(state.meshes,scene,isResidenceRecord,state.origin);
  console.info('[AutoMinds Window Audit]',state.windows.summary);
  state.stairSafety=createSourceStairSafety(state.meshes,scene,isResidenceRecord);
  console.info('[AutoMinds Stair Safety Concept]',state.stairSafety.summary);
@@ -1566,6 +1567,10 @@ if(isLocalQA){
     stairSafety:state.stairSafety?.summary??null,
     balconies:state.balconies?.summary??null,
     planCirculation:state.planCirculation?.summary??null,
+    stairLivingWall:state.planCirculation?.openStairWall
+      ?{removedParts:state.planCirculation.openStairWall.count,
+        sourceGuids:state.planCirculation.openStairWall.sourceGuids,
+        sourceIFCUnmodified:true}:null,
     maidAccess:state.maidAccess?.summary??null,
     activeDoorCount:state.doorSystem?.doors.filter(d=>!d.removedFromPlan).length??null,
     kitchenDoor:state.planCirculation?.kitchenDoor?.status()??null,
@@ -1613,6 +1618,34 @@ if(isLocalQA){
    return {id,level:door.level,look:look.toArray(),eye:eye.toArray(),visible:door.visual.visible};
   },
   checkPlanCirculation:()=>checkPlanCirculation(),
+  checkStairWindowAndOpening:()=>{
+   const wall=state.planCirculation?.openStairWall;
+   const window=state.windows?.windows.find(w=>w.source.some(
+     r=>String(r.mesh.userData.ifc?.name).trim()==='WD - 008'&&
+       Math.abs(w.position.x+state.origin.x-107.06)<.12&&
+       Math.abs(w.position.z+state.origin.z+6.975)<.12));
+   if(!wall||!window)return {ready:false};
+   const windowCuts=state.doorApertureAudit?.visualCuts?.filter(c=>c.kind==='window')??[];
+   const correctCut=windowCuts.find(c=>
+     c.box.x<window.position.x&&c.box.y>window.position.x&&
+     c.box.z<window.position.z&&c.box.w>window.position.z);
+   const lowerExterior=state.meshes.filter(r=>r.layer?.level==='ground'&&
+     r.category==='walls'&&
+     String(r.mesh.userData.ifc?.name).trim()==='SW - 013'&&
+     Math.abs((r.box.min.x+r.box.max.x)/2+state.origin.x-107.15)<.18&&
+     r.box.min.y<=.1&&r.box.max.y>=5.5);
+   return {ready:true,removedWallParts:wall.count,
+    allThreeWallPiecesInvisible:[...wall.concealed].every(r=>
+      r.mesh.userData.clientStairSittingWallRemoved&&!r.mesh.visible&&!isRecordVisible(r)),
+    groundWindowSourceHidden:window.source.every(r=>!r.mesh.visible),
+    glazingLowestY:window.position.y-window.height/2,
+    glazingTopY:window.position.y+window.height/2,
+    glazingSourceWD008:window.source.some(r=>r.mesh.userData.ifc?.name==='WD - 008'),
+    apertureLowestY:correctCut?.height.x??null,
+    lowerStairExteriorWallVisible:lowerExterior.some(r=>r.mesh.visible),
+    guardsRetained:Boolean(state.stairSafety?.sourceVerified&&state.stairSafety.root.visible),
+    sourceIFCPreserved:wall.sourceIFCUnmodified&&state.windows.summary.stairWindow?.originalIFCUnmodified};
+  },
   checkOpenPlanAccess:()=>{
    const p=state.planCirculation,maid=state.maidAccess,doors=state.doorSystem?.doors??[];
    if(!p||!maid)return {ready:false};

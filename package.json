@@ -21,6 +21,7 @@
     "test:phase7": "node tests/verify-phase7-architecture.mjs",
     "test:portal": "node tests/verify-source-portal-navigation.mjs",
     "test:plan-circulation": "node tests/verify-plan-circulation.mjs",
+    "test:stair-wall-window": "node tests/verify-stair-window-open-wall.mjs",
     "test:kitchen-outdoor": "node tests/verify-kitchen-outdoor.mjs",
     "test:kitchen-clearance": "node tests/verify-kitchen-door-clearance.mjs"
   },
