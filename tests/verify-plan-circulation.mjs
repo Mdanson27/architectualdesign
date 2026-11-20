@@ -51,12 +51,14 @@ function mockDoor(id,x,z,level='ground'){
  return {id,level,position:new THREE.Vector3(x,1.3,z),visual:new THREE.Group(),
   source:[{mesh:m}],current:0,target:0};
 }
-const group={doors:[mockDoor(19,108.22,-13.8),mockDoor(22,111.76,-11.14),
- mockDoor(25,114.635,-4.39),mockDoor(21,111.68,-5.31)]};
-const maid=implementOpenPlanMaidAccess(group,new THREE.Scene());
+const shifted=new THREE.Vector3(90,0,-12);
+const sourceDoor=(id,x,z)=>mockDoor(id,x-shifted.x,z-shifted.z);
+const group={doors:[sourceDoor(19,108.22,-13.8),sourceDoor(22,111.76,-11.14),
+ sourceDoor(25,114.635,-4.39),sourceDoor(21,111.68,-5.31)]};
+const maid=implementOpenPlanMaidAccess(group,new THREE.Scene(),shifted);
 assert.deepEqual(maid.removed.map(x=>x.id),[25,22]);
 assert(!group.doors[0].removedFromPlan,'exterior maid balcony door must remain intact');
-assert(maid.collider.box.containsPoint(new THREE.Vector3(111.76,1.0,-11.14)));
+assert(maid.collider.box.containsPoint(new THREE.Vector3(111.76-shifted.x,1.0,-11.14-shifted.z)));
 assert(maid.summary.maidInteriorSealed);
 assert.equal(maid.summary.activeDoorCount,2);
 assert.equal(maid.summary.originalIFCUnmodified,true);

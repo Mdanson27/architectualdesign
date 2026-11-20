@@ -16,13 +16,13 @@ export const OPEN_PLAN_REMOVED_DOORS=Object.freeze([
 export const MAID_EXTERNAL_DOOR=Object.freeze({
  id:19,level:'ground',position:[108.22,-13.80]
 });
-const near=(d,s)=>d.id===s.id&&d.level===s.level&&
- Math.hypot(d.position.x-s.position[0],d.position.z-s.position[1])<.16;
+const near=(d,s,origin)=>d.id===s.id&&d.level===s.level&&
+ Math.hypot(d.position.x+origin.x-s.position[0],d.position.z+origin.z-s.position[1])<.16;
 
 export function implementOpenPlanMaidAccess(doorSystem,scene,origin={x:0,z:0}){
  const removed=[];
  for(const spec of OPEN_PLAN_REMOVED_DOORS){
-  const door=doorSystem?.doors?.find(d=>near(d,spec));
+  const door=doorSystem?.doors?.find(d=>near(d,spec,origin));
   if(!door)throw Error('Expected source door missing or moved: '+spec.name);
   door.removedFromPlan=true;
   door.planOverrideReason=spec.name;
@@ -32,7 +32,7 @@ export function implementOpenPlanMaidAccess(doorSystem,scene,origin={x:0,z:0}){
    sourceGuids:door.source.map(r=>r.mesh.userData.ifc?.guid),
    sourceIFCPreserved:true});
  }
- const external=doorSystem?.doors?.find(d=>near(d,MAID_EXTERNAL_DOOR));
+ const external=doorSystem?.doors?.find(d=>near(d,MAID_EXTERNAL_DOOR,origin));
  if(!external)throw Error('Maid exterior/balcony access not present; refuse to seal the interior');
  if(external.removedFromPlan)throw Error('Maid balcony-side door must remain functional');
 
