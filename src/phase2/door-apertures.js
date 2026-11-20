@@ -25,7 +25,8 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
     Math.min(Math.abs(cx-w.box.min.x),Math.abs(cx-w.box.max.x));
   const closeWalls=walls.filter(w=>closestNormal(w)<normalBand+.11);
   if(!closeWalls.length)return;
-  const low=ymin+(kind==='door'?.055:.015),high=ymax-(kind==='door'?.05:.015);
+  const low=kind==='plan'?ymin-.025:ymin+(kind==='door'?.055:.015);
+  const high=kind==='plan'?ymax+.025:ymax-(kind==='door'?.05:.015);
   if(high-low<.30)return;
   // Wall cuts are applied only to genuine source-derived door/window positions.
   // The depth accounts for thicker IFC wall faces without cutting adjacent rooms.
@@ -44,6 +45,7 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
     sourceIds,alongX,width,wallCount:wallMeshes.size});
  }
  for(const d of doorSystem?.doors??[]){
+  if(d.removedFromPlan)continue;
   if(cuts.length>=MAX_OPENINGS)break;
   append('door',d.id,d.position.x,d.position.z,d.groundY,d.groundY+d.height,
     d.width,d.alongX,d.source.map(s=>s.mesh.userData.ifc?.guid),d);

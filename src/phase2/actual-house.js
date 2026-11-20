@@ -19,6 +19,7 @@ import {createSourceBalconyRestoration} from './balcony-restoration.js';
 import {createHouseLighting} from './lighting-system.js';
 import {PLAN_ROUTE_TARGETS,findPhysicalRoute} from './circulation-routes.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
+import {implementOpenPlanMaidAccess} from './open-plan-access.js';
 
 /**
  * Actual-house interactive viewer.
@@ -93,7 +94,7 @@ const state={
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
- night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
+ night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
 };
@@ -277,6 +278,8 @@ function refreshVisibility(){
   (state.floor==='ground'||state.floor==='all'||(state.mode==='walk'&&state.footY<1.5));
  if(state.stairSafety?.root)state.stairSafety.root.visible=state.showStairSafety;
  if(state.balconies?.root)state.balconies.root.visible=state.showBalconies;
+ if(state.maidAccess?.root)state.maidAccess.root.visible=
+  state.mode==='walk'||!state.sectionEnabled||state.floor==='all'||state.floor==='ground';
  if(state.planCirculation?.root)state.planCirculation.root.visible=
   state.mode==='walk'||!state.sectionEnabled||state.floor==='all'||state.floor==='ground';
  if(state.windows)state.windows.updateVisibility({
@@ -435,9 +438,11 @@ function setupEnhancements(){
   'Source-anchored flights and landing · handrails + upper void guard · concept only, not engineer certified':
   'Stair source incomplete. No unsupported safety geometry fabricated.';
  state.doorSystem=createDoorSystem(state.doors,scene,isResidenceRecord);
+ state.maidAccess=implementOpenPlanMaidAccess(state.doorSystem,scene,state.origin);
+ state.solids.push(state.maidAccess.collider);
  state.planCirculation=createPlanCirculationCorrections(state.meshes,scene,state.origin,isResidenceRecord);
  console.info('[S1 ground-floor opening correction]',state.planCirculation.summary);
- console.info('[Kitchen door low counter intrusion repair]',
+ console.info('[Open concept kitchen counter clearance]',
   state.planCirculation.kitchenCounterRepair?.summary);
  state.balconies=createSourceBalconyRestoration(state.meshes,scene,state.origin,isResidenceRecord);
  state.lightingSystem=createHouseLighting(scene,state.origin);
@@ -771,6 +776,8 @@ function mapDraw(){
  ctx.fillStyle='#aec5bf';ctx.font='bold 9px DM Sans';ctx.fillText('SOURCE IFC · METRE SCALE',13,H-10);
 }
 function isRecordVisible(rec){
+ if(rec.mesh.userData.isMaidRoomSeal)
+  return Boolean(state.maidAccess?.root?.visible&&rec.mesh.visible);
  let group=state.layers.get(rec.layer.name);
  return Boolean(group?.group.visible && rec.mesh.visible && visibleSourceRecord(rec));
 }
@@ -1559,6 +1566,8 @@ if(isLocalQA){
     stairSafety:state.stairSafety?.summary??null,
     balconies:state.balconies?.summary??null,
     planCirculation:state.planCirculation?.summary??null,
+    maidAccess:state.maidAccess?.summary??null,
+    activeDoorCount:state.doorSystem?.doors.filter(d=>!d.removedFromPlan).length??null,
     kitchenDoor:state.planCirculation?.kitchenDoor?.status()??null,
     outdoorWalk:state.siteWalk?.summary??null,
     lighting:state.lightingSystem?.status()??null,
@@ -1604,22 +1613,36 @@ if(isLocalQA){
    return {id,level:door.level,look:look.toArray(),eye:eye.toArray(),visible:door.visual.visible};
   },
   checkPlanCirculation:()=>checkPlanCirculation(),
-  checkKitchenDoor:()=>{
-   const d=state.planCirculation?.kitchenDoor;if(!d)return {ready:false};
-   const initial=d.target>.5,at=d.root.position;
-   const from=new THREE.Vector3(at.x-.42,1.0,at.z);
-   const to=new THREE.Vector3(at.x+.42,1.0,at.z);
-   d.setOpenForQA(false);
-   const closedBlocks=d.blocksTraversal(from,to,0,.32);
-   d.setOpenForQA(true);
-   const openAllows=!d.blocksTraversal(from,to,0,.32);
-   const leafRotation=d.root.getObjectByName('HINGED_KITCHEN_LEAF_PIVOT')?.rotation.y;
-   d.setOpenForQA(initial);
-   return {ready:true,closedBlocks,openAllows,leafRotation,
-    functional:true,visualDoorNotStatic:true,
-    counterClippingActive:state.planCirculation?.kitchenCounterRepair?.enabled??false,
-    counterIntrusionsClipped:state.planCirculation?.kitchenCounterRepair?.summary.matchedSourceSlabs??0,
-    counterSourceMaterialsIntact:state.planCirculation?.kitchenCounterRepair?.summary.sourceMeshesAndVertexBuffersPreserved??false};
+  checkOpenPlanAccess:()=>{
+   const p=state.planCirculation,maid=state.maidAccess,doors=state.doorSystem?.doors??[];
+   if(!p||!maid)return {ready:false};
+   const removed=doors.filter(d=>d.removedFromPlan);
+   const external=doors.find(d=>d.id===19);
+   const seal=maid.collider.box;
+   const maidDoor=doors.find(d=>d.id===22),loungeDoor=doors.find(d=>d.id===25);
+   const planBays=p.apertures.map(a=>({id:a.id,width:a.width,
+      sourceWallMeshes:a.sourceWallMeshes.size,verified:a.verified,
+      noDoorLeaf:!p.kitchenDoor}));
+   const from=new THREE.Vector3(111.76-state.origin.x,1,-11.52-state.origin.z);
+   const to=new THREE.Vector3(111.76-state.origin.x,1,-10.83-state.origin.z);
+   const crossesSeal=seal.intersectsBox(new THREE.Box3().setFromPoints([from,to]));
+   const prev={floor:state.floor,section:state.sectionEnabled,mode:state.mode};
+   let maidBlocked=false;
+   try{
+    state.floor='all';state.sectionEnabled=false;state.mode='walk';refreshVisibility();
+    maidBlocked=detectObstacle(from.x,from.z,to.x,to.z,0);
+   }finally{
+    state.floor=prev.floor;state.sectionEnabled=prev.section;state.mode=prev.mode;refreshVisibility();
+   }
+   return {ready:true,openConcept:p.summary.openConcept,
+    internalPlanDoors:p.summary.internalDoorCount,
+    planBays,sourceCounterClip:p.kitchenCounterRepair?.summary?.matchedSourceSlabs??0,
+    disabledDoorIds:removed.map(d=>d.id),maidInteriorDoorRemoved:Boolean(maidDoor?.removedFromPlan),
+    sittingDiningDoorRemoved:Boolean(loungeDoor?.removedFromPlan),
+    maidExteriorDoorPreserved:external?.removedFromPlan!==true&&Boolean(external?.visual),
+    maidWallVisible:maid.maidWall.visible,
+    maidWallCollision:maidBlocked,maidSealCrossesTestSegment:crossesSeal,
+    originalIFCUnmodified:maid.summary.originalIFCUnmodified};
   },
   checkOutdoorWalking:()=>{
    const walk=state.siteWalk,site=state.siteContext;

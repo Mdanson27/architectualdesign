@@ -29,6 +29,7 @@
 !/src/phase2/lighting-system.js
 !/src/phase2/circulation-routes.js
 !/src/phase2/plan-circulation.js
+!/src/phase2/open-plan-access.js
 !/src/phase2/site-walk-support.js
 !/tests/verify-stair-safety.mjs
 !/tests/verify-source-openings.mjs

@@ -2,7 +2,7 @@ name: Deploy AutoMinds Spaces to GitHub Pages
 
 on:
   push:
-    branches: [main, phase7-architecture-circulation-balconies-lighting]
+    branches: [main, phase7-architecture-circulation-balconies-lighting, stages-a-d-open-plan-maid-access]
   workflow_dispatch:
 
 permissions:
@@ -48,9 +48,9 @@ jobs:
         run: npm run test:plan-circulation
       - name: Verify continuous source-backed doorway portal navigation
         run: npm run test:portal
-      - name: Verify functional kitchen leaf and compound first-person walking
+      - name: Verify client-corrected kitchen/dining OPEN layout and compound walking
         run: npm run test:kitchen-outdoor
-      - name: Verify clean Kitchen-Dining doorway below the counter
+      - name: Verify source kitchen counter remains clear at OPEN dining connection
         run: npm run test:kitchen-clearance
       - name: Build public GitHub Pages site
         run: npm run build
@@ -68,7 +68,7 @@ jobs:
         run: |
           command -v google-chrome
           npm run test:browser
-      - name: Required 29-doorway and 4-route architectural acceptance
+      - name: Required 27 active doors, 5 open-plan routes and maid access
         if: success()
         timeout-minutes: 8
         env:

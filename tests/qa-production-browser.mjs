@@ -78,23 +78,21 @@ try{
  const summary=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.summary())"));
  const scene=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
  const balcony=summary.balconies;
- const kitchen=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkKitchenDoor())"));
+ const openPlan=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkOpenPlanAccess())"));
  const outside=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkOutdoorWalking())"));
- const kitchenLeaf=summary.kitchenDoor?.physicalDoorModel;
- if(!kitchenLeaf||kitchenLeaf.panelCount!==4||kitchenLeaf.hingeCount!==3||
-    kitchenLeaf.handleCount!==2||kitchenLeaf.leafThicknessMetres<.06)
-   throw Error('Kitchen door is still a flat panel, not a modeled two-sided hinged wooden door: '+JSON.stringify(kitchenLeaf));
- console.log('KITCHEN_REAL_3D_DOOR',JSON.stringify(kitchenLeaf));
- if(!kitchen.ready||!kitchen.functional||!kitchen.visualDoorNotStatic||
-    !kitchen.closedBlocks||!kitchen.openAllows||kitchen.leafRotation<1.25||
-    !kitchen.counterClippingActive||kitchen.counterIntrusionsClipped!==3||
-    !kitchen.counterSourceMaterialsIntact)
-   throw Error('Kitchen/Dining door must swing visibly and be collidable when closed: '+JSON.stringify(kitchen));
+ if(!openPlan.ready||!openPlan.openConcept||openPlan.internalPlanDoors!==0||
+    openPlan.planBays.length!==3||openPlan.planBays.some(p=>!p.verified||p.sourceWallMeshes<1)||
+    !openPlan.disabledDoorIds.includes(22)||!openPlan.disabledDoorIds.includes(25)||
+    !openPlan.maidInteriorDoorRemoved||!openPlan.sittingDiningDoorRemoved||
+    !openPlan.maidExteriorDoorPreserved||!openPlan.maidWallCollision||
+    !openPlan.maidSealCrossesTestSegment||!openPlan.originalIFCUnmodified)
+   throw Error('Open-plan interconnection or maid exterior-only rule failed: '+JSON.stringify(openPlan));
+ console.log('OPEN_CONCEPT_MAID_ACCESS',JSON.stringify(openPlan));
  if(!outside.ready||!outside.hasSpawn||outside.groundHeight===null||
     !outside.firstPersonGroundMatchesCompound||!outside.interiorNotFabricated||
     !outside.boundaryBlocks||!outside.outsideGroundRejected||!outside.stepAroundCompound)
    throw Error('Compound first-person walk, house cut-out or plot boundary invalid: '+JSON.stringify(outside));
- console.log('KITCHEN_DOOR_OUTDOOR_WALK',JSON.stringify({kitchen, outside}));
+ console.log('OPEN_CONCEPT_AND_OUTDOOR_WALK',JSON.stringify({openPlan, outside}));
  console.log('PHASE7_SOURCE_OPENINGS',JSON.stringify(summary.planCirculation));
  if(summary.planCirculation?.sourceConfirmedOpenings!==3||
    summary.openingRegistry?.planConfirmedCirculationOpenings!==3)
@@ -133,7 +131,7 @@ try{
    throw Error('Independent night and house-light controls failed');
  console.log('PHASE7_BALCONY_LIGHTS',JSON.stringify({restored:balcony.restored,concealed:balcony.concealedOpaqueEdgeMeshes,
   lights:lightBefore.activeEmitters,nightIndependent:true}));
- const ids=process.env.QA_ALL_DOORS==='1'?Array.from({length:29},(_,i)=>i+1):[6,12,14,15,21,25,26,27,28,29];
+ const ids=(process.env.QA_ALL_DOORS==='1'?Array.from({length:29},(_,i)=>i+1):[6,12,14,15,19,21,26,27,28,29]).filter(id=>id!==22&&id!==25);
  const crossings=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.doorCrossings("+JSON.stringify(ids)+",true))"));
  const obstructed=crossings.filter(x=>!x.openFront?.ok||!x.openBack?.ok).map(x=>({
   id:x.id,level:x.level,sourceGuids:x.sourceGuids,front:x.openFront,back:x.openBack
@@ -172,9 +170,9 @@ try{
   outsideRawVisible:scene.outsideRawMeshesVisible,rawWindowProxiesVisible:scene.originalWindowProxiesStillVisible,
   testedDoorIds:ids,obstructed,closedDoorUnexpectedPass:blockedWhenClosed,
   browserExceptions:exceptions}));
- if(summary.doorCount!==29||summary.windows?.windowAssemblies<20)
+ if(summary.doorCount!==29||summary.activeDoorCount!==27||summary.windows?.windowAssemblies<20)
   throw Error('Unexpected door/window model count');
- if(summary.openingRegistry?.verifiedDoorWallCutouts<29)
+ if(summary.openingRegistry?.verifiedDoorWallCutouts<27)
   throw Error('Not all IFC doorways have source-matched visual cutouts');
  if(summary.verifiedFacadeGlazing?.sourceAlignedPanels<2)
   throw Error('Source-verified first-floor glazing not active');

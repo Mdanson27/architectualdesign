@@ -11,6 +11,9 @@ export const PLAN_ROUTE_TARGETS=[
   // S1 sitting-room safe standing point confirmed in the real-browser route;
   // the earlier nominal anchor lay 24cm behind local room furniture.
   drawing:'S1 ground floor stair / 35m² sitting room'},
+ {id:'ground-sitting-dining',label:'Sitting Room → Dining · no door',level:0,
+  start:[115.12,-6.86],end:[114.65,-2.38],
+  drawing:'Client-corrected S1 · no partition or sliding leaf'},
  {id:'ground-stair-dining',label:'Stair foyer → Dining Room',level:0,
   start:[110.15,-6.70],end:[114.65,-2.38],
   drawing:'S1 ground floor stair / 19m² dining room'},

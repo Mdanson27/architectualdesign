@@ -8,196 +8,28 @@ import * as THREE from 'three';
  * continue through these DRAWN openings. Only remove the aperture volume,
  * never delete the structural wall or supporting piers.
  */
+// Client-corrected open-concept interpretation of ground-floor S1.
+ // End piers / structural columns are retained, but NO door leaves or full
+ // enclosure walls occur between Stair, Sitting, Dining and Kitchen.
 export const S1_GROUND_OPENINGS=Object.freeze([
- {id:'stair-living-upper-bay',label:'Stair to Sitting Room - northern open bay',
-  name:'SW - 017',center:[112.3,-7.02],alongX:false,width:.83,height:2.45,
-  drawing:'S1 ground floor, Sitting Room west boundary between 200mm piers',
-  wallZ:[-7.54,-6.53]},
- {id:'stair-living-lower-bay',label:'Stair to Sitting Room - southern open bay',
-  name:'SW - 017',center:[112.3,-6.02],alongX:false,width:.80,height:2.45,
-  drawing:'S1 ground floor, Sitting Room west boundary between 200mm piers',
-  wallZ:[-6.53,-5.56]},
- {id:'kitchen-dining-door',label:'Kitchen to Dining Hall interior door',
-  name:'SW - 019',center:[112.3,-2.35],alongX:false,width:.93,height:2.42,
-  drawing:'S1 ground floor, Kitchen/Dining dividing wall with door-swing symbol',
+ {id:'stair-sitting-open',label:'Stair to Sitting Room · continuous open bay',
+  name:'SW - 017',center:[112.30,-6.545],alongX:false,width:1.69,height:3.29,
+  drawing:'Client-corrected S1 · no stair-to-sitting door',
+  wallZ:[-7.54,-5.56]},
+ {id:'sitting-dining-open',label:'Sitting Room to Dining · fully open',
+  name:'SW - 023',center:[114.76,-4.39],alongX:true,width:4.28,height:3.29,
+  drawing:'Client-corrected S1 · remove DOO-001 sliding leaf between Sitting and Dining'},
+ {id:'kitchen-dining-open',label:'Kitchen to Dining · open between two columns',
+  name:'SW - 019',center:[112.30,-2.465],alongX:false,width:5.53,height:3.29,
+  drawing:'Client-corrected S1 · column-bounded open Kitchen and Dining, no interior door',
   wallZ:[-5.56,.59]},
 ]);
 
-const edgeMat=new THREE.MeshStandardMaterial({color:0xcab49a,roughness:.62,metalness:.04});
-const oak=new THREE.MeshStandardMaterial({color:0x8b6547,roughness:.58,side:THREE.DoubleSide});
 
 function planarBounds(b,origin){
  return {minX:b.min.x+origin.x,maxX:b.max.x+origin.x,
   minZ:b.min.z+origin.z,maxZ:b.max.z+origin.z};
 }
-/**
- * The 0.93m Kitchen / Dining door is a drawing-backed S1 opening rather than
- * one of the 29 source-model door records. It needs an independently animated
- * leaf and actual CLOSED/OPEN collision behavior, not a permanently offset
- * brown slab. It never changes the source IFC vertex buffers.
- */
-export function createFunctionalKitchenDoor(plan,origin={x:0,z:0}){
- const root=new THREE.Group();
- root.name='S1_FUNCTIONAL_KITCHEN_DINING_DOOR';
- root.position.set(plan.center[0]-origin.x,0,plan.center[1]-origin.z);
- const h=plan.height,w=plan.width;
- // Physically model only this Kitchen–Dining leaf: full-depth frame, a
- // hinged timber body, recessed double-sided panels and real lock hardware.
- // The original S1 aperture, IFC walls and 29 source doors are untouched.
- const timber=new THREE.MeshStandardMaterial({
-  color:0x895637,roughness:.56,metalness:0
- });
- const stileWood=new THREE.MeshStandardMaterial({
-  color:0xa4754d,roughness:.48,metalness:0
- });
- const panelWood=new THREE.MeshStandardMaterial({
-  color:0x74452d,roughness:.63,metalness:0
- });
- const brass=new THREE.MeshStandardMaterial({
-  color:0xc3a46f,metalness:.79,roughness:.27
- });
- const frameWood=new THREE.MeshStandardMaterial({
-  color:0xe5d5c1,roughness:.53,metalness:0
- });
- const trim=(sx,sy,sz,x,y,z,name,material=frameWood,parent=root)=>{
-  const mesh=new THREE.Mesh(new THREE.BoxGeometry(sx,sy,sz),material);
-  mesh.position.set(x,y,z);
-  mesh.name=name;
-  mesh.castShadow=false;
-  mesh.receiveShadow=true;
-  parent.add(mesh);
-  return mesh;
- };
- // The jamb spans the real 200mm partition depth, not a painted rectangle.
- trim(.23,h+.065,.084,0,(h+.065)/2,-w/2,'KITCHEN_DOOR_FRAME_LEFT');
- trim(.23,h+.065,.084,0,(h+.065)/2,w/2,'KITCHEN_DOOR_FRAME_RIGHT');
- trim(.23,.105,w+.09,0,h+.022,0,'KITCHEN_DOOR_HEADER');
- for(const face of [-1,1]){
-  const x=face*.124;
-  trim(.024,h+.095,.076,x,(h+.095)/2,-w/2,'KITCHEN_DOOR_CASING');
-  trim(.024,h+.095,.076,x,(h+.095)/2,w/2,'KITCHEN_DOOR_CASING');
-  trim(.024,.082,w+.14,x,h+.052,0,'KITCHEN_DOOR_CASING_HEADER');
- }
- const pivot=new THREE.Group();
- pivot.name='HINGED_KITCHEN_LEAF_PIVOT';
- pivot.position.set(0,0,-w/2+.052);
- root.add(pivot);
- const thickness=.068;
- const leafWidth=w-.102;
- const leafHeight=h-.105;
- const bottom=.047;
- const faceX=thickness/2;
- const leaf=new THREE.Mesh(new THREE.BoxGeometry(thickness,leafHeight,leafWidth),timber);
- leaf.position.set(0,bottom+leafHeight/2,leafWidth/2);
- leaf.name='S1_KITCHEN_DINING_PROPER_HINGED_WOOD_DOOR';
- leaf.castShadow=false;
- leaf.receiveShadow=true;
- pivot.add(leaf);
- // The stiles and cross-rails make the leaf visibly three-dimensional from
- // either room and from above; panels are inset into the door body.
- const panelWidths=leafWidth-.23;
- const panels=[
-  {middle:.565,height:.71},
-  {middle:1.690,height:.82}
- ];
- for(const side of [-1,1]){
-  for(const panel of panels){
-   const inset=trim(.009,panel.height,panelWidths,
-    side*(faceX+.004),panel.middle,leafWidth/2,
-    'KITCHEN_DOOR_RECESSED_WOOD_PANEL',panelWood,pivot);
-   inset.userData.isRecessedTimberPanel=true;
-   const edgeY=panel.height/2+.018;
-   const edgeZ=panelWidths/2+.018;
-   const borderX=side*(faceX+.017);
-   // Individual profile beads catch light and show actual joinery depth.
-   for(const dy of [-edgeY,edgeY]){
-    trim(.023,.033,panelWidths+.07,borderX,panel.middle+dy,leafWidth/2,
-     'KITCHEN_DOOR_RAISED_PANEL_MOULDING',stileWood,pivot);
-   }
-   for(const dz of [-edgeZ,edgeZ]){
-    trim(.023,panel.height+.07,.034,borderX,panel.middle,leafWidth/2+dz,
-     'KITCHEN_DOOR_RAISED_PANEL_MOULDING',stileWood,pivot);
-   }
-  }
-  // Three-dimensional outer rails and stiles retain their texture from both
-  // sides; they do not extend into the clear door jamb.
-  for(const z of [.052,leafWidth-.052]){
-   trim(.018,leafHeight,.098,side*(faceX+.01),bottom+leafHeight/2,z,
-    'KITCHEN_DOOR_TIMBER_STILE',stileWood,pivot);
-  }
-  for(const y of [bottom+.065,bottom+1.12,bottom+leafHeight-.065]){
-   trim(.018,.102,leafWidth-.12,side*(faceX+.01),y,leafWidth/2,
-    'KITCHEN_DOOR_TIMBER_RAIL',stileWood,pivot);
-  }
-  // Working-looking lever hardware is attached to the rotating leaf on BOTH
-  // faces rather than a fixed spherical dot on an unmodeled flat panel.
-  const handleZ=leafWidth-.13;
-  trim(.013,.212,.066,side*(faceX+.015),1.035,handleZ,
-   'KITCHEN_DOOR_BRASS_ESCUTCHEON',brass,pivot);
-  const spindle=new THREE.Mesh(new THREE.SphereGeometry(.032,12,10),brass);
-  spindle.position.set(side*(faceX+.046),1.035,handleZ);
-  spindle.name='KITCHEN_DOOR_HANDLE_SPINDLE';
-  pivot.add(spindle);
-  trim(.022,.026,.127,side*(faceX+.072),1.035,handleZ-.051,
-   'KITCHEN_DOOR_LEVER_HANDLE',brass,pivot);
- }
- // Three genuine visible hinge barrels rotate with the leaf; fixed frame
- // straps remain on the jamb. The hinge axis is at the leaf's pivot.
- for(const y of [.30,1.20,2.08]){
-  const barrel=new THREE.Mesh(new THREE.CylinderGeometry(.024,.024,.095,14),brass);
-  barrel.position.set(0,y,0);
-  barrel.name='KITCHEN_DOOR_HINGE_BARREL';
-  pivot.add(barrel);
-  trim(.016,.098,.075,-.080,y,0,'KITCHEN_DOOR_FRAME_HINGE',brass);
- }
- root.userData.real3DKitchenDoor=true;
- root.userData.doorModel={
-  panelCount:4,hingeCount:3,handleCount:2,leafThicknessMetres:thickness,
-  openingWidthMetres:w,leafWidthMetres:leafWidth,
-  reversibleSourceOnly:true
- };
- let current=0,target=0;
- function update(dt=.016){
-  current=THREE.MathUtils.damp(current,target,8,Math.min(.10,Math.max(0,dt)));
-  if(Math.abs(current-target)<.002)current=target;
-  // Open into the dining side, away from the kitchen cabinetry.
-  pivot.rotation.y=current*Math.PI*.49;
-  root.updateMatrixWorld(true);
- }
- function distanceTo(viewer){
-  const x=viewer.x-root.position.x,z=viewer.z-root.position.z;
-  return Math.hypot(x,Math.max(0,Math.abs(z)-w/2));
- }
- function near(viewer,footY,max=1.75){
-  return Math.abs(footY)<1.05&&distanceTo(viewer)<max;
- }
- function toggle(viewer,footY){
-  if(!near(viewer,footY))return {ok:false,reason:'Move closer to the kitchen door'};
-  const dx=viewer.x-root.position.x,dz=viewer.z-root.position.z;
-  if(target>.5&&Math.abs(dx)<.48&&Math.abs(dz)<w/2+.32)
-   return {ok:false,reason:'Move away from the kitchen doorway before closing'};
-  target=target>.5?0:1;
-  return {ok:true,open:target>.5,style:'hinge',name:'Kitchen–Dining door'};
- }
- function blocksTraversal(from,to,footY,radius=.32){
-  if(current>=.85||Math.abs(footY)>1.05)return false;
-  const ax=from.x-root.position.x,bx=to.x-root.position.x;
-  const az=from.z-root.position.z,bz=to.z-root.position.z;
-  if(Math.min(Math.abs(az),Math.abs(bz))>w/2+radius*.35)return false;
-  return (Math.abs(bx)<.052+radius&&Math.abs(bx)<=Math.abs(ax)+.00001) ||
-   (ax*bx<=0&&Math.abs(az)<w/2+radius*.1&&Math.abs(bz)<w/2+radius*.1);
- }
- function status(){return {open:target>.5,current,target,
-  centre:[plan.center[0],plan.center[1]],width:w,height:h,
-  functional:true,physicalDoorModel:root.userData.doorModel,
-  source:'S1 Kitchen / Dining door-swing'};}
- update(.01);
- return {root,update,near,toggle,blocksTraversal,status,distanceTo,
-  get current(){return current;},get target(){return target;},
-  setOpenForQA(v){current=target=v?1:0;update(0);}};
-}
-
-
 /**
  * Fix the actual counter-end obstruction seen in the Kitchen–Dining door.
  * The S1 opening passes through SW-019 at x=112.30, z=-2.35, but three
@@ -287,7 +119,7 @@ export function repairKitchenDoorCounterIntrusion(records,origin,plan,inside=()=
 
 export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},inside=()=>true){
  const supported=[];
- let kitchenDoor=null,kitchenCounterRepair=null;
+ let kitchenCounterRepair=null;
  const root=new THREE.Group();root.name='S1_CONFIRMED_OPEN_ROOM_CIRCULATION';scene.add(root);
  for(const plan of S1_GROUND_OPENINGS){
   const walls=records.filter(r=>{
@@ -309,15 +141,16 @@ export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},
   });
   // Build the real swinging display door at the source-backed plan opening,
   // with live keyboard interaction and solid closed-door collision.
-  if(plan.id==='kitchen-dining-door'){
-   kitchenDoor=createFunctionalKitchenDoor(plan,origin);
+  if(plan.id==='kitchen-dining-open'){
+   // Retain kitchen counter surfaces outside the inter-room clear span;
+   // locally clip the old counter-end intrusion only at the removed wall.
    kitchenCounterRepair=repairKitchenDoorCounterIntrusion(records,origin,plan,inside);
-   root.add(kitchenDoor.root);
   }
  }
- return {root,kitchenDoor,kitchenCounterRepair,apertures:supported.filter(r=>r.verified),
+ return {root,kitchenDoor:null,kitchenCounterRepair,apertures:supported.filter(r=>r.verified),
   summary:{sourceConfirmedOpenings:supported.filter(x=>x.verified).length,
-   kitchenDoorFunctional:Boolean(kitchenDoor),
+   kitchenDoorFunctional:false,openConcept:true,internalDoorCount:0,
+   structuralEndPiersPreserved:true,
    kitchenCounterClearance:kitchenCounterRepair?.summary??null,
    expected:S1_GROUND_OPENINGS.length,
    connections:supported.map(({sourceWallMeshes,...rest})=>rest),

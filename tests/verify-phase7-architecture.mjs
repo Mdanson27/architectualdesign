@@ -79,7 +79,7 @@ const impossible=findPhysicalRoute({start:[0,0],end:[2.5,0],level:0,ground:grid,
  blocked:(x,z,nx,nz)=>(x<barrierX&&nx>=barrierX)||(x>=barrierX&&nx<barrierX),gridStep:.5,
  maxVisited:100});
 assert(!impossible.ok,'route tester must not permit passing through a solid wall');
-assert.equal(PLAN_ROUTE_TARGETS.length,4);
+assert.equal(PLAN_ROUTE_TARGETS.length,5);
 console.log(JSON.stringify({passed:true,balconies:restoration.summary.restored,
  opaqueWallsSuppressed:restoration.concealed.size,sourceVerticesPreserved:true,
  guardedEdges:true,lightingFixtures:status.groupCount,

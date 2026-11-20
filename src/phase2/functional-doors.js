@@ -133,7 +133,7 @@ export function createDoorSystem(records,scene,inside=()=>true){
   return best;
  }
  function toggle(door,viewer){
-  if(!door)return {ok:false,reason:'Move closer to a door'};
+  if(!door||door.removedFromPlan)return {ok:false,reason:'This transition has no door in the corrected floor plan'};
   if(door.target>0.5){
    const p=doorLocal(door,new THREE.Vector3(viewer.x,door.groundY+1,viewer.z));
    if(Math.abs(p.x)<door.width/2+.38 && Math.abs(p.z)<.62){
@@ -146,6 +146,7 @@ export function createDoorSystem(records,scene,inside=()=>true){
  }
  function update(dt){
   for(const d of doors){
+   if(d.removedFromPlan)continue;
    d.current=THREE.MathUtils.damp(d.current,d.target,7,Math.min(dt,.1));
    if(Math.abs(d.current-d.target)<.002)d.current=d.target;
    for(const p of d.panels){
@@ -159,7 +160,7 @@ export function createDoorSystem(records,scene,inside=()=>true){
   for(const d of doors){
    const onFloor=!sectionEnabled||mode==='walk'||floor==='all'||
     (floor==='ground'?d.level==='ground':true);
-   d.visual.visible=onFloor;
+   d.visual.visible=onFloor&&!d.removedFromPlan;
   }
  }
  function collisionMeshes(){
