@@ -17,6 +17,7 @@ import {revealObstructedDoors} from './door-apertures.js';
 import {createPlanDiningFurniture} from './dining-furnishings.js';
 import {createSourceBalconyRestoration} from './balcony-restoration.js';
 import {createHouseLighting} from './lighting-system.js';
+import {applyStudioAnneScheme,STUDIO_ANNE_SCHEMES} from './studio-anne-brief.js';
 import {PLAN_ROUTE_TARGETS,findPhysicalRoute} from './circulation-routes.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
@@ -94,7 +95,8 @@ const state={
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
- night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
+ night:false,houseLightsOn:true,designScheme:'source',designSchemeSummary:null,
+ lightLayers:{ambient:true,task:true,accent:true},balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
 };
@@ -455,7 +457,7 @@ function setupEnhancements(){
   state.planCirculation.kitchenCounterRepair?.summary);
  state.balconies=createSourceBalconyRestoration(state.meshes,scene,state.origin,isResidenceRecord);
  state.lightingSystem=createHouseLighting(scene,state.origin);
- state.lightingSystem.update({night:state.night,enabled:state.houseLightsOn});
+ state.lightingSystem.update({night:state.night,enabled:state.houseLightsOn,layers:state.lightLayers});
  console.info('[AutoMinds S1/S2 balcony presentation]',state.balconies.summary);
  const status=$('balconyAuditStatus');
  if(status)status.textContent=state.balconies.summary.restored+' source-supported balconies · '+state.balconies.summary.concealedOpaqueEdgeMeshes+' false outer enclosure meshes hidden';
@@ -476,6 +478,7 @@ function setupEnhancements(){
  $('siteAuditStatus').textContent='S1 plan · 48.5 × 25 m · 3 bays, paving, grass, trees and a 4m gate. '+
   state.sourceContextAudit.suppressedSurroundings+' unrelated IFC pieces suppressed. Location is a visual alignment, not a survey.';
  state.dining=createPlanDiningFurniture(scene,state.origin,state.meshes.filter(isResidenceRecord));
+ state.designSchemeSummary=applyStudioAnneScheme(mat,state.meshes,state.designScheme);
  buildBedroomNavigator();
  buildDoorNavigator();
  refreshVisibility();
@@ -1238,6 +1241,21 @@ function checkPlanCirculation(){
  }
 }
 // ---------- Controls, references and interface ----------
+function updateStudioAnnePreview(scheme=state.designScheme){
+ state.designScheme=scheme;
+ state.designSchemeSummary=applyStudioAnneScheme(mat,state.meshes,scheme);
+ const label=STUDIO_ANNE_SCHEMES[scheme]?.label??'Original house preview';
+ const status=$('designStudioStatus');
+ if(status)status.textContent=label+' · preview only · ambient / task / accent controls separate · IFC unchanged';
+ return state.designSchemeSummary;
+}
+function toggleStudioAnneLayer(layer,enabled){
+ state.lightLayers[layer]=enabled;
+ state.lightingSystem?.update({layers:state.lightLayers});
+ const status=$('designStudioStatus');
+ if(status)status.textContent='Studio Anne lighting: '+Object.entries(state.lightLayers)
+  .map(([key,on])=>key+' '+(on?'on':'off')).join(' · ')+' · preview only';
+}
 function toggleLighting(){
  state.night=!state.night;
  hemi.intensity=state.night?.22:1.55;
@@ -1327,6 +1345,19 @@ $('sectionToggle').addEventListener('change',e=>{
 });
 $('lightBtn').addEventListener('click',toggleLighting);
 $('houseLightsBtn').addEventListener('click',toggleHouseLights);
+$('designStudioBtn').addEventListener('click',()=>{
+ const panel=$('designStudioPanel'),open=!panel.classList.toggle('hidden');
+ $('designStudioBtn').setAttribute('aria-expanded',String(open));
+});
+$('designScheme').addEventListener('change',e=>{
+ const result=updateStudioAnnePreview(e.target.value);
+ toast('Studio Anne · '+result.label+' · comparison only');
+});
+for(const [id,layer] of [
+ ['designAmbientToggle','ambient'],
+ ['designTaskToggle','task'],
+ ['designAccentToggle','accent']
+])$(id).addEventListener('change',e=>toggleStudioAnneLayer(layer,e.target.checked));
 $('balconyToggle').addEventListener('change',e=>{
  state.showBalconies=e.target.checked;refreshVisibility();
  toast(state.showBalconies?'Plan-supported glazed balconies restored':'Comparing unmodified IFC balcony edges');
@@ -1401,6 +1432,7 @@ $('doorRevealToggle').addEventListener('change',e=>{
  state.planCirculation?.kitchenCounterRepair?.setEnabled(e.target.checked);
  if(e.target.checked){
   state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit,state.planCirculation);
+  updateStudioAnnePreview();
  }else if(state.doorApertureAudit){
   state.doorApertureAudit.restore();
  }
@@ -1680,6 +1712,7 @@ if(isLocalQA){
     kitchenDoor:state.planCirculation?.kitchenDoor?.status()??null,
     outdoorWalk:state.siteWalk?.summary??null,
     lighting:state.lightingSystem?.status()??null,
+    studioAnne:state.designSchemeSummary??null,
     circulation:state.lastRouteReport?{passed:state.lastRouteReport.passed,total:state.lastRouteReport.total}:null,
     stairSafetyShown:state.stairSafety?.root?.visible??false,
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
@@ -1808,6 +1841,13 @@ if(isLocalQA){
   diagnoseS1Openings:()=>diagnoseS1Openings(),
   diagnoseRouteGridPassages:()=>diagnoseRouteGridPassages(),
   lightingStatus:()=>state.lightingSystem?.status()??null,
+  designBriefStatus:()=>({...state.designSchemeSummary,
+   lighting:state.lightingSystem?.status()??null}),
+  setDesignBriefScheme:(scheme='source')=>{
+   const result=updateStudioAnnePreview(scheme);
+   $('designScheme').value=scheme;
+   return result;
+  },
   doorCrossings:(ids=[21,25,27],bothSides=true)=>{
    if(!state.doorSystem||!state.doorApertureAudit)return {error:'IFC doors still loading'};
    // Complete architecture: avoid section clipping a legitimate crossing.
