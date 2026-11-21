@@ -17,6 +17,7 @@ import {revealObstructedDoors} from './door-apertures.js';
 import {createPlanDiningFurniture} from './dining-furnishings.js';
 import {createSourceBalconyRestoration} from './balcony-restoration.js';
 import {createHouseLighting} from './lighting-system.js';
+import {applyStudioAnneScheme,STUDIO_ANNE_SCHEMES,applyStudioAnneFloorPreview} from './studio-anne-brief.js';
 import {PLAN_ROUTE_TARGETS,findPhysicalRoute} from './circulation-routes.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
@@ -94,7 +95,9 @@ const state={
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
- night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
+ night:false,houseLightsOn:true,designScheme:'source',designSchemeSummary:null,
+ floorPreview:'source',floorPreviewSummary:null,
+ lightLayers:{ambient:true,task:true,accent:true},balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
 };
@@ -137,6 +140,24 @@ function texture(type){
     p.moveTo(x+t*8,0);p.bezierCurveTo(x+7+t*8,145,x-2+t*8,320,x+t*8,512);p.stroke();
    }
   }
+ }else if(type==='ash'||type==='caramel'){
+   // Wood-look floor tiles from Studio Anne page 7: samples, not timber planks.
+   const ash=type==='ash';
+   const shades=ash?['#e3d9c9','#d5caba','#ebe1d1','#cec3b3']:
+    ['#cb9b73','#bd8b61','#d6a87f','#b5825c'];
+   p.fillStyle=shades[0];p.fillRect(0,0,512,512);
+   for(let x=0;x<512;x+=64){
+    p.fillStyle=shades[(x/64)%4];p.fillRect(x+1,0,62,512);
+    p.fillStyle=ash?'rgba(97,80,64,.19)':'rgba(84,50,30,.19)';
+    p.fillRect(x+62,0,2,512);
+    for(let line=0;line<5;line++){
+     const offset=(line*11+x*7)%55;
+     p.strokeStyle=ash?'rgba(119,104,87,.13)':'rgba(79,51,29,.15)';
+     p.lineWidth=.8;p.beginPath();p.moveTo(x+offset,0);
+     p.bezierCurveTo(x+offset+5,145,x+offset-4,320,x+offset+2,512);
+     p.stroke();
+    }
+   }
  }else if(type==='stone'){
   p.fillStyle='#e6dccb';p.fillRect(0,0,512,512);
   for(let row=0;row<24;row++)for(let col=0;col<10;col++){
@@ -156,7 +177,7 @@ function texture(type){
  t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;
  return t;
 }
-const maps={plaster:texture('plaster'),marble:texture('marble'),wood:texture('wood'),stone:texture('stone')};
+const maps={plaster:texture('plaster'),marble:texture('marble'),wood:texture('wood'),ash:texture('ash'),caramel:texture('caramel'),stone:texture('stone')};
 function material(color,roughness=.7,metalness=0,map=null,extra={}){
  return new THREE.MeshStandardMaterial({color,roughness,metalness,map,side:THREE.DoubleSide,...extra});
 }
@@ -455,7 +476,7 @@ function setupEnhancements(){
   state.planCirculation.kitchenCounterRepair?.summary);
  state.balconies=createSourceBalconyRestoration(state.meshes,scene,state.origin,isResidenceRecord);
  state.lightingSystem=createHouseLighting(scene,state.origin);
- state.lightingSystem.update({night:state.night,enabled:state.houseLightsOn});
+ state.lightingSystem.update({night:state.night,enabled:state.houseLightsOn,layers:state.lightLayers});
  console.info('[AutoMinds S1/S2 balcony presentation]',state.balconies.summary);
  const status=$('balconyAuditStatus');
  if(status)status.textContent=state.balconies.summary.restored+' source-supported balconies · '+state.balconies.summary.concealedOpaqueEdgeMeshes+' false outer enclosure meshes hidden';
@@ -476,6 +497,8 @@ function setupEnhancements(){
  $('siteAuditStatus').textContent='S1 plan · 48.5 × 25 m · 3 bays, paving, grass, trees and a 4m gate. '+
   state.sourceContextAudit.suppressedSurroundings+' unrelated IFC pieces suppressed. Location is a visual alignment, not a survey.';
  state.dining=createPlanDiningFurniture(scene,state.origin,state.meshes.filter(isResidenceRecord));
+ state.designSchemeSummary=applyStudioAnneScheme(mat,state.meshes,state.designScheme);
+ state.floorPreviewSummary=applyStudioAnneFloorPreview(mat.floor,maps,state.floorPreview);
  buildBedroomNavigator();
  buildDoorNavigator();
  refreshVisibility();
@@ -1238,6 +1261,22 @@ function checkPlanCirculation(){
  }
 }
 // ---------- Controls, references and interface ----------
+function updateStudioAnnePreview(scheme=state.designScheme){
+ state.designScheme=scheme;
+ state.designSchemeSummary=applyStudioAnneScheme(mat,state.meshes,scheme);
+ state.floorPreviewSummary=applyStudioAnneFloorPreview(mat.floor,maps,state.floorPreview);
+ const label=STUDIO_ANNE_SCHEMES[scheme]?.label??'Original house preview';
+ const status=$('designStudioStatus');
+ if(status)status.textContent=label+' · preview only · ambient / task / accent controls separate · IFC unchanged';
+ return state.designSchemeSummary;
+}
+function toggleStudioAnneLayer(layer,enabled){
+ state.lightLayers[layer]=enabled;
+ state.lightingSystem?.update({layers:state.lightLayers});
+ const status=$('designStudioStatus');
+ if(status)status.textContent='Studio Anne lighting: '+Object.entries(state.lightLayers)
+  .map(([key,on])=>key+' '+(on?'on':'off')).join(' · ')+' · preview only';
+}
 function toggleLighting(){
  state.night=!state.night;
  hemi.intensity=state.night?.22:1.55;
@@ -1327,6 +1366,24 @@ $('sectionToggle').addEventListener('change',e=>{
 });
 $('lightBtn').addEventListener('click',toggleLighting);
 $('houseLightsBtn').addEventListener('click',toggleHouseLights);
+$('designStudioBtn').addEventListener('click',()=>{
+ const panel=$('designStudioPanel'),open=!panel.classList.toggle('hidden');
+ $('designStudioBtn').setAttribute('aria-expanded',String(open));
+});
+$('designScheme').addEventListener('change',e=>{
+ const result=updateStudioAnnePreview(e.target.value);
+ toast('Studio Anne · '+result.label+' · comparison only');
+});
+$('designFloor').addEventListener('change',e=>{
+ state.floorPreview=e.target.value;
+ updateStudioAnnePreview();
+ toast('Studio Anne · '+state.floorPreviewSummary.label+' · visual flooring sample');
+});
+for(const [id,layer] of [
+ ['designAmbientToggle','ambient'],
+ ['designTaskToggle','task'],
+ ['designAccentToggle','accent']
+])$(id).addEventListener('change',e=>toggleStudioAnneLayer(layer,e.target.checked));
 $('balconyToggle').addEventListener('change',e=>{
  state.showBalconies=e.target.checked;refreshVisibility();
  toast(state.showBalconies?'Plan-supported glazed balconies restored':'Comparing unmodified IFC balcony edges');
@@ -1401,6 +1458,7 @@ $('doorRevealToggle').addEventListener('change',e=>{
  state.planCirculation?.kitchenCounterRepair?.setEnabled(e.target.checked);
  if(e.target.checked){
   state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit,state.planCirculation);
+  updateStudioAnnePreview();
  }else if(state.doorApertureAudit){
   state.doorApertureAudit.restore();
  }
@@ -1680,6 +1738,8 @@ if(isLocalQA){
     kitchenDoor:state.planCirculation?.kitchenDoor?.status()??null,
     outdoorWalk:state.siteWalk?.summary??null,
     lighting:state.lightingSystem?.status()??null,
+    studioAnne:state.designSchemeSummary??null,
+    studioAnneFloor:state.floorPreviewSummary??null,
     circulation:state.lastRouteReport?{passed:state.lastRouteReport.passed,total:state.lastRouteReport.total}:null,
     stairSafetyShown:state.stairSafety?.root?.visible??false,
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
@@ -1808,6 +1868,14 @@ if(isLocalQA){
   diagnoseS1Openings:()=>diagnoseS1Openings(),
   diagnoseRouteGridPassages:()=>diagnoseRouteGridPassages(),
   lightingStatus:()=>state.lightingSystem?.status()??null,
+  designBriefStatus:()=>({...state.designSchemeSummary,
+   floor:state.floorPreviewSummary??null,
+   lighting:state.lightingSystem?.status()??null}),
+  setDesignBriefScheme:(scheme='source')=>{
+   const result=updateStudioAnnePreview(scheme);
+   $('designScheme').value=scheme;
+   return result;
+  },
   doorCrossings:(ids=[21,25,27],bothSides=true)=>{
    if(!state.doorSystem||!state.doorApertureAudit)return {error:'IFC doors still loading'};
    // Complete architecture: avoid section clipping a legitimate crossing.

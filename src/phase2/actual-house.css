@@ -81,3 +81,22 @@ button,input,a{font:inherit}button{cursor:pointer}a{color:inherit;text-decoratio
 .doorInteract button{background:#e9bf8e;color:#18323b;border:0;border-radius:6px;padding:10px 13px;white-space:nowrap;font:800 11px "Manrope",sans-serif;cursor:pointer}
 .doorInteract button:hover{background:#ffdaad}
 @media(max-width:680px){.doorInteract{bottom:105px;width:calc(100% - 32px)}.doorInteract span{font-size:10px}}
+
+/* Studio Anne's Emmanuel Design Brief: explicit, reversible visual alternatives. */
+.designStudioPanel{display:flex;flex-direction:column;gap:8px;padding:12px 11px;
+ border:1px solid #c7b18d77;border-radius:7px;background:#132f33;
+ box-shadow:inset 0 1px #ffffff16}
+.designStudioPanel>strong{font:800 11px "Manrope";color:#f0c58c}
+.designStudioPanel>p{color:#b6cdc5;margin:0;font:500 10px/1.6 "DM Sans"}
+.designStudioPanel>label:not(.designLightLine){font:800 9px "Manrope";
+ color:#d9c8aa;letter-spacing:.65px}
+.designStudioPanel select{width:100%;min-height:37px;border-radius:5px;
+ background:#10272c;border:1px solid #84a19a;color:#eef4eb;
+ padding:6px 9px;font:700 11px "DM Sans";cursor:pointer}
+.designStudioPanel select:focus-visible,
+.designStudioPanel input:focus-visible{outline:2px solid #e8bf8b;outline-offset:2px}
+.designLightLine{display:flex;align-items:center;gap:9px;padding:5px 3px;
+ color:#dceae4;font:600 10px "DM Sans";cursor:pointer}
+.designLightLine input{width:15px;height:15px;margin:0;accent-color:#e9bd85}
+#designStudioStatus{border-top:1px solid #ffffff20;padding-top:7px;
+ color:#deb887;font:600 10px/1.55 "DM Sans"}

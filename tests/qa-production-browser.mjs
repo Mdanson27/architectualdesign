@@ -249,6 +249,26 @@ try{
    throw Error('Independent night and house-light controls failed');
  console.log('PHASE7_BALCONY_LIGHTS',JSON.stringify({restored:balcony.restored,concealed:balcony.concealedOpaqueEdgeMeshes,
   lights:lightBefore.activeEmitters,nightIndependent:true}));
+ const briefBefore=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.designBriefStatus())"));
+ const briefTest=JSON.parse(await evaluate("JSON.stringify((()=>{\n const panel=document.querySelector('#designStudioPanel');\n document.querySelector('#designStudioBtn').click();\n const panelVisible=!panel.classList.contains('hidden');\n const select=document.querySelector('#designScheme');\n const initial=window.__AutoMindsQA.designBriefStatus().scheme;\n select.value='mint';select.dispatchEvent(new Event('change',{bubbles:true}));\n const mint=window.__AutoMindsQA.designBriefStatus().scheme;\n select.value='powder';select.dispatchEvent(new Event('change',{bubbles:true}));\n const powder=window.__AutoMindsQA.designBriefStatus().scheme;\n select.value='source';select.dispatchEvent(new Event('change',{bubbles:true}));\n const restored=window.__AutoMindsQA.designBriefStatus().scheme;\n document.querySelector('#designTaskToggle').click();\n const taskOff=window.__AutoMindsQA.lightingStatus();\n document.querySelector('#designTaskToggle').click();\n const taskRestored=window.__AutoMindsQA.lightingStatus();\n document.querySelector('#designStudioBtn').click();\n return {panelVisible,initial,mint,powder,restored,taskOff,\n  taskRestored,panelClosed:panel.classList.contains('hidden')};\n})())"));
+ if(briefBefore.scheme!=='source'||briefBefore.lighting?.briefFixtureCount!==5||
+  briefBefore.lighting?.activeEmitters!==14||!briefTest.panelVisible||
+  !briefTest.panelClosed||briefTest.initial!=='source'||briefTest.mint!=='mint'||
+  briefTest.powder!=='powder'||briefTest.restored!=='source'||
+  briefTest.taskOff.layers.task!==false||briefTest.taskOff.activeBriefEmitters!==3||
+  briefTest.taskRestored.layers.task!==true||briefTest.taskRestored.activeBriefEmitters!==5)
+  throw Error('Studio Anne material preview / lighting failed: '+
+   JSON.stringify({briefBefore,briefTest}));
+ console.log('STUDIO_ANNE_BRIEF_PREVIEW_PASSED',
+  JSON.stringify({schemeRestored:briefTest.restored,
+   taskLightsIndependentlyControlled:true,fixturePreviews:5}));
+ const floorQA=JSON.parse(await evaluate("JSON.stringify((()=>{\n const f=document.querySelector('#designFloor');\n const initial=window.__AutoMindsQA.designBriefStatus().floor.style;\n f.value='ash';f.dispatchEvent(new Event('change',{bubbles:true}));\n const ash=window.__AutoMindsQA.designBriefStatus().floor.style;\n f.value='porcelain';f.dispatchEvent(new Event('change',{bubbles:true}));\n const porcelain=window.__AutoMindsQA.designBriefStatus().floor.style;\n f.value='caramel';f.dispatchEvent(new Event('change',{bubbles:true}));\n const caramel=window.__AutoMindsQA.designBriefStatus().floor.style;\n f.value='source';f.dispatchEvent(new Event('change',{bubbles:true}));\n const restored=window.__AutoMindsQA.designBriefStatus().floor.style;\n return {initial,ash,porcelain,caramel,restored};\n})())"));
+ if(floorQA.initial!=='source'||floorQA.ash!=='ash'||
+  floorQA.porcelain!=='porcelain'||floorQA.caramel!=='caramel'||
+  floorQA.restored!=='source')
+  throw Error('Studio Anne flooring comparisons did not reset: '+
+   JSON.stringify(floorQA));
+ console.log('STUDIO_ANNE_PAGE7_FLOORS_PASSED',JSON.stringify(floorQA));
  const ids=(process.env.QA_ALL_DOORS==='1'?Array.from({length:29},(_,i)=>i+1):[6,12,14,15,19,26,27,28,29]).filter(id=>id!==21&&id!==22&&id!==25);
  const crossings=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.doorCrossings("+JSON.stringify(ids)+",true))"));
  const obstructed=crossings.filter(x=>!x.openFront?.ok||!x.openBack?.ok).map(x=>({

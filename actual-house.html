@@ -46,6 +46,29 @@
      <label class="toggleLine"><span><b>Show curated site context</b><small>S1 plan · perimeter, 3 parking bays, pavers and lawns</small></span><input id="surroundingsToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
      <label class="toggleLine"><span><b>Section / remove roof above floor</b><small>Reveal wall layout and rooms from above</small></span><input id="sectionToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
    </div>
+   <button id="designStudioBtn" class="structAction" type="button" aria-expanded="false" aria-controls="designStudioPanel">◇ STUDIO ANNE · FINISHES & LIGHTING</button>
+   <section id="designStudioPanel" class="designStudioPanel hidden" aria-label="Studio Anne design alternatives">
+     <strong>Emmanuel's design brief</strong>
+     <p>Pages 2–5: comparison previews, not confirmed final selections. Original IFC geometry remains unchanged.</p>
+     <label for="designScheme">Finishes preview</label>
+     <select id="designScheme" aria-label="Choose a Studio Anne finishes preview">
+       <option value="source">Original house preview</option>
+       <option value="mint">Mint · 60 / 30 / 10</option>
+       <option value="taupe">Taupe · 60 / 30 / 10</option>
+       <option value="powder">Powder Blue · 60 / 30 / 10</option>
+     </select>
+     <label for="designFloor">Flooring sample · page 7</label>
+     <select id="designFloor" aria-label="Choose a Studio Anne flooring preview">
+       <option value="source">Original floor preview</option>
+       <option value="porcelain">Porcelain / ceramic</option>
+       <option value="ash">Ash wood-look tile</option>
+       <option value="caramel">Caramel wood-look tile</option>
+     </select>
+     <label class="designLightLine"><input id="designAmbientToggle" type="checkbox" checked/> Ambient lights</label>
+     <label class="designLightLine"><input id="designTaskToggle" type="checkbox" checked/> Task lights · Kitchen</label>
+     <label class="designLightLine"><input id="designAccentToggle" type="checkbox" checked/> Accent lights · Dining & stairs</label>
+     <p id="designStudioStatus" role="status" aria-live="polite">Preview only · Studio Anne pages 3–5, 10–12.</p>
+   </section>
    <button id="stairFocusBtn" class="structAction">↗ INSPECT REAL STAIRCASE</button>
    <button id="circulationBtn" class="structAction" title="Source-floor and obstacle-aware test, not a teleporter">⌁ VERIFY STAIR → ROOM ACCESS</button>
    <div id="circulationStatus" class="measureStatus">Stair-to-sitting, dining, kitchen and Family Room routes not yet tested.</div>
