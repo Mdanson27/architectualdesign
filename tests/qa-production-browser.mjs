@@ -127,16 +127,18 @@ try{
  const siteReview=summary.siteContext;
  if(!siteReview?.gateRoadFacingLongBoundary||
    !siteReview?.continuousPavingGateToParking||
-   siteReview?.palmTreesKeptOutsideDrive!==2||
-   siteReview?.longDriveMetres<15||
-   siteReview?.gateOffsetFromLeftMetres<36)
-   throw Error('Gate / driveway / palm site-plan correction was not loaded: '+
-     JSON.stringify(siteReview));
- console.log('S1_GATE_AND_PARKING_GEOMETRY_VERIFIED',JSON.stringify({
-   gateOffsetFromFrontageStart:siteReview.gateOffsetFromLeftMetres,
-   pavedDriveLength:siteReview.longDriveMetres,
-   parkingBays:siteReview.parkingBays,
-   treesOnLawnSide:siteReview.palmTreesKeptOutsideDrive
+   siteReview?.gateOffsetFromLeftMetres>11||
+   siteReview?.gateOffsetFromLeftMetres<5||
+   siteReview?.parkingOutdoorCoverage<50||
+   siteReview?.removedOldGatePalmTrees!==2||
+   siteReview?.palmTreesPreserved!==3)
+   throw Error('Client-corrected opposite gate / half-compound parking regression: '+
+    JSON.stringify(siteReview));
+ console.log('OPPOSITE_GATE_AND_EXPANDED_PARKING_VERIFIED',JSON.stringify({
+  gateOffsetFromLeft:siteReview.gateOffsetFromLeftMetres,
+  parkingOutdoorCoverage:siteReview.parkingOutdoorCoverage,
+  parkingBays:siteReview.parkingBays,palmsPreserved:siteReview.palmTreesPreserved,
+  oldGatePalmsRemoved:siteReview.removedOldGatePalmTrees
  }));
  const scene=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
  const balcony=summary.balconies;
