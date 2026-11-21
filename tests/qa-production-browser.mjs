@@ -262,6 +262,13 @@ try{
  console.log('STUDIO_ANNE_BRIEF_PREVIEW_PASSED',
   JSON.stringify({schemeRestored:briefTest.restored,
    taskLightsIndependentlyControlled:true,fixturePreviews:5}));
+ const floorQA=JSON.parse(await evaluate("JSON.stringify((()=>{\n const f=document.querySelector('#designFloor');\n const initial=window.__AutoMindsQA.designBriefStatus().floor.style;\n f.value='ash';f.dispatchEvent(new Event('change',{bubbles:true}));\n const ash=window.__AutoMindsQA.designBriefStatus().floor.style;\n f.value='porcelain';f.dispatchEvent(new Event('change',{bubbles:true}));\n const porcelain=window.__AutoMindsQA.designBriefStatus().floor.style;\n f.value='caramel';f.dispatchEvent(new Event('change',{bubbles:true}));\n const caramel=window.__AutoMindsQA.designBriefStatus().floor.style;\n f.value='source';f.dispatchEvent(new Event('change',{bubbles:true}));\n const restored=window.__AutoMindsQA.designBriefStatus().floor.style;\n return {initial,ash,porcelain,caramel,restored};\n})())"));
+ if(floorQA.initial!=='source'||floorQA.ash!=='ash'||
+  floorQA.porcelain!=='porcelain'||floorQA.caramel!=='caramel'||
+  floorQA.restored!=='source')
+  throw Error('Studio Anne flooring comparisons did not reset: '+
+   JSON.stringify(floorQA));
+ console.log('STUDIO_ANNE_PAGE7_FLOORS_PASSED',JSON.stringify(floorQA));
  const ids=(process.env.QA_ALL_DOORS==='1'?Array.from({length:29},(_,i)=>i+1):[6,12,14,15,19,26,27,28,29]).filter(id=>id!==21&&id!==22&&id!==25);
  const crossings=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.doorCrossings("+JSON.stringify(ids)+",true))"));
  const obstructed=crossings.filter(x=>!x.openFront?.ok||!x.openBack?.ok).map(x=>({
