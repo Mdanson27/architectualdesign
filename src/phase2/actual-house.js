@@ -1558,6 +1558,56 @@ const isLocalQA=(location.hostname==='localhost'||location.hostname==='127.0.0.1
  && new URLSearchParams(location.search).has('qa');
 if(isLocalQA){
  window.__AutoMindsQA={
+  auditNov21ClientAreas:()=>{
+   scene.updateMatrixWorld(true);
+   const offset=state.origin;
+   const toWorldBox=r=>({
+    x:[+(r.box.min.x+offset.x).toFixed(3),+(r.box.max.x+offset.x).toFixed(3)],
+    y:[+r.box.min.y.toFixed(3),+r.box.max.y.toFixed(3)],
+    z:[+(r.box.min.z+offset.z).toFixed(3),+(r.box.max.z+offset.z).toFixed(3)]});
+   const ds=state.doorSystem?.doors.map(d=>({
+    id:d.id,level:d.level,style:d.style,removed:!!d.removedFromPlan,
+    x:+(d.position.x+offset.x).toFixed(3),z:+(d.position.z+offset.z).toFixed(3),
+    width:+d.width.toFixed(3),
+    sources:d.source.map(q=>({guid:q.mesh.userData.ifc?.guid,name:q.mesh.userData.ifc?.name}))
+   }))??[];
+   const entry=ds.find(d=>d.id===27);
+   const pick=r=>{
+    if(r.layer?.level!=='ground'||r.box.min.y>3.4||r.box.max.y<0.3)return false;
+    const p=toWorldBox(r),name=r.mesh.userData.ifc?.name??'';
+    const nearEntry=entry&&p.x[0]<entry.x+3.4&&p.x[1]>entry.x-3.4&&
+     p.z[0]<entry.z+3.4&&p.z[1]>entry.z-3.4;
+    const nearStair=p.x[0]<114.8&&p.x[1]>110.2&&
+     p.z[0]<-5.2&&p.z[1]>-10.2;
+    const nearKitchen=p.x[0]<114.1&&p.x[1]>110.3&&
+     p.z[0]<1.55&&p.z[1]>-5.9;
+    const structural=['walls','columns','railings','doors'].includes(r.category);
+    const skinny=Math.min(p.x[1]-p.x[0],p.z[1]-p.z[0])<.38;
+    const proxyPanel=(r.category==='proxies'||r.category==='slabs')&&
+       skinny&&(p.y[1]-p.y[0]>.44);
+    return (structural||proxyPanel)&&(nearEntry||nearStair||nearKitchen);
+   };
+   const records=state.meshes.filter(pick).map(r=>{
+    const b=toWorldBox(r);
+    return {name:r.mesh.userData.ifc?.name,guid:r.mesh.userData.ifc?.guid,
+     category:r.category,visible:r.mesh.visible,
+     dims:[b.x[1]-b.x[0],b.y[1]-b.y[0],b.z[1]-b.z[0]].map(v=>+v.toFixed(2)),
+     box:b};
+   });
+   const generated=[];
+   state.stairSafety?.root?.traverse(o=>{
+    if(!o.isMesh)return;
+    const b=new THREE.Box3().setFromObject(o);
+    const dims=b.getSize(new THREE.Vector3());
+    generated.push({name:o.name,visible:o.visible,center:{
+     x:+(b.min.x+b.max.x+2*offset.x).toFixed(2)/2,
+     z:+(b.min.z+b.max.z+2*offset.z).toFixed(2)/2,
+     y:+((b.min.y+b.max.y)/2).toFixed(2)
+    },dimensions:[dims.x,dims.y,dims.z].map(v=>+v.toFixed(2))});
+   });
+   return {doors:ds,entry,source:records,stairGenerated:generated.filter(x=>
+    /POST|HANDRAIL|GUARD|BALUSTER|TRANSITION/i.test(x.name)).slice(0,120)};
+  },
   auditOpenConceptGeometry:()=>{
    const zones=[
     {name:'stair_sitting',x:[107.5,114.3],z:[-9.52,-5.48],y:[-.1,3.35]},
