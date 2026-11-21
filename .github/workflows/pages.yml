@@ -46,6 +46,8 @@ jobs:
         run: npm run test:phase7
       - name: Verify S1 drawing-confirmed ground-floor circulation openings
         run: npm run test:plan-circulation
+      - name: Verify client ground stair-kitchen wall removal and main door enclosure
+        run: npm run test:client-open-plan
       - name: Reject stair/sitting floating glazing and kitchen divider; keep enclosing facade
         run: npm run test:open-plan
       - name: Verify stair window stops at landing and ground stair-to-sitting wall is absent
