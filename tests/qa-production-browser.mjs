@@ -158,6 +158,8 @@ try{
  if(!siteReview?.gateOnPalmTreeSideFence||
    !siteReview?.oldGateBoundaryRestored||
    !siteReview?.straightDrivewayToParking||
+   !siteReview?.straightPavingOuterEdge||
+   siteReview?.driveCourtRightEdgeOffsetMetres!==0||
    !siteReview?.continuousPavingGateToParking||
    siteReview?.gateDistanceFromForegroundCornerMetres>14||
    siteReview?.totalPavingOutdoorCoverage>=50||
@@ -172,6 +174,8 @@ try{
   gateOnPalmSide:true,
   gateCornerOffsetMetres:siteReview.gateDistanceFromForegroundCornerMetres,
   straightDriveway:true,
+  straightPavingOuterEdge:true,
+  parkingDriveEdgeOffsetMetres:siteReview.driveCourtRightEdgeOffsetMetres,
   pavedParkingCoveragePercent:siteReview.parkingOutdoorCoverage,
   totalPavedOutdoorCoveragePercent:siteReview.totalPavingOutdoorCoverage,
   lawnOutdoorCoverageApprox:siteReview.lawnOutdoorCoverageApprox,
