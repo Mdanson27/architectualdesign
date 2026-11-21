@@ -57,8 +57,8 @@ assert(first.briefFixtures.some(x=>x.id==='dining-table-pendant'&&x.kelvin===270
 const pendant=lights.briefEmitters.find(x=>x.id==='dining-table-pendant');
 assert.equal(pendant.point[0],DINING_TABLE_WORLD[0]);
 assert.equal(pendant.point[2],DINING_TABLE_WORLD[2]);
-assert(Math.abs((pendant.point[1]-.765)-.825)<.001,
- 'dining pendant should be above the actual tabletop, not room centre');
+assert(Math.abs((pendant.point[1]-.115-.81)-.825)<.003,
+ 'dining pendant diffuser must sit 0.75–0.90m above actual tabletop');
 assert(first.fixtures.find(x=>x.id==='kitchen').kelvin>=3000);
 assert(first.fixtures.find(x=>x.id==='dining').kelvin===2700);
 assert(first.fixtures.find(x=>x.id==='reading').kelvin>=3500);
