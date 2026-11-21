@@ -43,6 +43,7 @@
 !/tests/verify-stair-window-open-wall.mjs
 !/tests/verify-kitchen-outdoor.mjs
 !/tests/verify-kitchen-door-clearance.mjs
+!/tests/verify-open-plan-clarity.mjs
 !/tests/qa-production-browser.mjs
 !/tests/
 !/tests/verify-site-context.mjs

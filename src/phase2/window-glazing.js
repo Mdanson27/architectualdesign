@@ -112,13 +112,35 @@ export function createIFCWindowGlazing(records,scene,isResidenceRecord,origin={x
   const found=clusters.find(g=>matching(g[0],c));
   if(found)found.push(c);else clusters.push([c]);
  }
+ // Two internal IFC-window proxies were exported inside the ground-floor
+ // stair / Sitting Room divider. That divider has been removed by the client's
+ // open-plan correction, so these are NOT exterior glazing and must not appear
+ // as floating 3D glass frames or remain collidable in the open circulation.
+ const obsoleteStairGlass=clusters.filter(group=>{
+  if(group[0].level!=='ground')return false;
+  const x=group.reduce((n,c)=>n+c.center.x,0)/group.length+origin.x;
+  const z=group.reduce((n,c)=>n+c.center.z,0)/group.length+origin.z;
+  const width=Math.max(...group.map(c=>c.width));
+  const height=Math.max(...group.map(c=>c.height));
+  return Math.abs(x-112.296)<.16 && width>.45&&width<.95 &&
+   height>1.85&&height<2.7 &&
+   (Math.abs(z+7.852)<.18||Math.abs(z+6.222)<.18);
+ });
+ const keepClusters=clusters.filter(group=>!obsoleteStairGlass.includes(group));
+ const omittedSources=obsoleteStairGlass.flatMap(group=>group.map(c=>c.rec));
+ for(const rec of omittedSources){
+  rec.mesh.userData.clientStairSittingGlassRemoved=true;
+  rec.mesh.visible=false;
+ }
  const root=new THREE.Group();root.name='IFC_GLASS_PANES_AND_ALUMINIUM_FRAMES';
- const windows=clusters.map((cluster,i)=>makeWindow(cluster,i));
+ const windows=keepClusters.map((cluster,i)=>makeWindow(cluster,i));
  for(const w of windows)root.add(w.group);
  root.visible=true;scene.add(root);
- const sourceSet=new Set(windows.flatMap(w=>w.source));
- const stair=clusters.flat().find(c=>c.correctedStairWindow);
+ const sourceSet=new Set([...windows.flatMap(w=>w.source),...omittedSources]);
+ const stair=keepClusters.flat().find(c=>c.correctedStairWindow);
  const summary={windowAssemblies:windows.length,replacedProxyComponents:sourceSet.size,
+  stairSittingOpenGlassAssembliesRemoved:obsoleteStairGlass.length,
+  removedInteriorGlassSourceGuids:omittedSources.map(r=>r.mesh.userData.ifc?.guid),
   transparentGlass:true,sourceAligned:true,syntheticOpenings:0,
   supportedNarrowTransomParts:windows.filter(w=>w.height<.55).length,
   glassOpacity:glass.opacity,

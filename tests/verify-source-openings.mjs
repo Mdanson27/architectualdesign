@@ -44,7 +44,7 @@ assert.equal(shaderCut.windowObstructedCount,1);
 assert.equal(shaderCut.summary.noSourceVerticesModified,true);
 assert.deepEqual([...wallMesh.geometry.attributes.position.array],old);
 const shader={uniforms:{},vertexShader:'#include <begin_vertex>',fragmentShader:'#include <clipping_planes_fragment>'};
-material.onBeforeCompile(shader,{});
+wallMesh.material.onBeforeCompile(shader,{});
 assert(shader.fragmentShader.includes('uDoorCount'));
 assert(shader.fragmentShader.includes('discard'));
 assert(shader.vertexShader.includes('vHouseWorldPoint'));

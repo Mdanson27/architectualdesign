@@ -2,7 +2,7 @@ name: Deploy AutoMinds Spaces to GitHub Pages
 
 on:
   push:
-    branches: [main, phase7-architecture-circulation-balconies-lighting, stages-a-d-open-plan-maid-access, fix-stair-window-open-wall]
+    branches: [main, phase7-architecture-circulation-balconies-lighting, stages-a-d-open-plan-maid-access, fix-stair-window-open-wall, fix-open-plan-divider-and-kitchen-envelope-20261121]
   workflow_dispatch:
 
 permissions:
@@ -46,6 +46,8 @@ jobs:
         run: npm run test:phase7
       - name: Verify S1 drawing-confirmed ground-floor circulation openings
         run: npm run test:plan-circulation
+      - name: Reject stair/sitting floating glazing and kitchen divider; keep enclosing facade
+        run: npm run test:open-plan
       - name: Verify stair window stops at landing and ground stair-to-sitting wall is absent
         run: npm run test:stair-wall-window
       - name: Verify continuous source-backed doorway portal navigation
