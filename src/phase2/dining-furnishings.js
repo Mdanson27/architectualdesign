@@ -26,6 +26,7 @@ function makeChair(x,z,rotation,index){
  piece(chair,.41,.27,.073,0,.81,.16,cushion);
  return chair;
 }
+export const DINING_TABLE_WORLD=Object.freeze([115.05,0,-1.52]);
 export function createPlanDiningFurniture(scene,origin,sourceRecords=[]){
  const root=new THREE.Group();
  root.name='PDF_DINING_ROOM_19M2_SIX_CHAIRS_PROVISIONAL';
@@ -33,7 +34,7 @@ export function createPlanDiningFurniture(scene,origin,sourceRecords=[]){
  // photo/plan orientation. Requires source-to-PDF interior clearance approval.
  // Shift the complete six-seat group east within the plan's 19m² room.
  // The former west chair obstructed the Kitchen–Dining doorway at X=112.30m.
- root.position.set(115.05-origin.x,0,-1.52-origin.z);
+ root.position.set(DINING_TABLE_WORLD[0]-origin.x,0,DINING_TABLE_WORLD[2]-origin.z);
  const tabletop=new THREE.Group();tabletop.name='REAL_3D_DINING_TABLE';
  const tableTop=piece(tabletop,2.17,.09,1.10,0,.765,0,oak);
  for(const x of [-.94,.94])for(const z of [-.42,.42])piece(tabletop,.084,.72,.084,x,.36,z,legs);
