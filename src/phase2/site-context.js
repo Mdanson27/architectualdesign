@@ -191,7 +191,11 @@ export function createCuratedSiteContext(scene,origin){
  // - Lawn continues across the entire foreground and alongside the driveway.
  // All geometry is viewer-only: source IFC remains unchanged.
  const gateCenterX=right-11.20,gateZ=top;
- const parkX=house.maxX+1.35,parkRight=right-9.30;
+ const driveWidth=4.60;
+ // The previous court stopped 0.40m short of the driveway's outer edge.
+ // Match the entire right-hand edge precisely so the paving / kerb runs
+ // straight from the gate to the far side of the parking court.
+ const parkX=house.maxX+1.35,parkRight=gateCenterX+driveWidth/2;
  const parkRear=top+8.20,parkFront=front-.85;
  const parkW=parkRight-parkX,parkDepth=parkFront-parkRear;
  const footprint=(house.maxX-house.minX)*(house.maxZ-house.minZ);
@@ -200,7 +204,7 @@ export function createCuratedSiteContext(scene,origin){
  // Vehicle access is centered on the 4m gate and passes through the
  // 7–8m right-side lawn setback. It overlaps the court's rear-right edge,
  // guaranteeing a continuous paved route instead of a broken L-shaped path.
- const driveWidth=4.60,driveX0=gateCenterX-driveWidth/2,
+ const driveX0=gateCenterX-driveWidth/2,
   driveX1=gateCenterX+driveWidth/2;
  const driveZ0=top+.12,driveZ1=parkRear+.55;
  const driveArea=driveWidth*(driveZ1-driveZ0);
@@ -230,8 +234,10 @@ export function createCuratedSiteContext(scene,origin){
  // Low edge kerbs define lawn vs pavement. Never block the entrance or
  // the transition between the straight driveway and the parking court.
  const kerbY=surface+.029;
- box(root,.11,.10,parkDepth-.10,parkRight+.06,kerbY,
-  (parkRear+parkFront)/2,mat.kerb,'PAVED_AREA_RIGHT_KERB');
+ // One uninterrupted straight kerb: do not join two separate offset
+ // parking / driveway kerbs or double-stack them in the overlap.
+ box(root,.11,.10,parkFront-driveZ0-.55,driveX1+.06,kerbY,
+  (driveZ0+parkFront)/2,mat.kerb,'PAVED_AND_DRIVE_RIGHT_KERB');
  box(root,.11,.10,parkDepth-.10,parkX-.06,kerbY,
   (parkRear+parkFront)/2,mat.kerb,'PAVED_AREA_LEFT_KERB');
  const rearLeftWidth=driveX0-parkX-.17;
@@ -240,8 +246,9 @@ export function createCuratedSiteContext(scene,origin){
    kerbY,parkRear-.06,mat.kerb,'PAVED_AREA_REAR_KERB_LEFT');
  box(root,.10,.10,driveZ1-driveZ0-.55,driveX0-.06,kerbY,
   (driveZ0+driveZ1)/2,mat.kerb,'DRIVEWAY_LAWN_KERB_LEFT');
- box(root,.10,.10,driveZ1-driveZ0-.55,driveX1+.06,kerbY,
-  (driveZ0+driveZ1)/2,mat.kerb,'DRIVEWAY_LAWN_KERB_RIGHT');
+ // The former short DRIVEWAY_LAWN_KERB_RIGHT is replaced by the single
+ // PAVED_AND_DRIVE_RIGHT_KERB above. No hard jog at the parking join.
+
 
  // One 600x600x50mm splash apron row is explicitly required by note 9.
  const apron=.6,pad=.18;
@@ -336,6 +343,8 @@ export function createCuratedSiteContext(scene,origin){
   gateOffsetFromLeftMetres:+(gateCenterX-left).toFixed(2),
   gatePlacement:'palm-tree-side fence near foreground corner, approved layout',
   straightDrivewayToParking:true,
+  straightPavingOuterEdge:true,
+  driveCourtRightEdgeOffsetMetres:+(parkRight-driveX1).toFixed(3),
   continuousPavingGateToParking:true,
   drivewayWidthMetres:driveWidth,
   parkingAreaSquareMetres:+parkArea.toFixed(1),
