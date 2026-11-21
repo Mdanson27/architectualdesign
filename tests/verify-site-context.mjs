@@ -66,6 +66,22 @@ assert(access.driveway.z0>=access.gateCenter[1]&&
  'the driveway must directly overlap the parking court');
 assert(access.parking.x0>site.house.maxX,
  'parking must not intrude into the main house');
+assert.equal(site.summary.straightPavingOuterEdge,true);
+assert.equal(site.summary.driveCourtRightEdgeOffsetMetres,0,
+ 'parking edge must be perfectly flush with the straight driveway');
+assert(Math.abs(access.parking.x1-access.driveway.x1)<1e-6,
+ 'driveway must not kink where it meets the parking');
+const outerKerb=site.root.children.filter(m=>m.name==='PAVED_AND_DRIVE_RIGHT_KERB');
+assert.equal(outerKerb.length,1,
+ 'exactly one uninterrupted kerb should run alongside driveway and parking');
+assert.equal(site.root.children.filter(m=>m.name==='DRIVEWAY_LAWN_KERB_RIGHT').length,0,
+ 'old overlapping driveway kerb must not reintroduce a jog');
+const kerbBounds=new THREE.Box3().setFromObject(outerKerb[0]);
+assert(Math.abs(kerbBounds.min.x+origin.x-access.driveway.x1)<.06,
+ 'straight kerb follows the same outer x coordinate along its full run');
+assert(kerbBounds.min.z+origin.z<access.driveway.z0+.45 &&
+ kerbBounds.max.z+origin.z>access.parking.z1-.45,
+ 'straight outer kerb extends continuously from the gate to parking');
 assert(access.palms.every(([x,z])=>x>access.parking.x1+1.0),
  'all three foreground palms must be in the lawn, not on parking or driveway');
 site.root.updateMatrixWorld(true);
