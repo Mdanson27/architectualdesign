@@ -24,7 +24,12 @@ const records=[...affected,...unaffected],
    positions:[...r.mesh.geometry.attributes.position.array]}));
 const result=repairKitchenDoorCounterIntrusion(records,new THREE.Vector3(),plan);
 assert.equal(result.summary.matchedSourceSlabs,3);
-for(const r of affected)assert.notStrictEqual(r.mesh.material,original[records.indexOf(r)].material);
+for(const r of affected){
+ assert.notStrictEqual(r.mesh.material,original[records.indexOf(r)].material);
+ assert.equal(r.mesh.visible,false,'no ribbed source divider may remain visible');
+ assert.equal(r.mesh.userData.clientKitchenDiningDividerRemoved,true);
+}
+for(const r of unaffected)assert.equal(r.mesh.visible,true,'real kitchen counters and floor must remain visible');
 for(const r of unaffected)assert.strictEqual(r.mesh.material,original[records.indexOf(r)].material);
 assert(result.pointInCut(new THREE.Vector3(112.3,.45,-2.35)));
 assert(!result.pointInCut(new THREE.Vector3(113.1,.45,-2.35)));

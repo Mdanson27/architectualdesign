@@ -86,6 +86,12 @@ export function repairKitchenDoorCounterIntrusion(records,origin,plan,inside=()=
   original.set(rec,material);cut.set(rec,derived);
   rec.mesh.material=derived;
   rec.mesh.userData.kitchenCounterDoorCut=true;
+  // The three narrow SLA-002 strips are an obsolete low partition at the
+  // client-confirmed OPEN kitchen/dining connection, not room floor slabs.
+  // Hide the whole strip, including the uncropped end near the external wall.
+  // The broad source kitchen worktops remain untouched and visible.
+  rec.mesh.userData.clientKitchenDiningDividerRemoved=true;
+  rec.mesh.visible=false;
  }
  let enabled=true;
  function setEnabled(value){

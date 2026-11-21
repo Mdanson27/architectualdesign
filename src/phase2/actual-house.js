@@ -264,6 +264,7 @@ function refreshVisibility(){
   const visible=visibleSourceRecord(rec);
   rec.mesh.visible=visible;
   if(rec.mesh.userData.clientStairSittingWallRemoved)rec.mesh.visible=false;
+  if(rec.mesh.userData.clientKitchenDiningDividerRemoved)rec.mesh.visible=false;
   if(state.doorSystem&&rec.mesh.userData.functionallyReplacedDoorId)rec.mesh.visible=false;
   if(state.windows?.sourceSet.has(rec))rec.mesh.visible=false;
   if(rec.mesh.userData.facadeDuplicateHidden)rec.mesh.visible=false;
@@ -1556,6 +1557,47 @@ const isLocalQA=(location.hostname==='localhost'||location.hostname==='127.0.0.1
  && new URLSearchParams(location.search).has('qa');
 if(isLocalQA){
  window.__AutoMindsQA={
+  auditOpenConceptGeometry:()=>{
+   const zones=[
+    {name:'stair_sitting',x:[107.5,114.3],z:[-9.52,-5.48],y:[-.1,3.35]},
+    {name:'kitchen_dining',x:[111.5,112.55],z:[-5.57,.68],y:[-.1,3.35]},
+    {name:'kitchen_external',x:[107.45,112.55],z:[.30,.87],y:[-.1,3.35]}
+   ];
+   const entries=[];
+   const records=new Map(state.meshes.map(r=>[r.mesh,r]));
+   scene.updateMatrixWorld(true);
+   scene.traverse(o=>{
+    if(!o.isMesh)return;
+    for(let p=o;p;p=p.parent){if(!p.visible)return;}
+    const b=new THREE.Box3().setFromObject(o);
+    const min=[b.min.x+state.origin.x,b.min.y,b.min.z+state.origin.z];
+    const max=[b.max.x+state.origin.x,b.max.y,b.max.z+state.origin.z];
+    const matches=zones.filter(z=>max[0]>z.x[0]&&min[0]<z.x[1]&&max[2]>z.z[0]&&min[2]<z.z[1]&&max[1]>z.y[0]&&min[1]<z.y[1]);
+    if(!matches.length)return;
+    const rec=records.get(o);
+    entries.push({zone:matches.map(x=>x.name),name:o.name,sourceName:o.userData?.ifc?.name??null,
+     category:rec?.category??'generated',level:rec?.layer?.level??null,
+     parent:o.parent?.name??null,grandparent:o.parent?.parent?.name??null,
+     transparent:!!o.material?.transparent,opacity:o.material?.opacity??null,
+     box:[min,max].map(a=>a.map(v=>+v.toFixed(3)))});
+   });
+   return {entries,counts:Object.fromEntries(zones.map(z=>[z.name,entries.filter(e=>e.zone.includes(z.name)).length])),
+    runtime:{
+     windowSummary:state.windows?.summary,
+     windows:state.windows?.windows.map(w=>({x:w.position.x+state.origin.x,
+       z:w.position.z+state.origin.z,y:w.position.y,width:w.width,height:w.height,
+       level:w.level,source:w.source.map(r=>({guid:r.mesh.userData.ifc?.guid,name:r.mesh.userData.ifc?.name}))})),
+     dividerSelected:state.planCirculation?.kitchenCounterRepair?.selected.map(r=>({
+       guid:r.mesh.userData.ifc?.guid,name:r.mesh.userData.ifc?.name,
+       flagged:r.mesh.userData.clientKitchenDiningDividerRemoved,visible:r.mesh.visible,
+       inScene:state.meshes.includes(r)})),
+     matches:state.meshes.filter(r=>['1u1fK$zsPDMxAPstkxZ1sp',
+       '0$U3BhYYLFWRl7EzZZ9tud','2Quhv0cYjC68LUGFv3TDMx'].includes(r.mesh.name))
+       .map(r=>({name:r.mesh.name,visible:r.mesh.visible,flagged:r.mesh.userData.clientKitchenDiningDividerRemoved})),
+     cutSummary:state.doorApertureAudit?.summary
+    }};
+
+  },
   summary:()=>({meshes:state.meshes.length,loaded:state.loadedLayers,expected:state.totalLayers,
     doorCount:state.doorSystem?.doors.length??0,apertures:state.doorApertureAudit?.obstructedCount??0,
     siteContext:state.siteContext?.summary??null,sourceContextAudit:state.sourceContextAudit??null,

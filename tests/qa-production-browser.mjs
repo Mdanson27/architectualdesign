@@ -1,10 +1,11 @@
 import http from 'node:http';
 import path from 'node:path';
+import os from 'node:os';
 import fs from 'node:fs';
 import {spawn} from 'node:child_process';
 
 const root=path.resolve('dist');
-const port=5188,debugPort=9267;
+const port=5188,debugPort=22000+(process.pid%15000);
 const contentTypes={'.html':'text/html','.js':'application/javascript','.json':'application/json',
  '.css':'text/css','.glb':'model/gltf-binary','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'};
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
@@ -21,14 +22,17 @@ const server=http.createServer((req,res)=>{
 });
 await new Promise(r=>server.listen(port,'127.0.0.1',r));
 const url='http://127.0.0.1:'+port+'/architectualdesign/actual-house.html?preview&qa';
-const chrome=spawn(process.env.CHROME_BIN||'/usr/bin/google-chrome',[
+const chromeBin=process.env.CHROME_BIN || (process.platform==='win32'?'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe':'/usr/bin/google-chrome');
+const chrome=spawn(chromeBin,[
  '--headless=new','--no-sandbox','--disable-dev-shm-usage','--no-first-run',
  '--disable-background-networking','--disable-extensions','--disable-background-timer-throttling',
  '--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader',
  '--window-size=1280,800','--remote-debugging-port='+debugPort,
- '--user-data-dir=/tmp/autominds-chrome-'+process.pid,url
+ '--user-data-dir='+path.join(os.tmpdir(),'autominds-chrome-'+process.pid),url
 ],{stdio:['ignore','ignore','pipe']});
-const stderr=[];chrome.stderr.on('data',data=>{if(stderr.length<18)stderr.push(String(data).slice(0,1200));});
+const stderr=[];
+chrome.on('error',error=>stderr.push(String(error)));
+chrome.stderr.on('data',data=>{if(stderr.length<18)stderr.push(String(data).slice(0,1200));});
 let ws;
 const pending=new Map();let idCounter=0;const exceptions=[];
 function cdp(method,params={},timeout=90000){
@@ -75,7 +79,31 @@ try{
   await sleep(500);
  }
  if(!ready?.loaded||ready.loadedLayers!==ready.expected)throw Error('IFC not fully loaded (expected '+ready?.expected+', loaded '+ready?.loadedLayers+')');
+ const openGeometry=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.auditOpenConceptGeometry())"));
+ fs.mkdirSync('analysis',{recursive:true});
+ fs.writeFileSync('analysis/open-plan-live-geometry.json',JSON.stringify(openGeometry,null,2));
+ console.log('OPEN_PLAN_LIVE_GEOMETRY',JSON.stringify(openGeometry.counts));
  const summary=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.summary())"));
+ const unwantedStairGlass=openGeometry.entries.filter(e=>
+   e.zone.includes('stair_sitting')&&
+   e.grandparent==='IFC_GLASS_PANES_AND_ALUMINIUM_FRAMES' &&
+   e.box[0][0]<112.55&&e.box[1][0]>112.12 &&
+   [-7.852,-6.222].some(z=>Math.abs((e.box[0][2]+e.box[1][2])/2-z)<.55));
+ const unwantedDividerIds=new Set([
+   '1u1fK$zsPDMxAPstkxZ1sp','0$U3BhYYLFWRl7EzZZ9tud',
+   '2Quhv0cYjC68LUGFv3TDMx'
+ ]);
+ const unwantedDivider=openGeometry.entries.filter(e=>unwantedDividerIds.has(e.name));
+ if(unwantedStairGlass.length||unwantedDivider.length||
+    summary.windows?.stairSittingOpenGlassAssembliesRemoved!==2||
+    summary.openingRegistry?.untargetedExteriorWallsUnmodified!==true)
+   throw Error('Client open-plan glazing/divider/front facade regression: '+
+    JSON.stringify({stairGlass:unwantedStairGlass.length,divider:unwantedDivider.length,
+     removedGlass:summary.windows?.stairSittingOpenGlassAssembliesRemoved,
+     facadeRetained:summary.openingRegistry?.untargetedExteriorWallsUnmodified}));
+ console.log('OPEN_PLAN_VISUAL_CLEARANCE_CONFIRMED',JSON.stringify({
+   erroneousGlazingHidden:2,obsoleteDividerSlabsHidden:3,realFacadePreserved:true
+ }));
  const scene=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
  const balcony=summary.balconies;
  const openPlan=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkOpenPlanAccess())"));

@@ -23,7 +23,17 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
   const closestNormal=(w)=>alongX?
     Math.min(Math.abs(cz-w.box.min.z),Math.abs(cz-w.box.max.z)):
     Math.min(Math.abs(cx-w.box.min.x),Math.abs(cx-w.box.max.x));
-  const closeWalls=walls.filter(w=>closestNormal(w)<normalBand+.11);
+  // Match the actual source wall, not an intersecting perpendicular exterior
+  // wall at the end of an open-plan bay. Otherwise the kitchen/dining visual
+  // cut can open a false hole in the house envelope near the front facade.
+  const sourceGuids=new Set(sourceIds??[]);
+  const closeWalls=walls.filter(w=>{
+   if(closestNormal(w)>=normalBand+.11)return false;
+   if(kind==='plan')return sourceGuids.has(w.mesh.userData.ifc?.guid);
+   const size=w.box.getSize(new THREE.Vector3());
+   // Ignore a perpendicular full-height wall sharing a corner of the aperture.
+   return (size.x>=size.z)===alongX || Math.max(size.x,size.z)<.40;
+  });
   if(!closeWalls.length)return;
   const low=kind==='plan'?ymin-.025:ymin+(kind==='door'?.055:.015);
   const high=kind==='plan'?ymax+.025:ymax-(kind==='door'?.05:.015);
@@ -119,38 +129,52 @@ export function buildSourceApertures(doorSystem,records,inside=()=>true,windowSy
 export function revealObstructedDoors(wallMaterial,doorSystem,meshRecords,inside=()=>true,windowSystem=null,facadeSystem=null,planCirculation=null){
  const registry=buildSourceApertures(doorSystem,meshRecords,inside,windowSystem,facadeSystem,planCirculation);
  const cuts=registry.cuts;
- const vecBounds=Array.from({length:MAX_OPENINGS},(_,i)=>cuts[i]?.box||new THREE.Vector4(999999,999999,999999,999999));
- const vecHeights=Array.from({length:MAX_OPENINGS},(_,i)=>cuts[i]?.height||new THREE.Vector2(999999,999999));
- const uniforms={
-  uDoorBounds:{value:vecBounds},
-  uDoorHeights:{value:vecHeights},
-  uDoorCount:{value:cuts.length}
- };
- const previousShader=wallMaterial.onBeforeCompile;
- const previousKey=wallMaterial.customProgramCacheKey;
- wallMaterial.onBeforeCompile=(shader,renderer)=>{
-  previousShader?.(shader,renderer);
-  Object.assign(shader.uniforms,uniforms);
-  shader.vertexShader='varying vec3 vHouseWorldPoint;\n'+
+ // A shader cut is a property of a SPECIFIC IFC wall, never every wall
+ // sharing the same material. In particular, the kitchen-to-dining opening
+ // must not remove the perpendicular exterior kitchen/front walls.
+ const bySourceWall=new Map();
+ for(const cut of cuts)for(const mesh of cut.sourceWallMeshes){
+  if(!bySourceWall.has(mesh))bySourceWall.set(mesh,[]);
+  bySourceWall.get(mesh).push(cut);
+ }
+ const patchedWalls=new Map();
+ for(const [mesh,wallCuts] of bySourceWall){
+  const original=mesh.material;
+  const derived=original.clone();
+  const n=wallCuts.length;
+  const localUniforms={
+   uDoorBounds:{value:wallCuts.map(c=>c.box)},
+   uDoorHeights:{value:wallCuts.map(c=>c.height)},
+   uDoorCount:{value:n}
+  };
+  const inheritedCompile=original.onBeforeCompile;
+  derived.onBeforeCompile=(shader,renderer)=>{
+   inheritedCompile?.call(original,shader,renderer);
+   Object.assign(shader.uniforms,localUniforms);
+   shader.vertexShader='varying vec3 vHouseWorldPoint;\n'+
     shader.vertexShader.replace('#include <begin_vertex>',
-      '#include <begin_vertex>\n vHouseWorldPoint=(modelMatrix*vec4(transformed,1.0)).xyz;');
-  const hook='#include <clipping_planes_fragment>';
-  const test=hook+
-   '\n for(int openingIndex=0;openingIndex<'+MAX_OPENINGS+';openingIndex++){' +
-   '\n if(openingIndex>=uDoorCount)break;' +
-   '\n vec4 rect=uDoorBounds[openingIndex];' +
-   '\n vec2 y=uDoorHeights[openingIndex];' +
-   '\n if(vHouseWorldPoint.x>rect.x && vHouseWorldPoint.x<rect.y' +
-   ' && vHouseWorldPoint.z>rect.z && vHouseWorldPoint.z<rect.w' +
-   ' && vHouseWorldPoint.y>y.x && vHouseWorldPoint.y<y.y)discard;' +
-   '\n }';
-  shader.fragmentShader='varying vec3 vHouseWorldPoint;\n'+
-   'uniform vec4 uDoorBounds['+MAX_OPENINGS+'];\n'+
-   'uniform vec2 uDoorHeights['+MAX_OPENINGS+'];\n'+
-   'uniform int uDoorCount;\n'+shader.fragmentShader.replace(hook,test);
- };
- wallMaterial.customProgramCacheKey=()=>('ifc-source-door-window-apertures-v3-'+cuts.length);
- wallMaterial.needsUpdate=true;
+     '#include <begin_vertex>\n vHouseWorldPoint=(modelMatrix*vec4(transformed,1.0)).xyz;');
+   const hook='#include <clipping_planes_fragment>';
+   const test=hook+
+    '\n for(int openingIndex=0;openingIndex<'+n+';openingIndex++){' +
+    '\n if(openingIndex>=uDoorCount)break;' +
+    '\n vec4 rect=uDoorBounds[openingIndex];' +
+    '\n vec2 y=uDoorHeights[openingIndex];' +
+    '\n if(vHouseWorldPoint.x>rect.x && vHouseWorldPoint.x<rect.y' +
+    ' && vHouseWorldPoint.z>rect.z && vHouseWorldPoint.z<rect.w' +
+    ' && vHouseWorldPoint.y>y.x && vHouseWorldPoint.y<y.y)discard;' +
+    '\n }';
+   shader.fragmentShader='varying vec3 vHouseWorldPoint;\n'+
+    'uniform vec4 uDoorBounds['+n+'];\n'+
+    'uniform vec2 uDoorHeights['+n+'];\n'+
+    'uniform int uDoorCount;\n'+shader.fragmentShader.replace(hook,test);
+  };
+  derived.customProgramCacheKey=()=>('ifc-source-wall-cut-v4-'+
+   wallCuts.map(c=>c.kind+':'+c.id).join('|'));
+  derived.needsUpdate=true;
+  mesh.material=derived;
+  patchedWalls.set(mesh,{original,derived});
+ }
  const occlusionDetails=cuts.filter(c=>c.kind==='door').map(c=>({
   doorId:c.id,sourceWallCount:c.wallCount,sourceWallGuids:c.sourceWallGuids
  }));
@@ -164,11 +188,13 @@ export function revealObstructedDoors(wallMaterial,doorSystem,meshRecords,inside
   windowObstructedCount:registry.windowCutCount,
   visualCuts:cuts,occlusionDetails,windowOcclusionDetails,
   permitsOpenDoorWallHit:registry.permitsOpenDoorWallHit,
-  summary:registry.summary,
+  summary:{...registry.summary,sourceScopedWallMaterials:patchedWalls.size,
+   untargetedExteriorWallsUnmodified:true},
   restore:()=>{
-   wallMaterial.onBeforeCompile=previousShader;
-   wallMaterial.customProgramCacheKey=previousKey;
-   wallMaterial.needsUpdate=true;
+   for(const [mesh,{original,derived}] of patchedWalls){
+    mesh.material=original;
+    derived.dispose();
+   }
   }
  };
 }
