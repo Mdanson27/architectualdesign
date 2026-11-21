@@ -74,3 +74,38 @@ export function applyStudioAnneScheme(materials,records=[],scheme='source'){
   paletteRatios:STUDIO_ANNE_SCHEMES[scheme]?.ratios??null,
   sourceWallClones,sourceIFCUnmodified:true,geometryRebuilt:false};
 }
+
+/** Studio Anne page 7: flooring samples are alternatives, not an approved
+ * room-by-room specification. Preview the colour/texture on the existing
+ * source slabs only; no geometry, floor height or collision alterations.
+ */
+export const STUDIO_ANNE_FLOORS=Object.freeze({
+ porcelain:Object.freeze({label:'Porcelain / ceramic',page:7,
+  previewColor:'#f0ece6',roughness:.4,map:'marble'}),
+ ash:Object.freeze({label:'Ash wood-look tiles',page:7,
+  previewColor:'#efe7db',roughness:.66,map:'ash'}),
+ caramel:Object.freeze({label:'Caramel wood-look tiles',page:7,
+  previewColor:'#d2b292',roughness:.62,map:'caramel'})
+});
+const floorOriginals=new WeakMap();
+export function applyStudioAnneFloorPreview(material,maps,style='source'){
+ if(style!=='source'&&!STUDIO_ANNE_FLOORS[style])
+  throw Error('Unrecognised Studio Anne flooring style: '+style);
+ if(!material?.isMeshStandardMaterial)throw Error('Expected an IFC floor preview material');
+ if(!floorOriginals.has(material))
+  floorOriginals.set(material,{map:material.map,roughness:material.roughness});
+ const original=floorOriginals.get(material);
+ if(style==='source'){
+  material.map=original.map;material.roughness=original.roughness;
+ }else{
+  const config=STUDIO_ANNE_FLOORS[style];
+  if(!maps?.[config.map])throw Error('Missing flooring sample texture: '+config.map);
+  material.map=maps[config.map];
+  material.color.set(config.previewColor);
+  material.roughness=config.roughness;
+ }
+ material.needsUpdate=true;
+ return {style,label:STUDIO_ANNE_FLOORS[style]?.label??'Original floor',
+  previewOnly:true,sourceIFCUnmodified:true,
+  dimensionsUnchanged:true,page:7};
+}
