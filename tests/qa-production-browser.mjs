@@ -155,20 +155,27 @@ try{
   visibleKitchenRibColumns:badRibs.length,stairKitchenDoorRemoved:true
  }));
  const siteReview=summary.siteContext;
- if(!siteReview?.gateRoadFacingLongBoundary||
+ if(!siteReview?.gateOnPalmTreeSideFence||
+   !siteReview?.oldGateBoundaryRestored||
+   !siteReview?.straightDrivewayToParking||
    !siteReview?.continuousPavingGateToParking||
-   siteReview?.gateOffsetFromLeftMetres>11||
-   siteReview?.gateOffsetFromLeftMetres<5||
-   siteReview?.parkingOutdoorCoverage<50||
-   siteReview?.removedOldGatePalmTrees!==2||
+   siteReview?.gateDistanceFromForegroundCornerMetres>14||
+   siteReview?.totalPavingOutdoorCoverage>=50||
+   siteReview?.totalPavingOutdoorCoverage<30||
+   siteReview?.lawnOutdoorCoverageApprox<=50||
+   siteReview?.parkingOutdoorCoverage<25||
+   siteReview?.parkingOutdoorCoverage>=45||
    siteReview?.palmTreesPreserved!==3)
-   throw Error('Client-corrected opposite gate / half-compound parking regression: '+
+   throw Error('Approved palm-side gate / direct drive / generous lawn regression: '+
     JSON.stringify(siteReview));
- console.log('OPPOSITE_GATE_AND_EXPANDED_PARKING_VERIFIED',JSON.stringify({
-  gateOffsetFromLeft:siteReview.gateOffsetFromLeftMetres,
-  parkingOutdoorCoverage:siteReview.parkingOutdoorCoverage,
-  parkingBays:siteReview.parkingBays,palmsPreserved:siteReview.palmTreesPreserved,
-  oldGatePalmsRemoved:siteReview.removedOldGatePalmTrees
+ console.log('APPROVED_GATE_DRIVEWAY_AND_LAWN_VERIFIED',JSON.stringify({
+  gateOnPalmSide:true,
+  gateCornerOffsetMetres:siteReview.gateDistanceFromForegroundCornerMetres,
+  straightDriveway:true,
+  pavedParkingCoveragePercent:siteReview.parkingOutdoorCoverage,
+  totalPavedOutdoorCoveragePercent:siteReview.totalPavingOutdoorCoverage,
+  lawnOutdoorCoverageApprox:siteReview.lawnOutdoorCoverageApprox,
+  retainedLawnPalmTrees:siteReview.palmTreesPreserved
  }));
  const scene=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
  const balcony=summary.balconies;
