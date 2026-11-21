@@ -460,7 +460,7 @@ function setupEnhancements(){
  const status=$('balconyAuditStatus');
  if(status)status.textContent=state.balconies.summary.restored+' source-supported balconies · '+state.balconies.summary.concealedOpaqueEdgeMeshes+' false outer enclosure meshes hidden';
  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit,state.planCirculation);
- const details=state.doorSystem.doors.length;
+ const details=state.doorSystem.doors.filter(d=>!d.removedFromPlan).length;
  console.info('[AutoMinds Aperture Audit]',state.doorApertureAudit.obstructedCount,
   'door and',state.doorApertureAudit.windowObstructedCount,'window wall occlusions repaired visually');
  $('doorSystemCount').textContent=details+' interactive doorways · '+state.doorSystem.sourceCount+' IFC parts · '+state.doorApertureAudit.obstructedCount+' door obstructions · '+state.doorApertureAudit.windowObstructedCount+' window occlusions checked';
@@ -502,7 +502,7 @@ function buildBedroomNavigator(){
 }
 function buildDoorNavigator(){
  const container=$('doorList');container.textContent='';
- for(const door of state.doorSystem.doors){
+ for(const door of state.doorSystem.doors.filter(d=>!d.removedFromPlan)){
   const btn=document.createElement('button');
   btn.type='button';btn.className='bedroomItem';
   const level=door.level==='ground'?'Ground floor':'First floor';
@@ -530,7 +530,7 @@ function buildDoorNavigator(){
   });
   container.appendChild(btn);
  }
- $('doorTotal').textContent=state.doorSystem.doors.length+' interactive doorways grouped from '+state.doorSystem.sourceCount+' IFC parts';
+ $('doorTotal').textContent=state.doorSystem.doors.filter(d=>!d.removedFromPlan).length+' active doorways grouped from '+state.doorSystem.sourceCount+' IFC parts';
 }
 function beginMeasure(){
  state.measureMode=!state.measureMode;
