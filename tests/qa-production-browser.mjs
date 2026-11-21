@@ -131,6 +131,29 @@ try{
  console.log('OPEN_PLAN_VISUAL_CLEARANCE_CONFIRMED',JSON.stringify({
    erroneousGlazingHidden:2,obsoleteDividerSlabsHidden:3,realFacadePreserved:true
  }));
+ const cleared=summary.planCirculation?.clientStairKitchenCleanout;
+ const entrance=summary.mainDoorEnclosure;
+ const badStairPosts=nov21.source.filter(r=>
+  ['3kAl0gHyX6ihgy9PBZMVtT','1xo0ba7TzEN8lQogEQUDNP'].includes(r.guid)&&r.visible);
+ const badRibs=nov21.source.filter(r=>r.name==='CRE - 001'&&r.visible&&
+  r.box.x[0]>112.34&&r.box.x[1]<112.45&&
+  r.box.z[0]>-2.30&&r.box.z[1]<-.50&&r.dims[1]<1.1);
+ if(cleared?.groundKitchenStairWallHidden!==1||
+  cleared?.groundKitchenStairFacesHidden!==3||
+  cleared?.oldStairRoomPostsHidden!==2||
+  cleared?.kitchenRibColumnsHidden!==59||
+  cleared?.upperFaceGroundClipped!==1||
+  badStairPosts.length||badRibs.length||
+  !nov21.doors.find(d=>d.id===21)?.removed||
+  entrance?.mainDoubleDoorId!==27||
+  entrance?.sideWallPanels!==2||
+  !entrance?.overheadClosure||!entrance?.sourceWindowWD007Preserved)
+   throw Error('Client stair-to-kitchen open-concept / main-door enclosure invalid: '+
+    JSON.stringify({cleared,entrance,badStairPosts,badRibs:badRibs.length}));
+ console.log('NOV21_STAIR_KITCHEN_ENTRANCE_ACCEPTED',JSON.stringify({
+  cleared,entrance,oldStairColumnsVisible:badStairPosts.length,
+  visibleKitchenRibColumns:badRibs.length,stairKitchenDoorRemoved:true
+ }));
  const siteReview=summary.siteContext;
  if(!siteReview?.gateRoadFacingLongBoundary||
    !siteReview?.continuousPavingGateToParking||
@@ -166,6 +189,7 @@ try{
  if(!openPlan.ready||!openPlan.openConcept||openPlan.internalPlanDoors!==0||
     openPlan.planBays.length!==3||openPlan.planBays.some(p=>!p.verified||p.sourceWallMeshes<1)||
     !openPlan.disabledDoorIds.includes(22)||!openPlan.disabledDoorIds.includes(25)||
+    !openPlan.disabledDoorIds.includes(21)||
     !openPlan.maidInteriorDoorRemoved||!openPlan.sittingDiningDoorRemoved||
     !openPlan.maidExteriorDoorPreserved||!openPlan.maidWallCollision||
     !openPlan.maidSealCrossesTestSegment||!openPlan.originalIFCUnmodified)
@@ -214,7 +238,7 @@ try{
    throw Error('Independent night and house-light controls failed');
  console.log('PHASE7_BALCONY_LIGHTS',JSON.stringify({restored:balcony.restored,concealed:balcony.concealedOpaqueEdgeMeshes,
   lights:lightBefore.activeEmitters,nightIndependent:true}));
- const ids=(process.env.QA_ALL_DOORS==='1'?Array.from({length:29},(_,i)=>i+1):[6,12,14,15,19,21,26,27,28,29]).filter(id=>id!==22&&id!==25);
+ const ids=(process.env.QA_ALL_DOORS==='1'?Array.from({length:29},(_,i)=>i+1):[6,12,14,15,19,26,27,28,29]).filter(id=>id!==21&&id!==22&&id!==25);
  const crossings=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.doorCrossings("+JSON.stringify(ids)+",true))"));
  const obstructed=crossings.filter(x=>!x.openFront?.ok||!x.openBack?.ok).map(x=>({
   id:x.id,level:x.level,sourceGuids:x.sourceGuids,front:x.openFront,back:x.openBack
@@ -253,9 +277,9 @@ try{
   outsideRawVisible:scene.outsideRawMeshesVisible,rawWindowProxiesVisible:scene.originalWindowProxiesStillVisible,
   testedDoorIds:ids,obstructed,closedDoorUnexpectedPass:blockedWhenClosed,
   browserExceptions:exceptions}));
- if(summary.doorCount!==29||summary.activeDoorCount!==27||summary.windows?.windowAssemblies<20)
+ if(summary.doorCount!==29||summary.activeDoorCount!==26||summary.windows?.windowAssemblies<20)
   throw Error('Unexpected door/window model count');
- if(summary.openingRegistry?.verifiedDoorWallCutouts<27)
+ if(summary.openingRegistry?.verifiedDoorWallCutouts<26)
   throw Error('Not all IFC doorways have source-matched visual cutouts');
  if(summary.verifiedFacadeGlazing?.sourceAlignedPanels<2)
   throw Error('Source-verified first-floor glazing not active');
