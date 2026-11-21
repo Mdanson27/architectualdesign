@@ -24,61 +24,92 @@ const gatePosition=site.gate.getWorldPosition(new THREE.Vector3());
 assert(Math.abs(gatePosition.x-site.gateWorld.x)<.001);
 assert(Math.abs(gatePosition.z-site.gateWorld.z)<.001);
 const access=site.access;
-assert.equal(site.summary.gateRoadFacingLongBoundary,true);
-assert.equal(site.summary.continuousPavingGateToParking,true);
-assert(access.gateCenter[0]-site.frontage[0]>5 &&
- access.gateCenter[0]-site.frontage[0]<11,
- 'gate must be at the OPPOSITE end of the access-road frontage');
-assert(Math.abs(access.gateCenter[1]-site.siteFrontZ)<.01);
-assert(site.summary.parkingOutdoorCoverage>=50,
- 'parking court must cover at least half of the outdoor compound');
+assert(site.summary.gateOnPalmTreeSideFence,
+ 'new gate must be on the palm-tree-side fence, not the previous frontage');
+assert(site.summary.oldGateBoundaryRestored,
+ 'previous gate opening must be closed with the continuous boundary');
+assert.equal(access.gateBoundary,'palm-tree-side long fence (z=top)');
+assert(Math.abs(access.gateCenter[1]-(site.bounds.min.z+origin.z))<.01,
+ 'new gate lies in the long palm-tree-side boundary');
+assert(site.siteFrontZ-access.gateCenter[1]>24,
+ 'new gate must be on the OPPOSITE wall, not relocated along the same fence');
+assert(site.summary.gateDistanceFromForegroundCornerMetres>8&&
+ site.summary.gateDistanceFromForegroundCornerMetres<14,
+ 'gate is toward lower/foreground corner, not near the house');
+assert(site.summary.drivewayWidthMetres>=4.5);
+assert(site.summary.straightDrivewayToParking);
+assert(site.summary.continuousPavingGateToParking);
+assert(site.summary.parkingOutdoorCoverage>25&&
+ site.summary.parkingOutdoorCoverage<45,
+ 'parking must be substantial but not overwhelm the compound');
+assert(site.summary.totalPavingOutdoorCoverage>30&&
+ site.summary.totalPavingOutdoorCoverage<50,
+ 'all paving, including the driveway, must occupy less than half the outdoor area');
+assert(site.summary.lawnOutdoorCoverageApprox>50,
+ 'the majority of the outdoor compound should remain lawn');
 assert.equal(site.summary.removedOldGatePalmTrees,2);
 assert.equal(site.summary.palmTreesPreserved,3);
-const court=site.root.children.find(x=>x.name==='S1_EXPANDED_PAVED_PARKING_COURT');
-const driveway=site.root.children.find(x=>x.name==='S1_OPPOSITE_GATE_DRIVEWAY');
+assert.equal(site.root.children.filter(x=>x.name==='PLAN_LANDSCAPE_TREE').length,3);
+const court=site.root.children.find(x=>x.name==='S1_PAVED_PARKING_COURT');
+const driveway=site.root.children.find(x=>x.name==='S1_STRAIGHT_GATE_DRIVEWAY');
 const parking=site.root.children.find(x=>x.name==='S1_PAVED_PARKING_THREE_BAYS');
-assert(court&&driveway&&parking,'expanded court + paved gate approach + three bays');
-assert(access.driveway.x1>access.parking.x0,
- 'gate lane must overlap the larger paved court');
-assert(access.driveway.z0<access.parking.z1,
- 'paved gate lane must meet the parking court');
-assert(access.palms.every(([x,z])=>z<access.parking.z0-1.4),
- 'remaining three palm trees must not stand within parking');
-assert.equal(site.root.children.filter(x=>x.name.startsWith('S1_STREET_EDGE_')).length,2);
+assert(court&&driveway&&parking,
+ 'parking court, straight driveway and three designated bays must all exist');
+assert(access.driveway.x0<access.gateCenter[0]&&
+ access.driveway.x1>access.gateCenter[0]&&
+ access.parking.x0<access.gateCenter[0]&&
+ access.parking.x1>access.gateCenter[0],
+ 'the gate, driveway and parking court must be on the same straight drive line');
+assert(access.driveway.z0>=access.gateCenter[1]&&
+ access.driveway.z0<access.gateCenter[1]+.20&&
+ access.driveway.z1>access.parking.z0+.30,
+ 'the driveway must directly overlap the parking court');
+assert(access.parking.x0>site.house.maxX,
+ 'parking must not intrude into the main house');
+assert(access.palms.every(([x,z])=>x>access.parking.x1+1.0),
+ 'all three foreground palms must be in the lawn, not on parking or driveway');
 site.root.updateMatrixWorld(true);
 const gateVoid=new THREE.Box3(
- new THREE.Vector3(access.gateCenter[0]-origin.x-1.7,-.5,access.gateCenter[1]-origin.z-.13),
- new THREE.Vector3(access.gateCenter[0]-origin.x+1.7,2.2,access.gateCenter[1]-origin.z+.13)
-);
-assert(site.root.children.filter(x=>x.name==='APPROVED_BOUNDARY_WALL')
- .every(w=>!new THREE.Box3().setFromObject(w).intersectsBox(gateVoid)),
- 'no perimeter fence crosses the new gate opening');
+ new THREE.Vector3(access.gateCenter[0]-origin.x-1.7,-.5,
+  access.gateCenter[1]-origin.z-.14),
+ new THREE.Vector3(access.gateCenter[0]-origin.x+1.7,2.2,
+  access.gateCenter[1]-origin.z+.14));
+const walls=site.root.children.filter(x=>x.name==='APPROVED_BOUNDARY_WALL');
+assert(walls.every(w=>!new THREE.Box3().setFromObject(w).intersectsBox(gateVoid)),
+ 'no source fence wall may obstruct the right-side new gate opening');
+const oldGateX=site.frontage[0]+7.8,oldGateZ=site.siteFrontZ;
+assert(walls.some(w=>new THREE.Box3().setFromObject(w).containsPoint(
+ new THREE.Vector3(oldGateX-origin.x,.5,oldGateZ-origin.z))),
+ 'old wrong-side gate opening must now be closed with the matching wall');
 const parkingRay=new THREE.Raycaster();
-const px=(access.parking.x0+access.parking.x1)/2,
- pz=(access.parking.z0+access.parking.z1)/2;
-parkingRay.set(new THREE.Vector3(px-origin.x,2,pz-origin.z),new THREE.Vector3(0,-1,0));
+const parkingX=(access.parking.x0+access.parking.x1)/2;
+const parkingZ=(access.parking.z0+access.parking.z1)/2;
+parkingRay.set(new THREE.Vector3(parkingX-origin.x,2,parkingZ-origin.z),
+ new THREE.Vector3(0,-1,0));
 assert(parkingRay.intersectObject(court,false).length>0,
- 'expanded parking surface must be real geometry');
+ 'the actual paved parking mesh must cover the designated court');
+parkingRay.set(new THREE.Vector3(access.gateCenter[0]-origin.x,2,
+ (access.driveway.z0+access.driveway.z1)/2-origin.z),new THREE.Vector3(0,-1,0));
+assert(parkingRay.intersectObject(driveway,false).length>0,
+ 'the straight driveway must have real paver geometry');
 const walk=createSiteWalkSupport(site,origin);
-const route=[
- [access.gateCenter[0],site.siteFrontZ-.65],
- [access.gateCenter[0],site.siteFrontZ-2.1],
- [access.parking.x0+1.0,site.siteFrontZ-2.1],
- [access.parking.x0+2.0,access.parking.z1-2.2],
- [access.parking.x0+8.0,access.parking.z1-6.0],
- [access.parking.x0+12.0,access.parking.z0+3.7]
-];
+const gx=access.gateCenter[0],zStart=access.gateCenter[1]+.67,
+ zFinish=access.parking.z0+2;
+const route=[[gx,zStart],[gx,(zStart+zFinish)/2],[gx,zFinish],
+ [access.parking.x0+7,access.parking.z0+2.4],
+ [access.parking.x0+7,access.parking.z1-2]];
 for(let k=1;k<route.length;k++){
- const [x0,z0]=route[k-1], [x1,z1]=route[k];
- const n=Math.ceil(Math.hypot(x1-x0,z1-z0)/.45);
- for(let i=1;i<=n;i++){
-  const t=i/n,prev=(i-1)/n,x=x0+(x1-x0)*t,z=z0+(z1-z0)*t;
-  const ox=x0+(x1-x0)*prev,oz=z0+(z1-z0)*prev;
+ const [x0,z0]=route[k-1],[x1,z1]=route[k];
+ const steps=Math.ceil(Math.hypot(x1-x0,z1-z0)/.35);
+ for(let i=1;i<=steps;i++){
+  const t=i/steps,p=(i-1)/steps;
+  const x=x0+(x1-x0)*t,z=z0+(z1-z0)*t;
+  const ox=x0+(x1-x0)*p,oz=z0+(z1-z0)*p;
   assert(walk.sample(x-origin.x,z-origin.z,0,.4,.7),
-   'a continuous site walking surface must support the gate-to-parking route');
+   'gate-to-parking path must be supported by continuous ground');
   assert.equal(walk.blocksTraversal(ox-origin.x,oz-origin.z,
    x-origin.x,z-origin.z,walk.summary.siteY),false,
-   'gate to expanded parking cannot be obstructed by palm, bins, fence or planter');
+   'straight driveway / court must not collide with a tree, bin or wall');
  }
 }
 const grass=site.root.children.find(x=>x.name==='S1_LAWN_EXCLUDING_HOUSE');
@@ -89,7 +120,8 @@ function hits(x,z){
  return ray.intersectObject(grass,false).length;
 }
 assert.equal(hits(112,-8),0,'House interior should have no lawn');
-assert.equal(hits(142,-7),1,'Main lawn should exist beside driveway');
+assert.equal(hits(149,-4),1,'Large foreground lawn must remain exposed');
+assert.equal(hits(128,-17),1,'Lawn must remain beyond the parking and driveway');
 const audit=auditSourceContext([{category:'walls'},{category:'proxies'},{category:'furniture'},{category:'slabs'}],x=>x.category==='furniture');
 assert.equal(audit.insideResidence,1);
 assert.equal(audit.replacedSiteCandidates,2);
@@ -99,9 +131,12 @@ const result={
  status:'passed',layout:'S1',width:sitePlan.width,depth:sitePlan.depth,
  parkingBays:sitePlan.parkingCount,gateWidth:site.gate.userData.widthMetres,
  trees:3,meshCount:site.root.children.length,
- parkingOutdoorCoverage:site.summary.parkingOutdoorCoverage,oppositeGate:true,
+ parkingOutdoorCoverage:site.summary.parkingOutdoorCoverage,
+ totalPavingOutdoorCoverage:site.summary.totalPavingOutdoorCoverage,
+ lawnOutdoorCoverageApprox:site.summary.lawnOutdoorCoverageApprox,
+ palmTreeSideGate:true,oldGateClosed:true,
  turfHouseCutout:true,lawnCoverage:true,gateAligned:true,
  gateFrontageX:access.gateCenter[0],
- pavedLongDrive:true,parkingTurnConnected:true,approachPalmsOffPaving:true,audit
+ straightDriveway:true,parkingConnected:true,palmsPreservedOnLawn:true,audit
 };
 console.log(JSON.stringify(result,null,2));
