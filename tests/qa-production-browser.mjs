@@ -124,6 +124,20 @@ try{
  console.log('OPEN_PLAN_VISUAL_CLEARANCE_CONFIRMED',JSON.stringify({
    erroneousGlazingHidden:2,obsoleteDividerSlabsHidden:3,realFacadePreserved:true
  }));
+ const siteReview=summary.siteContext;
+ if(!siteReview?.gateRoadFacingLongBoundary||
+   !siteReview?.continuousPavingGateToParking||
+   siteReview?.palmTreesKeptOutsideDrive!==2||
+   siteReview?.longDriveMetres<15||
+   siteReview?.gateOffsetFromLeftMetres<36)
+   throw Error('Gate / driveway / palm site-plan correction was not loaded: '+
+     JSON.stringify(siteReview));
+ console.log('S1_GATE_AND_PARKING_GEOMETRY_VERIFIED',JSON.stringify({
+   gateOffsetFromFrontageStart:siteReview.gateOffsetFromLeftMetres,
+   pavedDriveLength:siteReview.longDriveMetres,
+   parkingBays:siteReview.parkingBays,
+   treesOnLawnSide:siteReview.palmTreesKeptOutsideDrive
+ }));
  const scene=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
  const balcony=summary.balconies;
  const openPlan=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.checkOpenPlanAccess())"));
