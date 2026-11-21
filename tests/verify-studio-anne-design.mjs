@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {STUDIO_ANNE_SCHEMES,DESIGN_BRIEF_LIGHTING,
- applyStudioAnneScheme} from '../src/phase2/studio-anne-brief.js';
+ applyStudioAnneScheme,STUDIO_ANNE_FLOORS,applyStudioAnneFloorPreview} from '../src/phase2/studio-anne-brief.js';
 import {LIGHTING_ZONES,createHouseLighting} from '../src/phase2/lighting-system.js';
 import {DINING_TABLE_WORLD} from '../src/phase2/dining-furnishings.js';
 
@@ -45,6 +45,24 @@ assert(m.wall.color.equals(srcColor),'original source preview colour restored');
 assert.equal(sourceWallShader.color.getHexString(),'f4e8da');
 assert.throws(()=>applyStudioAnneScheme(m,[],'unapproved-custom-scheme'));
 
+const textures={marble:new THREE.Texture(),ash:new THREE.Texture(),
+ caramel:new THREE.Texture()};
+const originalFloorMap=m.floor.map,originalRoughness=m.floor.roughness;
+for(const style of ['porcelain','ash','caramel']){
+ const info=applyStudioAnneFloorPreview(m.floor,textures,style);
+ assert.equal(info.style,style);
+ assert.equal(info.sourceIFCUnmodified,true);
+ assert.strictEqual(m.floor.map,textures[STUDIO_ANNE_FLOORS[style].map]);
+ assert.equal(m.floor.roughness,STUDIO_ANNE_FLOORS[style].roughness);
+ assert.strictEqual(mesh.geometry,geometryBefore);
+}
+applyStudioAnneScheme(m,[sourceRec],'source');
+const floorRestored=applyStudioAnneFloorPreview(m.floor,textures,'source');
+assert.equal(floorRestored.style,'source');
+assert.strictEqual(m.floor.map,originalFloorMap);
+assert.equal(m.floor.roughness,originalRoughness);
+assert(m.floor.color.equals(srcColor)===false,
+ 'floor finish and wall source materials must remain independent');
 const scene=new THREE.Scene(),origin={x:0,z:0};
 const lights=createHouseLighting(scene,origin);
 assert.equal(LIGHTING_ZONES.length,14);
@@ -81,4 +99,4 @@ assert(lights.briefEmitters.every(x=>!x.light.castShadow),
  'low memory GPUs must not enable expensive lighting shadows');
 console.log(JSON.stringify({passed:true,schemes:Object.keys(STUDIO_ANNE_SCHEMES),
  sourceIFCUnmodified:true,originalFinishRestored:true,legacyLights:14,
- briefFixtures:5,diningPendantOnTable:true,layerSwitchesIndependent:true}));
+ briefFixtures:5,floorPreviews:3,diningPendantOnTable:true,layerSwitchesIndependent:true}));
