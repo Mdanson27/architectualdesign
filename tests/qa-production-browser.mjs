@@ -94,6 +94,26 @@ try{
    '2Quhv0cYjC68LUGFv3TDMx'
  ]);
  const unwantedDivider=openGeometry.entries.filter(e=>unwantedDividerIds.has(e.name));
+ const unwantedPartitionWalls=openGeometry.entries.filter(e=>{
+  if(e.category!=='walls'||e.level!=='ground')return false;
+  if(e.sourceName==='SW - 019'&&e.box[0][0]>112.15&&e.box[1][0]<112.45)return true;
+  if(e.sourceName==='SW - 003'&&e.box[0][0]>112.16&&e.box[1][0]<112.45&&
+     e.box[1][2]-e.box[0][2]>4)return true;
+  return e.sourceName==='SW - 023'&&e.box[0][2]>-4.52&&e.box[1][2]<-4.25&&
+   e.box[0][0]>=112.35&&e.box[1][0]<=117.72;
+ });
+ const approvedFullRemoval=summary.planCirculation?.completeInteriorPartitionsRemoved;
+ const exteriorEnclosure=openGeometry.entries.filter(e=>e.category==='walls'&&
+  e.level==='ground'&&e.sourceName==='SW - 018'&&e.box[0][2]>.54&&
+  e.box[1][2]<.8);
+ if(unwantedPartitionWalls.length||approvedFullRemoval?.totalRemoved!==5||
+    exteriorEnclosure.length<1)
+  throw Error('Complete open-plan partition removal regression: '+
+   JSON.stringify({stillVisible:unwantedPartitionWalls,
+    removed:approvedFullRemoval?.totalRemoved,exteriorWallsVisible:exteriorEnclosure.length}));
+ console.log('COMPLETE_OPEN_PLAN_WALL_REMOVAL_VERIFIED',
+  JSON.stringify({removed:approvedFullRemoval.totalRemoved,
+   visibleInternalPartitions:0,exteriorEnclosureIntact:true}));
  if(unwantedStairGlass.length||unwantedDivider.length||
     summary.windows?.stairSittingOpenGlassAssembliesRemoved!==2||
     summary.openingRegistry?.untargetedExteriorWallsUnmodified!==true)
