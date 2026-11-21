@@ -67,7 +67,7 @@ export function createHouseLighting(scene,origin={x:0,z:0}){
   {id:'stair-step-upper',layer:'accent',room:'stairs',kelvin:2900,
    point:[109.36,1.14,-6.75],intensity:2.5,radius:1.45},
   {id:'dining-table-pendant',layer:'accent',room:'dining',kelvin:2700,
-   point:[DINING_TABLE_WORLD[0],1.59,DINING_TABLE_WORLD[2]],
+   point:[DINING_TABLE_WORLD[0],1.75,DINING_TABLE_WORLD[2]],
    intensity:6.2,radius:3.6}
  ];
  for(const f of briefFixtures){
@@ -81,12 +81,12 @@ export function createHouseLighting(scene,origin={x:0,z:0}){
     emissive:0xf8c78c,emissiveIntensity:.12}));
   lens.name='BRIEF_LIGHT_LENS';assembly.add(lens);
   if(f.room==='dining'){
-   // Table surface is 0.81m; pendant diffuser bottom 1.48m.
-   // 0.67m clearance is slightly below the brief's nominal range,
-   // so centre of fixture 1.59m yields ~0.78m to the lowest metal cap.
-   const stem=new THREE.Mesh(new THREE.CylinderGeometry(.009,.009,.89,8),
+   // Tabletop surface ~0.81m; diffuser radius .115m and centre 1.75m.
+   // Its bottom sits ~0.825m above the dining table, within the brief's
+   // 0.75–0.90m suspension clearance.
+   const stem=new THREE.Mesh(new THREE.CylinderGeometry(.009,.009,.77,8),
     new THREE.MeshStandardMaterial({color:0xb99d6c,metalness:.75,roughness:.3}));
-   stem.name='DINING_PENDANT_STEM';stem.position.y=.50;assembly.add(stem);
+   stem.name='DINING_PENDANT_STEM';stem.position.y=.44;assembly.add(stem);
   }
   const light=new THREE.PointLight(warmColor(f.kelvin),0,f.radius,2);
   light.name='STUDIO_ANNE_EMITTER_'+f.id;light.castShadow=false;
