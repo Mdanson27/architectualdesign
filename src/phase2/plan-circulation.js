@@ -209,10 +209,92 @@ export function removeGroundOpenPlanPartitions(records,origin={x:0,z:0},inside=(
    originalIFCUnmodified:true}};
 }
 
+/**
+ * Client corrected: kitchen and stair landing share a fully open ground-floor
+ * circulation zone, with no hinged Door 21 or its former SW-014 wall. The
+ * source also contains two 20 mm posts left behind by the removed stair-to-
+ * Sitting divider and 59 20 mm decorative rib columns at the former Kitchen/
+ * Dining screen. They are not load-bearing structural columns.
+ *
+ * A 6.6 m-tall IFC surface at the kitchen/stair border spans BOTH levels:
+ * discard its ground-floor pixels only and retain the first floor above 3.3m.
+ * Preserve all original meshes and source IFC data.
+ */
+export function removeClientStairKitchenAndResidues(records,origin={x:0,z:0},inside=()=>true){
+ const near=(a,b,eps=.035)=>Math.abs(a-b)<=eps;
+ const sideGuids=new Set([
+  '2$qga8Ea5CvumTP2BzXjlD',
+  '3nJ31WBuP5AQkjGckLOjHr',
+  '3uPzCMyXn5FgosjoRS5TBi'
+ ]);
+ const sets={kitchenWall:[],kitchenFaces:[],stairPosts:[],kitchenRibs:[],upperWallFace:[]};
+ for(const r of records){
+  if(!inside(r)||r.layer?.level!=='ground')continue;
+  const b=planarBounds(r.box,origin),name=String(r.mesh.userData.ifc?.name||'').trim().toUpperCase();
+  const guid=r.mesh.userData.ifc?.guid;
+  const height=r.box.max.y-r.box.min.y;
+  const xSize=b.maxX-b.minX,zSize=b.maxZ-b.minZ;
+  if(r.category==='walls'&&name==='SW - 014'&&
+   near(b.minX,107.646)&&near(b.maxX,112.396)&&
+   near(b.minZ,-5.558)&&near(b.maxZ,-5.358)&&near(height,3.3))
+   sets.kitchenWall.push(r);
+  else if(r.category==='walls'&&name==='SW - 004'&&sideGuids.has(guid))
+   sets.kitchenFaces.push(r);
+  else if(r.category==='walls'&&name==='SW - 004'&&
+   guid==='1phXQF8Qv7jRzXUT4NHrPi'&&height>6.5)
+   sets.upperWallFace.push(r);
+  else if(r.category==='columns'&&name==='CRE - 001'&&
+   b.minX>112.10&&b.maxX<112.28&&
+   b.minZ>-7.65&&b.maxZ<-6.45&&
+   height>3.0&&height<3.2&&xSize<.045&&zSize<.045)
+   sets.stairPosts.push(r);
+  else if(r.category==='columns'&&name==='CRE - 001'&&
+   b.minX>112.34&&b.maxX<112.45&&
+   b.minZ>-2.30&&b.maxZ<-.50&&
+   height>.75&&height<.96&&xSize<.045&&zSize<.045)
+   sets.kitchenRibs.push(r);
+ }
+ const concealed=new Set([
+  ...sets.kitchenWall,...sets.kitchenFaces,...sets.stairPosts,...sets.kitchenRibs
+ ]);
+ for(const r of concealed){
+  r.mesh.userData.clientKitchenStairPartitionRemoved=true;
+  r.mesh.visible=false;
+ }
+ const tall=sets.upperWallFace[0]??null;
+ if(tall){
+  const original=tall.mesh.material;
+  const material=original.clone(),previous=material.onBeforeCompile;
+  material.onBeforeCompile=(shader,renderer)=>{
+   previous?.call(material,shader,renderer);
+   shader.vertexShader='varying float vClientStairKitchenWorldY;\n'+
+    shader.vertexShader.replace('#include <begin_vertex>',
+     '#include <begin_vertex>\n vClientStairKitchenWorldY=(modelMatrix*vec4(transformed,1.0)).y;');
+   shader.fragmentShader='varying float vClientStairKitchenWorldY;\n'+
+    shader.fragmentShader.replace('#include <clipping_planes_fragment>',
+     '#include <clipping_planes_fragment>\n if(vClientStairKitchenWorldY<3.295)discard;');
+  };
+  material.customProgramCacheKey=()=> 'client-kitchen-stair-ground-face-v1';
+  material.needsUpdate=true;
+  tall.mesh.material=material;
+  tall.mesh.userData.clientStairKitchenGroundFaceClipped=true;
+ }
+ const summary={
+  groundKitchenStairWallHidden:sets.kitchenWall.length,
+  groundKitchenStairFacesHidden:sets.kitchenFaces.length,
+  oldStairRoomPostsHidden:sets.stairPosts.length,
+  kitchenRibColumnsHidden:sets.kitchenRibs.length,
+  upperFaceGroundClipped:sets.upperWallFace.length,
+  sourceIFCUnmodified:true,upperStoreyWallPreserved:!!tall
+ };
+ return {sets,concealed,upperFace:tall,summary};
+}
+
 export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},inside=()=>true){
  const supported=[];
  const openStairWall=removeStairSittingWall(records,origin,inside);
  const removedInteriorPartitions=removeGroundOpenPlanPartitions(records,origin,inside);
+ const stairKitchenCleanout=removeClientStairKitchenAndResidues(records,origin,inside);
  let kitchenCounterRepair=null;
  const root=new THREE.Group();root.name='S1_CONFIRMED_OPEN_ROOM_CIRCULATION';scene.add(root);
  for(const plan of S1_GROUND_OPENINGS){
@@ -241,12 +323,13 @@ export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},
    kitchenCounterRepair=repairKitchenDoorCounterIntrusion(records,origin,plan,inside);
   }
  }
- return {root,kitchenDoor:null,kitchenCounterRepair,openStairWall,removedInteriorPartitions,apertures:supported.filter(r=>r.verified),
+ return {root,kitchenDoor:null,kitchenCounterRepair,openStairWall,removedInteriorPartitions,stairKitchenCleanout,apertures:supported.filter(r=>r.verified),
   summary:{sourceConfirmedOpenings:supported.filter(x=>x.verified).length,
    kitchenDoorFunctional:false,openConcept:true,internalDoorCount:0,
    structuralEndPiersPreserved:true,
    stairSittingWallRemoved:openStairWall.count,
    completeInteriorPartitionsRemoved:removedInteriorPartitions.summary,
+   clientStairKitchenCleanout:stairKitchenCleanout.summary,
    removedStairWallGuids:openStairWall.sourceGuids,
    stairOriginalIFCPreserved:openStairWall.sourceIFCUnmodified,
    kitchenCounterClearance:kitchenCounterRepair?.summary??null,
