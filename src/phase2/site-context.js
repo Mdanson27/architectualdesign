@@ -12,7 +12,7 @@ import * as THREE from 'three';
 export const sitePlan = Object.freeze({
  width:48.5, depth:25, parkingCount:3, parkingBayWidth:2.5,
  gateWidth:4, splashApronWidth:0.6, source:'Home(4).pdf / S1 / 01 Site Plan',
- gatePlacement:'client-corrected toward foreground end of road-facing long boundary',
+ gatePlacement:'client-approved palm-tree-side long fence near foreground corner; direct straight driveway',
  buildingRegistration:'approximate, uses IFC ground/first wall bounds'
 });
 
@@ -182,56 +182,66 @@ export function createCuratedSiteContext(scene,origin){
  turf.rotation.x=-Math.PI/2;turf.position.y=surface-.014;
  turf.name='S1_LAWN_EXCLUDING_HOUSE';root.add(turf);
 
- // CLIENT-APPROVED S1 OVERRIDE (21 Nov): The previous gate was on the
- // wrong end of the long road-facing fence. Put it at the opposite end, then
- // pave a continuous driveway into an extensive parking court on the former
- // gate side. Keep the 3 plan-marked bays beside the residence as designated
- // stalls inside the larger turning/parking surface.
- //
- // The rectangular court is entirely INSIDE the straight portion of the
- // chamfered site; its area is >50% of the compound outside the house.
- const gateCenterX=left+7.8,gateZ=front;
- const parkX=house.maxX+1.50;
- const parkRight=right-corner-.30;
- const parkW=parkRight-parkX;
- const parkRear=top+3.7,parkFront=front-.85;
- const parkDepth=parkFront-parkRear;
+ // Client-approved updated visualization (21 Nov):
+ // - Site's right-hand / palm-tree-side long fence corresponds to z=top.
+ // - The 4m sliding gate belongs toward the foreground end of that fence.
+ // - A STRAIGHT, vehicle-width approach crosses the green side setback
+ //   directly into a substantial parking court beside/in front of the house.
+ // - Parking must be generous but NEVER cover half the outdoor compound.
+ // - Lawn continues across the entire foreground and alongside the driveway.
+ // All geometry is viewer-only: source IFC remains unchanged.
+ const gateCenterX=right-11.20,gateZ=top;
+ const parkX=house.maxX+1.35,parkRight=right-9.30;
+ const parkRear=top+8.20,parkFront=front-.85;
+ const parkW=parkRight-parkX,parkDepth=parkFront-parkRear;
  const footprint=(house.maxX-house.minX)*(house.maxZ-house.minZ);
  const outdoorArea=sitePlan.width*sitePlan.depth-footprint;
  const parkArea=parkW*parkDepth;
- if(parkArea/outdoorArea<.5)throw Error('Client requested parking occupying at least half outdoor compound');
+ // Vehicle access is centered on the 4m gate and passes through the
+ // 7–8m right-side lawn setback. It overlaps the court's rear-right edge,
+ // guaranteeing a continuous paved route instead of a broken L-shaped path.
+ const driveWidth=4.60,driveX0=gateCenterX-driveWidth/2,
+  driveX1=gateCenterX+driveWidth/2;
+ const driveZ0=top+.12,driveZ1=parkRear+.55;
+ const driveArea=driveWidth*(driveZ1-driveZ0);
+ const overlapArea=Math.max(0,Math.min(driveX1,parkRight)-Math.max(driveX0,parkX))*
+  Math.max(0,Math.min(driveZ1,parkFront)-Math.max(driveZ0,parkRear));
+ const totalPavedArea=parkArea+driveArea-overlapArea;
+ const totalPavingOutdoorCoverage=100*totalPavedArea/outdoorArea;
+ if(parkW<15||parkDepth<13||totalPavingOutdoorCoverage>=50||
+    totalPavingOutdoorCoverage<25)
+  throw Error('Parking must be spacious but preserve the majority of the lawn.');
+ if(!(gateCenterX>parkX&&gateCenterX<parkRight&&driveX0<parkRight))
+  throw Error('Gate and straight driveway must enter the parking court.');
  slab(root,mat.paving,parkX+parkW/2,(parkRear+parkFront)/2,
-  parkW,parkDepth,surface+.018,'S1_EXPANDED_PAVED_PARKING_COURT');
- const baysX=parkX+.55, baysZ0=house.minZ+5.1,baysZ1=house.maxZ-.06;
+  parkW,parkDepth,surface+.018,'S1_PAVED_PARKING_COURT');
+ slab(root,mat.paving,gateCenterX,(driveZ0+driveZ1)/2,
+  driveWidth,driveZ1-driveZ0,surface+.027,'S1_STRAIGHT_GATE_DRIVEWAY');
+ // The three plan-marked bays remain visible within the larger paved court.
+ const baysX=parkX+.55,baysZ0=parkRear+.48,baysZ1=parkFront-1.15;
  slab(root,mat.paving,baysX+sitePlan.parkingCount*sitePlan.parkingBayWidth/2,
   (baysZ0+baysZ1)/2,sitePlan.parkingCount*sitePlan.parkingBayWidth,
-  baysZ1-baysZ0,surface+.026,'S1_PAVED_PARKING_THREE_BAYS');
+  baysZ1-baysZ0,surface+.029,'S1_PAVED_PARKING_THREE_BAYS');
  for(let i=1;i<sitePlan.parkingCount;i++){
   strip(root,[baysX+i*sitePlan.parkingBayWidth,baysZ0+.20],
-    [baysX+i*sitePlan.parkingBayWidth,baysZ1-.20],
-    .055,.014,surface+.035,mat.mark,'PARKING_BAY_SEPARATOR');
+   [baysX+i*sitePlan.parkingBayWidth,baysZ1-.20],
+   .055,.014,surface+.036,mat.mark,'PARKING_BAY_SEPARATOR');
  }
- // Road-facing access lane on the OPPOSITE end of the frontage. It stays
- // ahead of the actual house and its front planted beds, then overlaps the
- // large right-side parking court, allowing vehicles to turn and distribute.
- const driveX0=gateCenterX-sitePlan.gateWidth/2-.30;
- const driveX1=parkX+2.2;
- const driveZ0=front-3.20,driveZ1=front-.12;
- slab(root,mat.paving,(driveX0+driveX1)/2,(driveZ0+driveZ1)/2,
-  driveX1-driveX0,driveZ1-driveZ0,surface+.024,'S1_OPPOSITE_GATE_DRIVEWAY');
- slab(root,mat.paving,parkX+1.1,(driveZ0+parkFront)/2,
-  3.4,parkFront-driveZ0,surface+.025,'S1_DRIVE_PARKING_TURNING_LINK');
+ // Low edge kerbs define lawn vs pavement. Never block the entrance or
+ // the transition between the straight driveway and the parking court.
  const kerbY=surface+.029;
- // Boundary-side kerbs only: never create a transverse obstruction in the
- // new gate-to-parking vehicle path or across the internal parking court.
- box(root,.11,.10,parkDepth-.1,parkRight+.06,kerbY,
+ box(root,.11,.10,parkDepth-.10,parkRight+.06,kerbY,
   (parkRear+parkFront)/2,mat.kerb,'PAVED_AREA_RIGHT_KERB');
- box(root,.11,.10,parkDepth-3.25,parkX-.06,kerbY,
-  (parkRear+driveZ0-.20)/2,mat.kerb,'PAVED_AREA_LEFT_KERB');
- box(root,parkW+.16,.10,.11,parkX+parkW/2,kerbY,parkRear-.06,
-  mat.kerb,'PAVED_AREA_REAR_KERB');
- box(root,driveX1-driveX0,.10,.09,(driveX0+driveX1)/2,kerbY,
-  driveZ0-.055,mat.kerb,'LONG_FRONTAGE_DRIVE_LAWN_KERB');
+ box(root,.11,.10,parkDepth-.10,parkX-.06,kerbY,
+  (parkRear+parkFront)/2,mat.kerb,'PAVED_AREA_LEFT_KERB');
+ const rearLeftWidth=driveX0-parkX-.17;
+ if(rearLeftWidth>.2)
+  box(root,rearLeftWidth,.10,.10,parkX+rearLeftWidth/2,
+   kerbY,parkRear-.06,mat.kerb,'PAVED_AREA_REAR_KERB_LEFT');
+ box(root,.10,.10,driveZ1-driveZ0-.55,driveX0-.06,kerbY,
+  (driveZ0+driveZ1)/2,mat.kerb,'DRIVEWAY_LAWN_KERB_LEFT');
+ box(root,.10,.10,driveZ1-driveZ0-.55,driveX1+.06,kerbY,
+  (driveZ0+driveZ1)/2,mat.kerb,'DRIVEWAY_LAWN_KERB_RIGHT');
 
  // One 600x600x50mm splash apron row is explicitly required by note 9.
  const apron=.6,pad=.18;
@@ -241,32 +251,33 @@ export function createCuratedSiteContext(scene,origin){
  slab(root,mat.paving,ext.x0-apron/2,(ext.z0+ext.z1)/2,apron,ext.z1-ext.z0,surface+.027,'S1_SPLASH_APRON_WEST');
  slab(root,mat.paving,ext.x1+apron/2,(ext.z0+ext.z1)/2,apron,ext.z1-ext.z0,surface+.027,'S1_SPLASH_APRON_EAST');
 
- // Actual boundary follows S1. Front wall is interrupted by the sliding gate.
+ // Right-hand palm-tree-side boundary (z=top) now holds the gate. The
+ // previous opening on the opposite perimeter is sealed with full fencing.
  const gateHalf=sitePlan.gateWidth/2;
- for(let i=0;i<boundary.length-2;i++)buildFence(root,boundary[i],boundary[i+1],base);
- buildFence(root,boundary[3],[gateCenterX+gateHalf+.22,front],base);
- buildFence(root,[gateCenterX-gateHalf-.22,front],boundary[4],base);
+ buildFence(root,boundary[0],[gateCenterX-gateHalf-.22,top],base);
+ buildFence(root,[gateCenterX+gateHalf+.22,top],boundary[1],base);
+ for(let i=1;i<boundary.length-1;i++)buildFence(root,boundary[i],boundary[i+1],base);
  buildFence(root,boundary[4],boundary[0],base);
  const gate=createSlideGate(root,gateCenterX,gateZ,base);
- // S1 depicts an access road along the gate/front plot line. This unmarked
- // external road strip is illustrative: its actual public-road width is not surveyed.
+ // The access road is outside the new gate-side fence, not the former side.
  const roadWidth=5.0;
- box(root,sitePlan.width-.4,.07,roadWidth,(left+right)/2,surface-.04,front+roadWidth/2+.17,mat.road,'S1_ACCESS_ROAD_REFERENCE');
- // Leave a real clear entry: the road-side kerb must not continue across the
- // sliding gate track. Both segments meet the corresponding boundary walls.
- const roadKerbLeftEnd=gateCenterX-gateHalf-.28;
- const roadKerbRightStart=gateCenterX+gateHalf+.28;
- box(root,roadKerbLeftEnd-left,.13,.14,(left+roadKerbLeftEnd)/2,
-  surface+.02,front+.18,mat.kerb,'S1_STREET_EDGE_LEFT');
- box(root,right-roadKerbRightStart,.13,.14,(right+roadKerbRightStart)/2,
-  surface+.02,front+.18,mat.kerb,'S1_STREET_EDGE_RIGHT');
- // Remove the two lawn palms by the OLD gate, as the client requested.
- // Retain three palms in the rear lawn setback, completely outside the
- // expanded parking court and opposite-side gate/driveway.
+ box(root,sitePlan.width-.40,.07,roadWidth,
+  (left+right)/2,surface-.04,top-roadWidth/2-.17,mat.road,
+  'S1_ACCESS_ROAD_REFERENCE');
+ const roadKerbLeftEnd=gateCenterX-gateHalf-.28,
+  roadKerbRightStart=gateCenterX+gateHalf+.28;
+ box(root,roadKerbLeftEnd-left,.13,.14,
+  (left+roadKerbLeftEnd)/2,surface+.02,top-.18,mat.kerb,
+  'S1_STREET_EDGE_LEFT');
+ box(root,right-roadKerbRightStart,.13,.14,
+  (right+roadKerbRightStart)/2,surface+.02,top-.18,mat.kerb,
+  'S1_STREET_EDGE_RIGHT');
+ // Keep palms in the large FRONT lawn as illustrated; none may stand
+ // in the gate opening, straight driveway or paved parking court.
  const palmLocations=[
-  [left+8.0,top+1.12,.83],
-  [left+31.7,top+1.15,1.05],
-  [left+40.7,top+1.20,1.12]
+  [right-4.65,top+3.45,.86],
+  [right-4.45,top+13.20,1.03],
+  [right-4.80,front-3.0,.97]
  ];
  for(const [x,z,scale] of palmLocations)palm(root,x,z,surface,scale);
  // Small planting beside the front facade follows the elevations and approved
@@ -287,17 +298,17 @@ export function createCuratedSiteContext(scene,origin){
    root.add(plant);
   }
  }
- // Plan symbols, presented discreetly and outside the parking driving lane.
- // The gate has moved: bins and safety points must NOT remain on the former
- // access alignment, inside the new vehicle corridor, or beyond the chamfer.
- // Keep them as discreet, plan-approved items in the adjacent lawn.
- const binX=gateCenterX-4.4,binZ=driveZ0-1.15;
+ // Fire point and two dust bins stay on the grass, away from vehicle
+ // entrances and the three source-plan parking bays.
+ const binX=left+7.2,binZ=front-1.25;
  for(let i=0;i<2;i++){
-  const bin=box(root,.48,.75,.52,binX+i*.65,surface+.39,binZ,mat.frame,'S1_DUST_BIN');
-  box(root,.53,.07,.57,bin.position.x,surface+.80,binZ,mat.coping,'BIN_LID');
+  const bin=box(root,.48,.75,.52,binX+i*.65,surface+.39,
+   binZ,mat.frame,'S1_DUST_BIN');
+  box(root,.53,.07,.57,bin.position.x,surface+.80,
+   binZ,mat.coping,'BIN_LID');
  }
- marker(root,parkRight+1.60,parkRear+3.2,surface,'FIRE_ASSEMBLY_POINT');
- marker(root,parkRight+1.60,parkRear+5.1,surface,'FIRE_HOSE_REEL');
+ marker(root,parkRight+1.62,parkRear+3.2,surface,'FIRE_ASSEMBLY_POINT');
+ marker(root,parkRight+1.62,parkRear+5.1,surface,'FIRE_HOSE_REEL');
  const bounds=new THREE.Box3(
   new THREE.Vector3(left-origin.x,base,top-origin.z),
   new THREE.Vector3(right-origin.x,9,front-origin.z)
@@ -306,23 +317,37 @@ export function createCuratedSiteContext(scene,origin){
  const gateWorld=new THREE.Vector3(gateCenterX-origin.x,base+1.2,gateZ-origin.z);
  const access={
   gateCenter:[gateCenterX,gateZ],
-  longFrontage:{x0:left,x1:right,z:front},
+  gateBoundary:'palm-tree-side long fence (z=top)',
+  longFrontage:{x0:left,x1:right,z:top},
   driveway:{x0:driveX0,x1:driveX1,z0:driveZ0,z1:driveZ1},
-  turn:{x0:parkX,x1:parkX+3,z0:driveZ0,z1:parkFront},
+  turn:{x0:driveX0,x1:driveX1,z0:parkRear,z1:driveZ1},
   parking:{x0:parkX,x1:parkRight,z0:parkRear,z1:parkFront},
-  designatedBays:{x0:baysX,x1:baysX+sitePlan.parkingCount*sitePlan.parkingBayWidth,z0:baysZ0,z1:baysZ1},
+  designatedBays:{x0:baysX,x1:baysX+sitePlan.parkingCount*sitePlan.parkingBayWidth,
+    z0:baysZ0,z1:baysZ1},
   palms:palmLocations.map(([x,z])=>[x,z]),
   removedOldGatePalms:2
  };
- const summary={siteWidthMetres:48.5,siteDepthMetres:25,
+ const summary={
+  siteWidthMetres:48.5,siteDepthMetres:25,
   parkingBays:3,gateWidthMetres:4,
-  gateRoadFacingLongBoundary:true,gateOffsetFromLeftMetres:+(gateCenterX-left).toFixed(2),
-  gatePlacement:'opposite end of road-facing frontage, client override',
-  continuousPavingGateToParking:true,parkAreaSquareMetres:+parkArea.toFixed(1),
+  gateOnPalmTreeSideFence:true,
+  oldGateBoundaryRestored:true,
+  gateDistanceFromForegroundCornerMetres:+(right-gateCenterX).toFixed(2),
+  gateOffsetFromLeftMetres:+(gateCenterX-left).toFixed(2),
+  gatePlacement:'palm-tree-side fence near foreground corner, approved layout',
+  straightDrivewayToParking:true,
+  continuousPavingGateToParking:true,
+  drivewayWidthMetres:driveWidth,
+  parkingAreaSquareMetres:+parkArea.toFixed(1),
   parkingOutdoorCoverage:+(100*parkArea/outdoorArea).toFixed(1),
+  totalPavingOutdoorCoverage:+totalPavingOutdoorCoverage.toFixed(1),
+  lawnOutdoorCoverageApprox:+(100-totalPavingOutdoorCoverage).toFixed(1),
   removedOldGatePalmTrees:2,palmTreesPreserved:3,
-  approvedComponents:root.children.length,source:'S1 architectural site layout + client corrected orientation',
-  alignment:'review-only',originalSurroundingIFCMeshesUnmodified:true};
+  approvedComponents:root.children.length,
+  source:'S1 architectural site layout + client-approved 21 Nov visualization',
+  alignment:'review-only',
+  originalSurroundingIFCMeshesUnmodified:true
+ };
  return {root,bounds,gate,gateWorld,summary,access,house,
   frontage:[left,right],siteFrontZ:front};
 }
