@@ -84,6 +84,13 @@ try{
  fs.writeFileSync('analysis/open-plan-live-geometry.json',JSON.stringify(openGeometry,null,2));
  console.log('OPEN_PLAN_LIVE_GEOMETRY',JSON.stringify(openGeometry.counts));
  const summary=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.summary())"));
+ const nov21=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.auditNov21ClientAreas())"));
+ console.log('NOV21_DOOR_LOCATIONS',JSON.stringify(nov21.doors.map(d=>({
+  id:d.id,x:d.x,z:d.z,style:d.style,removed:d.removed,width:d.width
+ }))));
+ console.log('NOV21_SOURCE_GEOMETRY',JSON.stringify(nov21.source));
+ console.log('NOV21_STAIR_GENERATED',JSON.stringify(nov21.stairGenerated.filter((x,i)=>i<75)));
+
  const unwantedStairGlass=openGeometry.entries.filter(e=>
    e.zone.includes('stair_sitting')&&
    e.grandparent==='IFC_GLASS_PANES_AND_ALUMINIUM_FRAMES' &&
