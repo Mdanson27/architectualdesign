@@ -280,13 +280,16 @@ export function createCuratedSiteContext(scene,origin){
   }
  }
  // Plan symbols, presented discreetly and outside the parking driving lane.
- const binX=gateCenterX-5.8,binZ=front-1.8;
+ // The gate has moved: bins and safety points must NOT remain on the former
+ // access alignment, inside the new vehicle corridor, or beyond the chamfer.
+ // Keep them as discreet, plan-approved items in the adjacent lawn.
+ const binX=gateCenterX-5.8,binZ=drivewayMinZ-.95;
  for(let i=0;i<2;i++){
   const bin=box(root,.48,.75,.52,binX+i*.65,surface+.39,binZ,mat.frame,'S1_DUST_BIN');
   box(root,.53,.07,.57,bin.position.x,surface+.80,binZ,mat.coping,'BIN_LID');
  }
- marker(root,gateCenterX+5.1,front-1.35,surface,'FIRE_ASSEMBLY_POINT');
- marker(root,gateCenterX+6.4,front-2.7,surface,'FIRE_HOSE_REEL');
+ marker(root,parkX+parkW+5.0,drivewayMinZ-1.25,surface,'FIRE_ASSEMBLY_POINT');
+ marker(root,parkX+parkW+2.5,drivewayMinZ-1.15,surface,'FIRE_HOSE_REEL');
  const bounds=new THREE.Box3(
   new THREE.Vector3(left-origin.x,base,top-origin.z),
   new THREE.Vector3(right-origin.x,9,front-origin.z)
