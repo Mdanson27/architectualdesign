@@ -265,6 +265,7 @@ function refreshVisibility(){
   rec.mesh.visible=visible;
   if(rec.mesh.userData.clientStairSittingWallRemoved)rec.mesh.visible=false;
   if(rec.mesh.userData.clientKitchenDiningDividerRemoved)rec.mesh.visible=false;
+  if(rec.mesh.userData.clientOpenPlanPartitionRemoved)rec.mesh.visible=false;
   if(state.doorSystem&&rec.mesh.userData.functionallyReplacedDoorId)rec.mesh.visible=false;
   if(state.windows?.sourceSet.has(rec))rec.mesh.visible=false;
   if(rec.mesh.userData.facadeDuplicateHidden)rec.mesh.visible=false;
@@ -1561,6 +1562,7 @@ if(isLocalQA){
    const zones=[
     {name:'stair_sitting',x:[107.5,114.3],z:[-9.52,-5.48],y:[-.1,3.35]},
     {name:'kitchen_dining',x:[111.5,112.55],z:[-5.57,.68],y:[-.1,3.35]},
+    {name:'dining_sitting',x:[112.30,117.76],z:[-4.56,-4.20],y:[-.1,3.35]},
     {name:'kitchen_external',x:[107.45,112.55],z:[.30,.87],y:[-.1,3.35]}
    ];
    const entries=[];

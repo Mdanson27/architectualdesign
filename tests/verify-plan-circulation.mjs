@@ -12,8 +12,11 @@ function rec(name,lo,hi,id){
 const walls=[
  rec('SW - 017',[112.2,0,-7.54],[112.4,3.3,-6.53],'stair-upper'),
  rec('SW - 017',[112.2,0,-6.53],[112.4,3.3,-5.56],'stair-lower'),
- rec('SW - 019',[112.2,0,-5.56],[112.4,3.3,.59],'kitchen'),
- rec('SW - 023',[112.4,0,-4.49],[117.12,3.3,-4.29],'sitting-dining'),
+ rec('SW - 019',[112.196,0,-5.558],[112.396,3.3,.592],'kitchen'),
+ rec('SW - 003',[112.191,0,-5.228],[112.198,3.3,.563],'kitchen-face-a'),
+ rec('SW - 003',[112.395,0,-4.36],[112.401,3.3,-.068],'kitchen-face-b'),
+ rec('SW - 023',[112.396,0,-4.488],[117.116,3.3,-4.288],'sitting-dining'),
+ rec('SW - 023',[117.116,0,-4.488],[117.666,3.3,-4.288],'sitting-dining-end'),
  rec('SW - 019',[115.2,0,-5.56],[115.4,3.3,.59],'other-wall'),
  rec('SW - 017',[112.2,0,-9.45],[112.4,3.3,-7.54],'stair-third-wall')
 ];
@@ -25,6 +28,11 @@ assert.equal(source.summary.internalDoorCount,0);
 assert.equal(source.summary.openConcept,true);
 assert.equal(source.openStairWall.count,3);
 assert.equal(source.summary.stairSittingWallRemoved,3);
+assert.equal(source.summary.completeInteriorPartitionsRemoved.totalRemoved,5);
+assert.equal(source.removedInteriorPartitions.concealed.size,5);
+assert(source.removedInteriorPartitions.summary.externalWallsPreserved);
+for(const rec of source.removedInteriorPartitions.concealed)
+ assert(rec.mesh.userData.clientOpenPlanPartitionRemoved&&!rec.mesh.visible);
 assert(source.openStairWall.sourceIFCUnmodified);
 assert(source.openStairWall.concealed.size===3);
 for(const r of source.openStairWall.concealed)
@@ -50,10 +58,10 @@ for(const plan of S1_GROUND_OPENINGS){
  assert.equal(registry.permitsOpenDoorWallHit(hit,3.3),false,'upstairs floor must not be cut');
 }
 assert.equal(registry.permitsOpenDoorWallHit(
- {object:walls[4].mesh,point:new THREE.Vector3(115.3,1,-2.35)},0),false);
+ {object:walls.find(r=>r.mesh.userData.ifc?.guid==='other-wall').mesh,point:new THREE.Vector3(115.3,1,-2.35)},0),false);
 assert.deepEqual(walls.map(r=>r.mesh.geometry),originals);
-assert.equal(walls[4].mesh.userData.clientStairSittingWallRemoved,undefined,
- 'nearby kitchen wall must stay untouched');
+assert.equal(walls.find(r=>r.mesh.userData.ifc?.guid==='other-wall').mesh.userData.clientOpenPlanPartitionRemoved,undefined,
+ 'nearby non-approved kitchen wall must stay untouched');
 function mockDoor(id,x,z,level='ground'){
  const m=new THREE.Mesh(new THREE.BoxGeometry(1,2.5,.2));
  m.userData.ifc={guid:'door-'+id};

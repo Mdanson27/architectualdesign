@@ -150,9 +150,69 @@ export function removeStairSittingWall(records,origin={x:0,z:0},inside=()=>true)
  };
 }
 
+/**
+ * Client-confirmed COMPLETE interior partition removal. Do not just shader-cut
+ * rectangular openings through these IFC walls: the uncut ends and SW-003
+ * surface sheets remain visible as false dividers. Suppress only the known
+ * ground-storey interior elements, identified by both IFC name and precise
+ * source-world envelope. Real exterior walls, floors and upper-storey walls
+ * are excluded even where they meet the old partition.
+ */
+export function removeGroundOpenPlanPartitions(records,origin={x:0,z:0},inside=()=>true){
+ const sets={kitchenCore:[],kitchenFaces:[],sittingDining:[]};
+ const near=(n,target,tolerance=.035)=>Math.abs(n-target)<=tolerance;
+ for(const r of records){
+  if(!inside(r)||r.category!=='walls'||r.layer?.level!=='ground')continue;
+  const b=planarBounds(r.box,origin);
+  const name=String(r.mesh.userData.ifc?.name||'').trim().toUpperCase();
+  if(r.box.min.y<-.06||r.box.max.y>3.36||r.box.max.y-r.box.min.y<3.15)continue;
+  const width=b.maxX-b.minX,depth=b.maxZ-b.minZ;
+  if(name==='SW - 019'&&near(b.minX,112.196)&&near(b.maxX,112.396)&&
+     near(b.minZ,-5.558)&&near(b.maxZ,.592)&&depth>6.05){
+   sets.kitchenCore.push(r);
+  }else if(name==='SW - 003'&&width<.035&&depth>4.0&&
+     b.minX>=112.16&&b.maxX<=112.44&&
+     b.minZ>=-5.26&&b.maxZ<=.60){
+   // Both face sheets from the same vanished Kitchen/Dining dividing wall.
+   // The SW-003 sheet at x=116.91 belongs to a different room boundary.
+   sets.kitchenFaces.push(r);
+  }else if(name==='SW - 023'&&near(b.minZ,-4.488)&&
+     near(b.maxZ,-4.288)&&
+     b.minX>=112.36&&b.maxX<=117.71&&width>.49){
+   // Long Sitting/Dining divider and its short matching end section.
+   sets.sittingDining.push(r);
+  }
+ }
+ const expected={kitchenCore:1,kitchenFaces:2,sittingDining:2};
+ for(const [category,count] of Object.entries(expected)){
+  if(sets[category].length!==count)throw Error(
+   'Refusing partial open-plan wall removal: '+category+
+   ' expected '+count+' IFC parts, found '+sets[category].length);
+ }
+ const concealed=new Set(Object.values(sets).flat());
+ for(const r of concealed){
+  r.mesh.userData.clientOpenPlanPartitionRemoved=true;
+  r.mesh.visible=false;
+ }
+ return {concealed,sets,sourceIFCUnmodified:true,
+  summary:{wholeInteriorWallRemoval:true,
+   removedKitchenCore:sets.kitchenCore.length,
+   removedKitchenFaces:sets.kitchenFaces.length,
+   removedSittingDiningWalls:sets.sittingDining.length,
+   totalRemoved:concealed.size,
+   parts:[...concealed].map(r=>({
+    guid:r.mesh.userData.ifc?.guid,
+    name:r.mesh.userData.ifc?.name,
+    level:r.layer.level
+   })),
+   externalWallsPreserved:true,
+   originalIFCUnmodified:true}};
+}
+
 export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},inside=()=>true){
  const supported=[];
  const openStairWall=removeStairSittingWall(records,origin,inside);
+ const removedInteriorPartitions=removeGroundOpenPlanPartitions(records,origin,inside);
  let kitchenCounterRepair=null;
  const root=new THREE.Group();root.name='S1_CONFIRMED_OPEN_ROOM_CIRCULATION';scene.add(root);
  for(const plan of S1_GROUND_OPENINGS){
@@ -181,11 +241,12 @@ export function createPlanCirculationCorrections(records,scene,origin={x:0,z:0},
    kitchenCounterRepair=repairKitchenDoorCounterIntrusion(records,origin,plan,inside);
   }
  }
- return {root,kitchenDoor:null,kitchenCounterRepair,openStairWall,apertures:supported.filter(r=>r.verified),
+ return {root,kitchenDoor:null,kitchenCounterRepair,openStairWall,removedInteriorPartitions,apertures:supported.filter(r=>r.verified),
   summary:{sourceConfirmedOpenings:supported.filter(x=>x.verified).length,
    kitchenDoorFunctional:false,openConcept:true,internalDoorCount:0,
    structuralEndPiersPreserved:true,
    stairSittingWallRemoved:openStairWall.count,
+   completeInteriorPartitionsRemoved:removedInteriorPartitions.summary,
    removedStairWallGuids:openStairWall.sourceGuids,
    stairOriginalIFCPreserved:openStairWall.sourceIFCUnmodified,
    kitchenCounterClearance:kitchenCounterRepair?.summary??null,

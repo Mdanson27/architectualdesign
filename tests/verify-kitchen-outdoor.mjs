@@ -31,11 +31,15 @@ const fixture=[
  wall('SW - 017',112.2,-9.45,112.4,-7.54,'sw-1'),
  wall('SW - 017',112.2,-7.54,112.4,-6.53,'sw-2'),
  wall('SW - 017',112.2,-6.53,112.4,-5.56,'sw-3'),
- wall('SW - 023',112.4,-4.49,117.12,-4.29,'sitting-divider'),
- wall('SW - 019',112.2,-5.56,112.4,.59,'kitchen-divider')
+ wall('SW - 023',112.396,-4.488,117.116,-4.288,'sitting-divider'),
+ wall('SW - 023',117.116,-4.488,117.666,-4.288,'sitting-divider-end'),
+ wall('SW - 019',112.196,-5.558,112.396,.592,'kitchen-divider'),
+ wall('SW - 003',112.191,-5.228,112.198,.563,'kitchen-face-a'),
+ wall('SW - 003',112.395,-4.36,112.401,-.068,'kitchen-face-b')
 ];
 const source=createPlanCirculationCorrections(fixture,new THREE.Scene(),origin);
 assert.equal(source.openStairWall.count,3);
+assert.equal(source.removedInteriorPartitions.concealed.size,5);
 assert.equal(source.kitchenDoor,null);
 assert.equal(source.summary.internalDoorCount,0);
 assert.equal(source.root.children.length,0);
