@@ -19,7 +19,7 @@ import {createSourceBalconyRestoration} from './balcony-restoration.js';
 import {createHouseLighting} from './lighting-system.js';
 import {PLAN_ROUTE_TARGETS,findPhysicalRoute} from './circulation-routes.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
-import {implementOpenPlanMaidAccess} from './open-plan-access.js';
+import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
 
 /**
  * Actual-house interactive viewer.
@@ -94,7 +94,7 @@ const state={
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
- night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
+ night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
 };
@@ -266,6 +266,7 @@ function refreshVisibility(){
   if(rec.mesh.userData.clientStairSittingWallRemoved)rec.mesh.visible=false;
   if(rec.mesh.userData.clientKitchenDiningDividerRemoved)rec.mesh.visible=false;
   if(rec.mesh.userData.clientOpenPlanPartitionRemoved)rec.mesh.visible=false;
+  if(rec.mesh.userData.clientKitchenStairPartitionRemoved)rec.mesh.visible=false;
   if(state.doorSystem&&rec.mesh.userData.functionallyReplacedDoorId)rec.mesh.visible=false;
   if(state.windows?.sourceSet.has(rec))rec.mesh.visible=false;
   if(rec.mesh.userData.facadeDuplicateHidden)rec.mesh.visible=false;
@@ -284,6 +285,8 @@ function refreshVisibility(){
  if(state.maidAccess?.root)state.maidAccess.root.visible=
   state.mode==='walk'||!state.sectionEnabled||state.floor==='all'||state.floor==='ground';
  if(state.planCirculation?.root)state.planCirculation.root.visible=
+  state.mode==='walk'||!state.sectionEnabled||state.floor==='all'||state.floor==='ground';
+ if(state.mainDoorEnclosure?.root)state.mainDoorEnclosure.root.visible=
   state.mode==='walk'||!state.sectionEnabled||state.floor==='all'||state.floor==='ground';
  if(state.windows)state.windows.updateVisibility({
   floor:state.floor,mode:state.mode,sectionEnabled:state.sectionEnabled
@@ -444,7 +447,10 @@ function setupEnhancements(){
  state.maidAccess=implementOpenPlanMaidAccess(state.doorSystem,scene,state.origin);
  state.solids.push(state.maidAccess.collider);
  state.planCirculation=createPlanCirculationCorrections(state.meshes,scene,state.origin,isResidenceRecord);
+ state.mainDoorEnclosure=createMainEntranceWallFinish(state.doorSystem,state.meshes,scene,state.origin);
+ state.solids.push(...state.mainDoorEnclosure.colliders);
  console.info('[S1 ground-floor opening correction]',state.planCirculation.summary);
+ console.info('[Client main door wall enclosure]',state.mainDoorEnclosure.summary);
  console.info('[Open concept kitchen counter clearance]',
   state.planCirculation.kitchenCounterRepair?.summary);
  state.balconies=createSourceBalconyRestoration(state.meshes,scene,state.origin,isResidenceRecord);
@@ -986,6 +992,9 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
  const candidates=nearby(state.solids,nextX,footY+1.05,nextZ,1.3);
  const rayMeshes=candidates.filter(r=>{
   if(!r.mesh.visible||r.mesh.userData.functionallyReplacedDoorId)return false;
+  // The source SW-004 face crosses both storeys. Preserve its upstairs wall
+  // while ignoring its selectively concealed ground-floor half in collisions.
+  if(r.mesh.userData.clientStairKitchenGroundFaceClipped&&footY<1.55)return false;
   const type=r.category;
   if(type==='railings')return true;
   if(type==='proxies'){
@@ -1666,6 +1675,7 @@ if(isLocalQA){
         sourceGuids:state.planCirculation.openStairWall.sourceGuids,
         sourceIFCUnmodified:true}:null,
     maidAccess:state.maidAccess?.summary??null,
+    mainDoorEnclosure:state.mainDoorEnclosure?.summary??null,
     activeDoorCount:state.doorSystem?.doors.filter(d=>!d.removedFromPlan).length??null,
     kitchenDoor:state.planCirculation?.kitchenDoor?.status()??null,
     outdoorWalk:state.siteWalk?.summary??null,
