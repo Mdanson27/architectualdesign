@@ -19,7 +19,7 @@ import {createSourceBalconyRestoration} from './balcony-restoration.js';
 import {createHouseLighting} from './lighting-system.js';
 import {PLAN_ROUTE_TARGETS,findPhysicalRoute} from './circulation-routes.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
-import {implementOpenPlanMaidAccess} from './open-plan-access.js';
+import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
 
 /**
  * Actual-house interactive viewer.
@@ -94,7 +94,7 @@ const state={
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
  showSurroundings:false,sectionEnabled:false,
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
- night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
+ night:false,houseLightsOn:true,balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
 };
@@ -266,6 +266,7 @@ function refreshVisibility(){
   if(rec.mesh.userData.clientStairSittingWallRemoved)rec.mesh.visible=false;
   if(rec.mesh.userData.clientKitchenDiningDividerRemoved)rec.mesh.visible=false;
   if(rec.mesh.userData.clientOpenPlanPartitionRemoved)rec.mesh.visible=false;
+  if(rec.mesh.userData.clientKitchenStairPartitionRemoved)rec.mesh.visible=false;
   if(state.doorSystem&&rec.mesh.userData.functionallyReplacedDoorId)rec.mesh.visible=false;
   if(state.windows?.sourceSet.has(rec))rec.mesh.visible=false;
   if(rec.mesh.userData.facadeDuplicateHidden)rec.mesh.visible=false;
@@ -284,6 +285,8 @@ function refreshVisibility(){
  if(state.maidAccess?.root)state.maidAccess.root.visible=
   state.mode==='walk'||!state.sectionEnabled||state.floor==='all'||state.floor==='ground';
  if(state.planCirculation?.root)state.planCirculation.root.visible=
+  state.mode==='walk'||!state.sectionEnabled||state.floor==='all'||state.floor==='ground';
+ if(state.mainDoorEnclosure?.root)state.mainDoorEnclosure.root.visible=
   state.mode==='walk'||!state.sectionEnabled||state.floor==='all'||state.floor==='ground';
  if(state.windows)state.windows.updateVisibility({
   floor:state.floor,mode:state.mode,sectionEnabled:state.sectionEnabled
@@ -444,7 +447,10 @@ function setupEnhancements(){
  state.maidAccess=implementOpenPlanMaidAccess(state.doorSystem,scene,state.origin);
  state.solids.push(state.maidAccess.collider);
  state.planCirculation=createPlanCirculationCorrections(state.meshes,scene,state.origin,isResidenceRecord);
+ state.mainDoorEnclosure=createMainEntranceWallFinish(state.doorSystem,state.meshes,scene,state.origin);
+ state.solids.push(...state.mainDoorEnclosure.colliders);
  console.info('[S1 ground-floor opening correction]',state.planCirculation.summary);
+ console.info('[Client main door wall enclosure]',state.mainDoorEnclosure.summary);
  console.info('[Open concept kitchen counter clearance]',
   state.planCirculation.kitchenCounterRepair?.summary);
  state.balconies=createSourceBalconyRestoration(state.meshes,scene,state.origin,isResidenceRecord);
@@ -454,7 +460,7 @@ function setupEnhancements(){
  const status=$('balconyAuditStatus');
  if(status)status.textContent=state.balconies.summary.restored+' source-supported balconies · '+state.balconies.summary.concealedOpaqueEdgeMeshes+' false outer enclosure meshes hidden';
  state.doorApertureAudit=revealObstructedDoors(mat.wall,state.doorSystem,state.meshes,isResidenceRecord,state.windows,state.facadeAudit,state.planCirculation);
- const details=state.doorSystem.doors.length;
+ const details=state.doorSystem.doors.filter(d=>!d.removedFromPlan).length;
  console.info('[AutoMinds Aperture Audit]',state.doorApertureAudit.obstructedCount,
   'door and',state.doorApertureAudit.windowObstructedCount,'window wall occlusions repaired visually');
  $('doorSystemCount').textContent=details+' interactive doorways · '+state.doorSystem.sourceCount+' IFC parts · '+state.doorApertureAudit.obstructedCount+' door obstructions · '+state.doorApertureAudit.windowObstructedCount+' window occlusions checked';
@@ -496,7 +502,7 @@ function buildBedroomNavigator(){
 }
 function buildDoorNavigator(){
  const container=$('doorList');container.textContent='';
- for(const door of state.doorSystem.doors){
+ for(const door of state.doorSystem.doors.filter(d=>!d.removedFromPlan)){
   const btn=document.createElement('button');
   btn.type='button';btn.className='bedroomItem';
   const level=door.level==='ground'?'Ground floor':'First floor';
@@ -524,7 +530,7 @@ function buildDoorNavigator(){
   });
   container.appendChild(btn);
  }
- $('doorTotal').textContent=state.doorSystem.doors.length+' interactive doorways grouped from '+state.doorSystem.sourceCount+' IFC parts';
+ $('doorTotal').textContent=state.doorSystem.doors.filter(d=>!d.removedFromPlan).length+' active doorways grouped from '+state.doorSystem.sourceCount+' IFC parts';
 }
 function beginMeasure(){
  state.measureMode=!state.measureMode;
@@ -986,6 +992,9 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
  const candidates=nearby(state.solids,nextX,footY+1.05,nextZ,1.3);
  const rayMeshes=candidates.filter(r=>{
   if(!r.mesh.visible||r.mesh.userData.functionallyReplacedDoorId)return false;
+  // The source SW-004 face crosses both storeys. Preserve its upstairs wall
+  // while ignoring its selectively concealed ground-floor half in collisions.
+  if(r.mesh.userData.clientStairKitchenGroundFaceClipped&&footY<1.55)return false;
   const type=r.category;
   if(type==='railings')return true;
   if(type==='proxies'){
@@ -1558,6 +1567,56 @@ const isLocalQA=(location.hostname==='localhost'||location.hostname==='127.0.0.1
  && new URLSearchParams(location.search).has('qa');
 if(isLocalQA){
  window.__AutoMindsQA={
+  auditNov21ClientAreas:()=>{
+   scene.updateMatrixWorld(true);
+   const offset=state.origin;
+   const toWorldBox=r=>({
+    x:[+(r.box.min.x+offset.x).toFixed(3),+(r.box.max.x+offset.x).toFixed(3)],
+    y:[+r.box.min.y.toFixed(3),+r.box.max.y.toFixed(3)],
+    z:[+(r.box.min.z+offset.z).toFixed(3),+(r.box.max.z+offset.z).toFixed(3)]});
+   const ds=state.doorSystem?.doors.map(d=>({
+    id:d.id,level:d.level,style:d.style,removed:!!d.removedFromPlan,
+    x:+(d.position.x+offset.x).toFixed(3),z:+(d.position.z+offset.z).toFixed(3),
+    width:+d.width.toFixed(3),
+    sources:d.source.map(q=>({guid:q.mesh.userData.ifc?.guid,name:q.mesh.userData.ifc?.name}))
+   }))??[];
+   const entry=ds.find(d=>d.id===27);
+   const pick=r=>{
+    if(r.layer?.level!=='ground'||r.box.min.y>3.4||r.box.max.y<0.3)return false;
+    const p=toWorldBox(r),name=r.mesh.userData.ifc?.name??'';
+    const nearEntry=entry&&p.x[0]<entry.x+3.4&&p.x[1]>entry.x-3.4&&
+     p.z[0]<entry.z+3.4&&p.z[1]>entry.z-3.4;
+    const nearStair=p.x[0]<114.8&&p.x[1]>110.2&&
+     p.z[0]<-5.2&&p.z[1]>-10.2;
+    const nearKitchen=p.x[0]<114.1&&p.x[1]>110.3&&
+     p.z[0]<1.55&&p.z[1]>-5.9;
+    const structural=['walls','columns','railings','doors'].includes(r.category);
+    const skinny=Math.min(p.x[1]-p.x[0],p.z[1]-p.z[0])<.38;
+    const proxyPanel=(r.category==='proxies'||r.category==='slabs')&&
+       skinny&&(p.y[1]-p.y[0]>.44);
+    return (structural||proxyPanel)&&(nearEntry||nearStair||nearKitchen);
+   };
+   const records=state.meshes.filter(pick).map(r=>{
+    const b=toWorldBox(r);
+    return {name:r.mesh.userData.ifc?.name,guid:r.mesh.userData.ifc?.guid,
+     category:r.category,visible:r.mesh.visible,
+     dims:[b.x[1]-b.x[0],b.y[1]-b.y[0],b.z[1]-b.z[0]].map(v=>+v.toFixed(2)),
+     box:b};
+   });
+   const generated=[];
+   state.stairSafety?.root?.traverse(o=>{
+    if(!o.isMesh)return;
+    const b=new THREE.Box3().setFromObject(o);
+    const dims=b.getSize(new THREE.Vector3());
+    generated.push({name:o.name,visible:o.visible,center:{
+     x:+(b.min.x+b.max.x+2*offset.x).toFixed(2)/2,
+     z:+(b.min.z+b.max.z+2*offset.z).toFixed(2)/2,
+     y:+((b.min.y+b.max.y)/2).toFixed(2)
+    },dimensions:[dims.x,dims.y,dims.z].map(v=>+v.toFixed(2))});
+   });
+   return {doors:ds,entry,source:records,stairGenerated:generated.filter(x=>
+    /POST|HANDRAIL|GUARD|BALUSTER|TRANSITION/i.test(x.name)).slice(0,120)};
+  },
   auditOpenConceptGeometry:()=>{
    const zones=[
     {name:'stair_sitting',x:[107.5,114.3],z:[-9.52,-5.48],y:[-.1,3.35]},
@@ -1616,6 +1675,7 @@ if(isLocalQA){
         sourceGuids:state.planCirculation.openStairWall.sourceGuids,
         sourceIFCUnmodified:true}:null,
     maidAccess:state.maidAccess?.summary??null,
+    mainDoorEnclosure:state.mainDoorEnclosure?.summary??null,
     activeDoorCount:state.doorSystem?.doors.filter(d=>!d.removedFromPlan).length??null,
     kitchenDoor:state.planCirculation?.kitchenDoor?.status()??null,
     outdoorWalk:state.siteWalk?.summary??null,

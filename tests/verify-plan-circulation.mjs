@@ -73,11 +73,12 @@ const sourceDoor=(id,x,z)=>mockDoor(id,x-shifted.x,z-shifted.z);
 const group={doors:[sourceDoor(19,108.22,-13.8),sourceDoor(22,111.76,-11.14),
  sourceDoor(25,114.635,-4.39),sourceDoor(21,111.68,-5.31)]};
 const maid=implementOpenPlanMaidAccess(group,new THREE.Scene(),shifted);
-assert.deepEqual(maid.removed.map(x=>x.id),[25,22]);
+assert.deepEqual(maid.removed.map(x=>x.id),[25,22,21]);
 assert(!group.doors[0].removedFromPlan,'exterior maid balcony door must remain intact');
 assert(maid.collider.box.containsPoint(new THREE.Vector3(111.76-shifted.x,1.0,-11.14-shifted.z)));
 assert(maid.summary.maidInteriorSealed);
-assert.equal(maid.summary.activeDoorCount,2);
+assert.equal(maid.summary.activeDoorCount,1);
+assert(maid.summary.kitchenStairDoorRemoved);
 assert.equal(maid.summary.originalIFCUnmodified,true);
 assert.equal(maid.maidWall.geometry.parameters.width,1.02);
 console.log(JSON.stringify({passed:true,openZones:source.apertures.length,

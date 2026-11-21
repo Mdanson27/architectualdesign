@@ -84,6 +84,13 @@ try{
  fs.writeFileSync('analysis/open-plan-live-geometry.json',JSON.stringify(openGeometry,null,2));
  console.log('OPEN_PLAN_LIVE_GEOMETRY',JSON.stringify(openGeometry.counts));
  const summary=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.summary())"));
+ const nov21=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.auditNov21ClientAreas())"));
+ console.log('NOV21_DOOR_LOCATIONS',JSON.stringify(nov21.doors.map(d=>({
+  id:d.id,x:d.x,z:d.z,style:d.style,removed:d.removed,width:d.width
+ }))));
+ console.log('NOV21_SOURCE_GEOMETRY',JSON.stringify(nov21.source));
+ console.log('NOV21_STAIR_GENERATED',JSON.stringify(nov21.stairGenerated.filter((x,i)=>i<75)));
+
  const unwantedStairGlass=openGeometry.entries.filter(e=>
    e.zone.includes('stair_sitting')&&
    e.grandparent==='IFC_GLASS_PANES_AND_ALUMINIUM_FRAMES' &&
@@ -124,19 +131,44 @@ try{
  console.log('OPEN_PLAN_VISUAL_CLEARANCE_CONFIRMED',JSON.stringify({
    erroneousGlazingHidden:2,obsoleteDividerSlabsHidden:3,realFacadePreserved:true
  }));
+ const cleared=summary.planCirculation?.clientStairKitchenCleanout;
+ const entrance=summary.mainDoorEnclosure;
+ const badStairPosts=nov21.source.filter(r=>
+  ['3kAl0gHyX6ihgy9PBZMVtT','1xo0ba7TzEN8lQogEQUDNP'].includes(r.guid)&&r.visible);
+ const badRibs=nov21.source.filter(r=>r.name==='CRE - 001'&&r.visible&&
+  r.box.x[0]>112.34&&r.box.x[1]<112.45&&
+  r.box.z[0]>-2.30&&r.box.z[1]<-.50&&r.dims[1]<1.1);
+ if(cleared?.groundKitchenStairWallHidden!==1||
+  cleared?.groundKitchenStairFacesHidden!==3||
+  cleared?.oldStairRoomPostsHidden!==2||
+  cleared?.kitchenRibColumnsHidden!==59||
+  cleared?.upperFaceGroundClipped!==1||
+  badStairPosts.length||badRibs.length||
+  !nov21.doors.find(d=>d.id===21)?.removed||
+  entrance?.mainDoubleDoorId!==27||
+  entrance?.sideWallPanels!==2||
+  !entrance?.overheadClosure||!entrance?.sourceWindowWD007Preserved)
+   throw Error('Client stair-to-kitchen open-concept / main-door enclosure invalid: '+
+    JSON.stringify({cleared,entrance,badStairPosts,badRibs:badRibs.length}));
+ console.log('NOV21_STAIR_KITCHEN_ENTRANCE_ACCEPTED',JSON.stringify({
+  cleared,entrance,oldStairColumnsVisible:badStairPosts.length,
+  visibleKitchenRibColumns:badRibs.length,stairKitchenDoorRemoved:true
+ }));
  const siteReview=summary.siteContext;
  if(!siteReview?.gateRoadFacingLongBoundary||
    !siteReview?.continuousPavingGateToParking||
-   siteReview?.palmTreesKeptOutsideDrive!==2||
-   siteReview?.longDriveMetres<15||
-   siteReview?.gateOffsetFromLeftMetres<36)
-   throw Error('Gate / driveway / palm site-plan correction was not loaded: '+
-     JSON.stringify(siteReview));
- console.log('S1_GATE_AND_PARKING_GEOMETRY_VERIFIED',JSON.stringify({
-   gateOffsetFromFrontageStart:siteReview.gateOffsetFromLeftMetres,
-   pavedDriveLength:siteReview.longDriveMetres,
-   parkingBays:siteReview.parkingBays,
-   treesOnLawnSide:siteReview.palmTreesKeptOutsideDrive
+   siteReview?.gateOffsetFromLeftMetres>11||
+   siteReview?.gateOffsetFromLeftMetres<5||
+   siteReview?.parkingOutdoorCoverage<50||
+   siteReview?.removedOldGatePalmTrees!==2||
+   siteReview?.palmTreesPreserved!==3)
+   throw Error('Client-corrected opposite gate / half-compound parking regression: '+
+    JSON.stringify(siteReview));
+ console.log('OPPOSITE_GATE_AND_EXPANDED_PARKING_VERIFIED',JSON.stringify({
+  gateOffsetFromLeft:siteReview.gateOffsetFromLeftMetres,
+  parkingOutdoorCoverage:siteReview.parkingOutdoorCoverage,
+  parkingBays:siteReview.parkingBays,palmsPreserved:siteReview.palmTreesPreserved,
+  oldGatePalmsRemoved:siteReview.removedOldGatePalmTrees
  }));
  const scene=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
  const balcony=summary.balconies;
@@ -157,6 +189,7 @@ try{
  if(!openPlan.ready||!openPlan.openConcept||openPlan.internalPlanDoors!==0||
     openPlan.planBays.length!==3||openPlan.planBays.some(p=>!p.verified||p.sourceWallMeshes<1)||
     !openPlan.disabledDoorIds.includes(22)||!openPlan.disabledDoorIds.includes(25)||
+    !openPlan.disabledDoorIds.includes(21)||
     !openPlan.maidInteriorDoorRemoved||!openPlan.sittingDiningDoorRemoved||
     !openPlan.maidExteriorDoorPreserved||!openPlan.maidWallCollision||
     !openPlan.maidSealCrossesTestSegment||!openPlan.originalIFCUnmodified)
@@ -205,7 +238,7 @@ try{
    throw Error('Independent night and house-light controls failed');
  console.log('PHASE7_BALCONY_LIGHTS',JSON.stringify({restored:balcony.restored,concealed:balcony.concealedOpaqueEdgeMeshes,
   lights:lightBefore.activeEmitters,nightIndependent:true}));
- const ids=(process.env.QA_ALL_DOORS==='1'?Array.from({length:29},(_,i)=>i+1):[6,12,14,15,19,21,26,27,28,29]).filter(id=>id!==22&&id!==25);
+ const ids=(process.env.QA_ALL_DOORS==='1'?Array.from({length:29},(_,i)=>i+1):[6,12,14,15,19,26,27,28,29]).filter(id=>id!==21&&id!==22&&id!==25);
  const crossings=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.doorCrossings("+JSON.stringify(ids)+",true))"));
  const obstructed=crossings.filter(x=>!x.openFront?.ok||!x.openBack?.ok).map(x=>({
   id:x.id,level:x.level,sourceGuids:x.sourceGuids,front:x.openFront,back:x.openBack
@@ -244,9 +277,9 @@ try{
   outsideRawVisible:scene.outsideRawMeshesVisible,rawWindowProxiesVisible:scene.originalWindowProxiesStillVisible,
   testedDoorIds:ids,obstructed,closedDoorUnexpectedPass:blockedWhenClosed,
   browserExceptions:exceptions}));
- if(summary.doorCount!==29||summary.activeDoorCount!==27||summary.windows?.windowAssemblies<20)
+ if(summary.doorCount!==29||summary.activeDoorCount!==26||summary.windows?.windowAssemblies<20)
   throw Error('Unexpected door/window model count');
- if(summary.openingRegistry?.verifiedDoorWallCutouts<27)
+ if(summary.openingRegistry?.verifiedDoorWallCutouts<26)
   throw Error('Not all IFC doorways have source-matched visual cutouts');
  if(summary.verifiedFacadeGlazing?.sourceAlignedPanels<2)
   throw Error('Source-verified first-floor glazing not active');
