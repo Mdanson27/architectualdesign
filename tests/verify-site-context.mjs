@@ -53,11 +53,11 @@ const gateVoid=new THREE.Box3(
 assert(site.root.children.filter(x=>x.name==='APPROVED_BOUNDARY_WALL')
  .every(w=>!new THREE.Box3().setFromObject(w).intersectsBox(gateVoid)),
  'no perimeter fence crosses the new gate opening');
-const ray=new THREE.Raycaster();
+const parkingRay=new THREE.Raycaster();
 const px=(access.parking.x0+access.parking.x1)/2,
  pz=(access.parking.z0+access.parking.z1)/2;
-ray.set(new THREE.Vector3(px-origin.x,2,pz-origin.z),new THREE.Vector3(0,-1,0));
-assert(ray.intersectObject(court,false).length>0,
+parkingRay.set(new THREE.Vector3(px-origin.x,2,pz-origin.z),new THREE.Vector3(0,-1,0));
+assert(parkingRay.intersectObject(court,false).length>0,
  'expanded parking surface must be real geometry');
 const walk=createSiteWalkSupport(site,origin);
 const route=[
