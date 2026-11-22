@@ -29,20 +29,21 @@ export const HOME_S1_SOURCE_REVIEW=Object.freeze({
 /**
  * Rectangles/polyline candidate footprints in ORIGINAL source IFC world X/Z
  * metres. Conservative simple polygons, excluding implied corridors/wet rooms.
- * Ground G-MAID candidate envelope visibly underrepresents transcribed 11m²;
+ * Ground G-BEDROOM envelope may include an adjacent WC niche; room edges
+ * remain unverified. G-MAID candidate envelope underrepresents 11m²;
  * this is intentionally highlighted rather than stretching the shape.
  */
 export const STAGE1_PLAN_SKETCHES=Object.freeze({
  'G-SITTING':{floor:'ground',vertices:[[112.4,-9.62],[119.73,-9.62],[119.73,-4.89],[112.4,-4.89]],confidence:'moderate'},
  'G-DINING':{floor:'ground',vertices:[[112.45,-4.42],[117.15,-4.42],[117.15,-.38],[112.45,-.38]],confidence:'moderate'},
- 'G-KITCHEN':{floor:'ground',vertices:[[106.2,-5.22],[112.25,-5.22],[112.25,-.40],[108.1,-.40],[108.1,-1.9],[106.2,-1.9]],confidence:'moderate'},
+ 'G-KITCHEN':{floor:'ground',vertices:[[107.55,-5.22],[112.25,-5.22],[112.25,-.40],[106.2,-.40],[106.2,-2.2],[107.55,-2.2]],confidence:'moderate'},
  'G-BEDROOM':{floor:'ground',vertices:[[112.56,-13.65],[118.4,-13.65],[118.4,-10.2],[112.56,-10.2]],confidence:'moderate'},
  'G-MAID':{floor:'ground',vertices:[[109.4,-14.5],[112.23,-14.5],[112.23,-11.58],[109.4,-11.58]],confidence:'low'},
  'F-MASTER':{floor:'first',vertices:[[112.4,-9.62],[119.73,-9.62],[119.73,-4.85],[112.4,-4.85]],confidence:'moderate'},
  'F-BEDROOM-2':{floor:'first',vertices:[[106.76,-14.48],[111.53,-14.48],[111.53,-10.86],[106.76,-10.86]],confidence:'moderate'},
  'F-BEDROOM-3':{floor:'first',vertices:[[107.8,-3.31],[112.28,-3.31],[112.28,-.33],[107.8,-.33]],confidence:'moderate'},
  'F-FAMILY':{floor:'first',vertices:[[112.4,-4.31],[116.92,-4.31],[116.92,-.15],[112.4,-.15]],confidence:'high-from-existing-furniture-guard'},
- 'F-READING':{floor:'first',vertices:[[106.74,-5.16],[111.7,-5.16],[111.7,-3.52],[106.74,-3.52]],confidence:'moderate'}
+ 'F-READING':{floor:'first',vertices:[[106.18,-5.35],[110.1,-5.35],[110.1,-3.30],[106.18,-3.30]],confidence:'moderate'}
 });
 export const STAGE1_S1_ADDITIONAL_CONDITIONS=Object.freeze([
  {id:'GROUND-WC-SH',floor:'ground',label:'Ground-floor WC/shower and toilet areas',status:'visually-present-count-to-verify'},
