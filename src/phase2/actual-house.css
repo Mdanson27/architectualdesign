@@ -121,3 +121,10 @@ button,input,a{font:inherit}button{cursor:pointer}a{color:inherit;text-decoratio
  font:800 9px "Manrope",sans-serif;border-radius:4px;cursor:pointer}
 .stage1Room .stage1Inspect:hover,.stage1Room .stage1Inspect:focus-visible{
  background:#315458;outline:2px solid #edc593;outline-offset:1px}
+
+/* Stage 2 / source-floor snapped visual tile comparison (not client-approved). */
+.stage2Header{display:flex;align-items:center;justify-content:space-between;
+ margin-top:4px;padding-top:12px;border-top:1px solid #d6c6a648;
+ color:#efc28e;font:800 10px/1.45 "Manrope",sans-serif;letter-spacing:.35px}
+.stage2Header span{color:#bbd5cd;font-size:8px;white-space:nowrap}
+#stage2FinishStatus{color:#e9d8bc!important;min-height:27px}
