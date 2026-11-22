@@ -483,7 +483,8 @@ function inspectStage1Room(id){
   ' · Amber line is a provisional plan-traced footprint; architectural outline not signed off';
  toast('Provisional S1 room footprint. Confirm against architect drawing before furnishing.');
  return {ok:true,id,provisional:true,level:entry.level,
-  verifiedRoomPolygon:false,candidates:entry.candidateIfcGuids.length};
+  verifiedRoomPolygon:false,candidates:entry.sourceCandidateCountTotal,
+  detailListTruncated:entry.candidateListTruncated};
 }
 function renderStage1Audit(){
  const audit=state.stage1RoomAudit;
@@ -504,7 +505,9 @@ function renderStage1Audit(){
   const meta=document.createElement('span');
   meta.textContent='Draft trace '+footprint.provisionalSketchedAreaM2+' m² ('+
    footprint.provisionalAreaDeltaPct+'% from S1 label) · '+
-   footprint.candidateIfcGuids.length+' overlapping IFC candidates, not verified assignments';
+   footprint.sourceCandidateCountTotal+' overlapping IFC candidates'+
+   (footprint.candidateListTruncated?' (detail list capped at 150)':'')+
+   ', not verified assignments';
   const locate=document.createElement('button');locate.type='button';
   locate.className='stage1Inspect';locate.textContent='INSPECT DRAFT LOCATION';
   locate.setAttribute('aria-label','Inspect preliminary source-plan location for '+room.label);
