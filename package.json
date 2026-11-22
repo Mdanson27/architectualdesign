@@ -22,6 +22,7 @@
     "test:studio-anne": "node tests/verify-studio-anne-design.mjs",
     "test:stage1": "node tests/verify-stage1-room-audit.mjs",
     "test:stage1-plan": "node tests/verify-stage1-plan-crosswalk.mjs",
+    "test:stage1-acceptance": "node tests/verify-stage1-acceptance.mjs",
     "test:portal": "node tests/verify-source-portal-navigation.mjs",
     "test:plan-circulation": "node tests/verify-plan-circulation.mjs",
     "test:client-open-plan": "node tests/verify-client-stair-kitchen.mjs",

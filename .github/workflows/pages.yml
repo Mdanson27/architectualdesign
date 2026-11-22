@@ -2,7 +2,7 @@ name: Deploy AutoMinds Spaces to GitHub Pages
 
 on:
   push:
-    branches: [main, phase7-architecture-circulation-balconies-lighting, stages-a-d-open-plan-maid-access, fix-stair-window-open-wall, fix-open-plan-divider-and-kitchen-envelope-20261121, fix-entire-ground-floor-open-plan-partitions-20261121, fix-site-gate-driveway-layout-20261121, fix-opposite-gate-expanded-parking-open-plan-20261121, fix-approved-right-fence-gate-green-compound-20261121, fix-drive-parking-straight-edge-20261121, studio-anne-design-brief-foundation-20261121, stage1-source-room-audit-20261122, stage1-plan-crosswalk-20261122]
+    branches: [main, phase7-architecture-circulation-balconies-lighting, stages-a-d-open-plan-maid-access, fix-stair-window-open-wall, fix-open-plan-divider-and-kitchen-envelope-20261121, fix-entire-ground-floor-open-plan-partitions-20261121, fix-site-gate-driveway-layout-20261121, fix-opposite-gate-expanded-parking-open-plan-20261121, fix-approved-right-fence-gate-green-compound-20261121, fix-drive-parking-straight-edge-20261121, studio-anne-design-brief-foundation-20261121, stage1-source-room-audit-20261122, stage1-plan-crosswalk-20261122, stage1-acceptance-gates-20261122]
   workflow_dispatch:
 
 permissions:
@@ -48,6 +48,8 @@ jobs:
         run: npm run test:studio-anne
       - name: Audit Stage 1 architectural room index and IFC source provenance
         run: npm run test:stage1
+      - name: Validate Stage 1 evidence and approval gates
+        run: npm run test:stage1-acceptance
       - name: Verify original S1 room footprints, candidate GUIDs and site-revision precedence
         run: npm run test:stage1-plan
       - name: Verify S1 drawing-confirmed ground-floor circulation openings
