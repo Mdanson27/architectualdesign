@@ -72,6 +72,22 @@
        <option value="ash">Ash wood-look tile</option>
        <option value="caramel">Caramel wood-look tile</option>
      </select>
+     <div class="stage2Header">STAGE 2 · ROOM-SPECIFIC FLOOR FINISHES <span>PAGE 7</span></div>
+     <p>Use the architect's provisional room traces to compare realistic floor tile pieces on the actual source slabs. Samples are removable, do not affect walking and are not client-approved.</p>
+     <label for="stage2Room">Room to preview</label>
+     <select id="stage2Room" aria-label="Stage 2 room-specific floor preview">
+       <option value="G-DINING">Ground-floor Dining</option>
+       <option value="G-SITTING">Ground-floor Sitting</option>
+       <option value="F-FAMILY">First-floor Family Room</option>
+     </select>
+     <label for="stage2Floor">Room-only tile sample</label>
+     <select id="stage2Floor" aria-label="Stage 2 floor finish applied only to the chosen room">
+       <option value="source">No room overlay · original IFC</option>
+       <option value="porcelain">Porcelain / ceramic</option>
+       <option value="ash">Ash wood-look tile</option>
+       <option value="caramel">Caramel wood-look tile</option>
+     </select>
+     <p id="stage2FinishStatus" role="status" aria-live="polite">Choose a room and a finish to compare. No overlay is applied by default.</p>
      <label class="designLightLine"><input id="designAmbientToggle" type="checkbox" checked/> Ambient lights</label>
      <label class="designLightLine"><input id="designTaskToggle" type="checkbox" checked/> Task lights · Kitchen</label>
      <label class="designLightLine"><input id="designAccentToggle" type="checkbox" checked/> Accent lights · Dining & stairs</label>
