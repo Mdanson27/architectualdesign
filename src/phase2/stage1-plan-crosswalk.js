@@ -110,7 +110,7 @@ function roomCandidates(room,records,origin){
  }
  items.sort((a,b)=>b.provisionalEvidenceScore-a.provisionalEvidenceScore||
   b.footprintOverlapM2-a.footprintOverlapM2);
- return items.slice(0,150);
+ return {items:items.slice(0,150),total:items.length,truncated:items.length>150};
 }
 /**
  * Only exports PROVISIONAL overlays. Architect-verifiable room polygons,
@@ -121,7 +121,7 @@ export function buildStage1PlanCrosswalk(rooms,records=[],origin={x:0,z:0}){
   const s=STAGE1_PLAN_SKETCHES[room.id];
   if(!s)throw Error('Missing S1 room sketch: '+room.id);
   if(s.floor!==room.level)throw Error('S1 world outline on wrong floor: '+room.id);
-  const candidates=roomCandidates(room,records,origin);
+  const probe=roomCandidates(room,records,origin),candidates=probe.items;
   const counts={};
   for(const c of candidates)counts[c.category]=(counts[c.category]||0)+1;
   const area=near(polygonArea(s.vertices));
@@ -138,7 +138,9 @@ export function buildStage1PlanCrosswalk(rooms,records=[],origin={x:0,z:0}){
    registrationConfidence:s.confidence,
    spatialRegistration:'manual-preliminary',status:'review-required',
    candidateIfcGuids:candidates,
-   categoryCounts:counts,hasGeometryCandidates:candidates.length>0
+   sourceCandidateCountTotal:probe.total,
+   candidateListTruncated:probe.truncated,
+   categoryCounts:counts,hasGeometryCandidates:probe.total>0
   };
  });
  return {
