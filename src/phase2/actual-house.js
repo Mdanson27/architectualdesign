@@ -20,6 +20,7 @@ import {createHouseLighting} from './lighting-system.js';
 import {applyStudioAnneScheme,STUDIO_ANNE_SCHEMES,applyStudioAnneFloorPreview} from './studio-anne-brief.js';
 import {PLAN_ROUTE_TARGETS,findPhysicalRoute} from './circulation-routes.js';
 import {buildStage1RoomAudit} from './stage1-room-audit.js';
+import {createStage2RoomFloorPreview} from './stage2-room-finishes.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
 
@@ -97,7 +98,7 @@ const state={
  showSurroundings:false,sectionEnabled:false,
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,houseLightsOn:true,designScheme:'source',designSchemeSummary:null,
- floorPreview:'source',floorPreviewSummary:null,
+ floorPreview:'source',floorPreviewSummary:null,stage2Room:'G-DINING',stage2Floor:'source',stage2Finishes:null,
  lightLayers:{ambient:true,task:true,accent:true},balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -302,6 +303,7 @@ function refreshVisibility(){
  if(state.movedSofa)state.movedSofa.root.visible=state.showFurniture;
  if(state.dining)state.dining.root.visible=state.showFurniture&&
   (state.floor==='ground'||state.floor==='all'||(state.mode==='walk'&&state.footY<1.5));
+ if(state.stage2Finishes)state.stage2Finishes.updateVisibility(state.floor,state.mode==='walk');
  if(state.stairSafety?.root)state.stairSafety.root.visible=state.showStairSafety;
  if(state.balconies?.root)state.balconies.root.visible=state.showBalconies;
  if(state.maidAccess?.root)state.maidAccess.root.visible=
@@ -567,6 +569,8 @@ function setupEnhancements(){
  state.dining=createPlanDiningFurniture(scene,state.origin,state.meshes.filter(isResidenceRecord));
  state.designSchemeSummary=applyStudioAnneScheme(mat,state.meshes,state.designScheme);
  state.floorPreviewSummary=applyStudioAnneFloorPreview(mat.floor,maps,state.floorPreview);
+ state.stage2Finishes=createStage2RoomFloorPreview(scene,state.origin,
+  (x,z,level)=>sampleGround(x,z,level,.28,.4),maps);
  state.stage1RoomAudit=buildStage1RoomAudit(state.sourceManifest,state.elements,
   state.meshes,state.origin);
  renderStage1Audit();
@@ -1348,6 +1352,17 @@ function updateStudioAnnePreview(scheme=state.designScheme){
  if(status)status.textContent=label+' · preview only · ambient / task / accent controls separate · IFC unchanged';
  return state.designSchemeSummary;
 }
+function updateStage2RoomFinish(){
+ if(!state.stage2Finishes)return {pending:true};
+ const detail=state.stage2Finishes.choose(state.stage2Room,state.stage2Floor);
+ state.stage2Finishes.updateVisibility(state.floor,state.mode==='walk');
+ const label=$('stage2FinishStatus');
+ if(label)label.textContent=detail.style==='source'?
+  'Original IFC floor shown · no additional room materials':
+  detail.placedTiles+' source-snapped non-colliding tile pieces · '+
+  detail.sampledAreaM2.toFixed(1)+' m² sample · room boundary provisional · Studio Anne p. 7';
+ return detail;
+}
 function toggleStudioAnneLayer(layer,enabled){
  state.lightLayers[layer]=enabled;
  state.lightingSystem?.update({layers:state.lightLayers});
@@ -1456,6 +1471,16 @@ $('designStudioBtn').addEventListener('click',()=>{
 $('designScheme').addEventListener('change',e=>{
  const result=updateStudioAnnePreview(e.target.value);
  toast('Studio Anne · '+result.label+' · comparison only');
+});
+$('stage2Room').addEventListener('change',e=>{
+ state.stage2Room=e.target.value;updateStage2RoomFinish();
+});
+$('stage2Floor').addEventListener('change',e=>{
+ state.stage2Floor=e.target.value;
+ const detail=updateStage2RoomFinish();
+ toast(detail.placedTiles?
+  'Stage 2: '+detail.placedTiles+' sample tiles, no IFC change':
+  'Stage 2: original source floor restored or no source floor found');
 });
 $('designFloor').addEventListener('change',e=>{
  state.floorPreview=e.target.value;
@@ -1957,6 +1982,12 @@ if(isLocalQA){
   diagnoseRouteGridPassages:()=>diagnoseRouteGridPassages(),
   lightingStatus:()=>state.lightingSystem?.status()??null,
   stage1RoomAudit:()=>state.stage1RoomAudit,
+  stage2Finishes:()=>state.stage2Finishes?.status()??null,
+  selectStage2RoomFinish:(room='G-DINING',style='source')=>{
+   state.stage2Room=room;state.stage2Floor=style;
+   $('stage2Room').value=room;$('stage2Floor').value=style;
+   return updateStage2RoomFinish();
+  },
   inspectStage1Room:(id)=>inspectStage1Room(id),
   removeStage1DraftOutline:()=>{clearStage1Outline();return !state.stage1RoomOutline;},
   designBriefStatus:()=>({...state.designSchemeSummary,
