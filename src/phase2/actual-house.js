@@ -90,7 +90,7 @@ const loader=new GLTFLoader();
 const keys={};
 const world=new THREE.Vector3();
 const state={
- sourceManifest:null,elements:{},stage1RoomAudit:null,origin:new THREE.Vector3(),
+ sourceManifest:null,elements:{},stage1RoomAudit:null,stage1RoomOutline:null,origin:new THREE.Vector3(),
  layers:new Map(),meshes:[],floors:[],solids:[],doors:[],
  center:new THREE.Vector3(),bounds:new THREE.Box3(),architectureBounds:new THREE.Box3(),
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
@@ -448,25 +448,68 @@ function focusMainBuilding(){
  $('locationText').textContent='RESIDENCE · IFC STRUCTURE';
  $('levelText').textContent=state.floor==='all'?'ALL LEVELS':levelNames[state.floor];
 }
+function clearStage1Outline(){
+ if(!state.stage1RoomOutline)return;
+ const outline=state.stage1RoomOutline;
+ scene.remove(outline);outline.geometry.dispose();outline.material.dispose();
+ state.stage1RoomOutline=null;
+}
+function inspectStage1Room(id){
+ const entry=state.stage1RoomAudit?.plan?.preliminarySourceCrosswalk?.entries.find(r=>r.id===id);
+ if(!entry||!entry.provisionalIfcXZVertices?.length)return {ok:false,reason:'Room draft absent'};
+ const planRoom=state.stage1RoomAudit.plan.rooms.find(r=>r.id===id);
+ if(state.mode==='walk')exitWalk();
+ applyFloorSelection(entry.level);
+ clearStage1Outline();
+ const level=sourceLevels[entry.level]??0;
+ const points=entry.provisionalIfcXZVertices.map(([x,z])=>
+  new THREE.Vector3(x-state.origin.x,level+.065,z-state.origin.z));
+ const geom=new THREE.BufferGeometry().setFromPoints(points);
+ const material=new THREE.LineBasicMaterial({color:0xf3ba7e,
+  depthTest:false,depthWrite:false});
+ const outline=new THREE.LineLoop(geom,material);
+ outline.name='STAGE1_PROVISIONAL_ROOM_OUTLINE_NOT_IFC_GEOMETRY';
+ outline.userData={provisionalOnly:true,sourceRoomId:id,
+  warning:'Draft plan-sketch overlay; not a confirmed architectural boundary'};
+ outline.renderOrder=1000;scene.add(outline);state.stage1RoomOutline=outline;
+ const b=entry.provisionalIfcBounds;
+ const centre=new THREE.Vector3((b.minX+b.maxX)/2-state.origin.x,
+  level+.4,(b.minZ+b.maxZ)/2-state.origin.z);
+ orbit.enabled=true;orbit.target.copy(centre);
+ camera.position.set(centre.x+3.3,level+8.2,centre.z+4.6);
+ camera.lookAt(centre);orbit.update();
+ $('locationText').textContent='STAGE 1 · DRAFT ROOM · '+planRoom.label.toUpperCase();
+ $('stage1AuditStatus').textContent='Inspecting '+planRoom.label+
+  ' · Amber line is a provisional plan-traced footprint; architectural outline not signed off';
+ toast('Provisional S1 room footprint. Confirm against architect drawing before furnishing.');
+ return {ok:true,id,provisional:true,level:entry.level,
+  verifiedRoomPolygon:false,candidates:entry.candidateIfcGuids.length};
+}
 function renderStage1Audit(){
  const audit=state.stage1RoomAudit;
  if(!audit)return;
  const status=$('stage1AuditStatus'),list=$('stage1AuditRooms');
- status.textContent=audit.plan.namedSpaceCount+' plan-listed rooms · '+
+ status.textContent=audit.plan.namedSpaceCount+' source-plan named spaces · '+
   audit.source.sourceIndexedElements+' indexed IFC objects · '+
   audit.source.unavailableSourceBatchCount+' conversion exclusions · '+
-  audit.plan.measuredRoomPolygons+' verified room polygons';
+  audit.plan.measuredRoomPolygons+' architect-certified room polygons';
  list.textContent='';
+ const drafts=audit.plan.preliminarySourceCrosswalk.entries;
  for(const room of audit.plan.rooms){
+  const footprint=drafts.find(d=>d.id===room.id);
   const item=document.createElement('div');item.className='stage1Room';
   const title=document.createElement('strong');
-  title.textContent=room.label+' · '+(room.level==='ground'?'Ground':'First')+' · '+
-   room.reportedAreaM2+' m² (plan transcription)';
+  title.textContent=room.label+' · '+(room.level==='ground'?'Ground':'First')+
+   ' · '+room.reportedAreaM2+' m² (S1 drawing label)';
   const meta=document.createElement('span');
-  meta.textContent='Room polygon not yet verified · Studio Anne p. '+
-   room.studioAnnePages.join(', ')+' · '+room.candidateFurnishingSourceMeshes.length+
-   ' nearby furniture GUID candidates (not room assignments)';
-  item.append(title,meta);list.appendChild(item);
+  meta.textContent='Draft trace '+footprint.provisionalSketchedAreaM2+' m² ('+
+   footprint.provisionalAreaDeltaPct+'% from S1 label) · '+
+   footprint.candidateIfcGuids.length+' overlapping IFC candidates, not verified assignments';
+  const locate=document.createElement('button');locate.type='button';
+  locate.className='stage1Inspect';locate.textContent='INSPECT DRAFT LOCATION';
+  locate.setAttribute('aria-label','Inspect preliminary source-plan location for '+room.label);
+  locate.addEventListener('click',()=>inspectStage1Room(room.id));
+  item.append(title,meta,locate);list.appendChild(item);
  }
 }
 function setupEnhancements(){
@@ -1401,6 +1444,7 @@ $('houseLightsBtn').addEventListener('click',toggleHouseLights);
 $('stage1AuditBtn').addEventListener('click',()=>{
  const panel=$('stage1AuditPanel'),open=panel.classList.toggle('hidden')===false;
  $('stage1AuditBtn').setAttribute('aria-expanded',String(open));
+ if(!open)clearStage1Outline();
 });
 $('designStudioBtn').addEventListener('click',()=>{
  const panel=$('designStudioPanel'),open=!panel.classList.toggle('hidden');
@@ -1910,6 +1954,8 @@ if(isLocalQA){
   diagnoseRouteGridPassages:()=>diagnoseRouteGridPassages(),
   lightingStatus:()=>state.lightingSystem?.status()??null,
   stage1RoomAudit:()=>state.stage1RoomAudit,
+  inspectStage1Room:(id)=>inspectStage1Room(id),
+  removeStage1DraftOutline:()=>{clearStage1Outline();return !state.stage1RoomOutline;},
   designBriefStatus:()=>({...state.designSchemeSummary,
    floor:state.floorPreviewSummary??null,
    lighting:state.lightingSystem?.status()??null}),
