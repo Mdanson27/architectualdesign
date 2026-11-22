@@ -46,6 +46,14 @@
      <label class="toggleLine"><span><b>Show curated site context</b><small>S1 plan · perimeter, 3 parking bays, pavers and lawns</small></span><input id="surroundingsToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
      <label class="toggleLine"><span><b>Section / remove roof above floor</b><small>Reveal wall layout and rooms from above</small></span><input id="sectionToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
    </div>
+   <button id="stage1AuditBtn" class="structAction" type="button" aria-expanded="false" aria-controls="stage1AuditPanel">▤ STAGE 1 · ARCHITECTURE AUDIT</button>
+   <section id="stage1AuditPanel" class="stage1AuditPanel hidden" aria-label="Architectural room mapping audit">
+     <strong>Room & source audit</strong>
+     <p id="stage1AuditStatus" role="status" aria-live="polite">Preparing IFC evidence register…</p>
+     <div class="stage1AuditMeta">Plan-listed room areas are not yet polygon-surveyed. Studio Anne finishes remain optional until approved.</div>
+     <div id="stage1AuditRooms" class="stage1AuditRooms"></div>
+     <p class="stage1AuditFoot">Room polygons, bathroom and pantry count, and the 13-suite discrepancy require source-plan / client confirmation. No architecture is changed by this audit.</p>
+   </section>
    <button id="designStudioBtn" class="structAction" type="button" aria-expanded="false" aria-controls="designStudioPanel">◇ STUDIO ANNE · FINISHES & LIGHTING</button>
    <section id="designStudioPanel" class="designStudioPanel hidden" aria-label="Studio Anne design alternatives">
      <strong>Emmanuel's design brief</strong>

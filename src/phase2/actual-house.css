@@ -100,3 +100,17 @@ button,input,a{font:inherit}button{cursor:pointer}a{color:inherit;text-decoratio
 .designLightLine input{width:15px;height:15px;margin:0;accent-color:#e9bd85}
 #designStudioStatus{border-top:1px solid #ffffff20;padding-top:7px;
  color:#deb887;font:600 10px/1.55 "DM Sans"}
+
+/* Stage 1 audit is read-only evidence; no building geometry is generated. */
+.stage1AuditPanel{display:flex;flex-direction:column;gap:8px;background:#132f33;
+ border:1px solid #8fa9a477;border-radius:7px;padding:11px}
+.stage1AuditPanel>strong{font:800 11px "Manrope",sans-serif;color:#f0c58c}
+.stage1AuditPanel>p,.stage1AuditPanel .stage1AuditMeta{font:500 10px/1.55 "DM Sans",sans-serif;
+ color:#c8d8d0;margin:0}
+.stage1AuditPanel .stage1AuditMeta{padding:7px 0;border-block:1px solid #b0c5b52e}
+.stage1AuditRooms{max-height:240px;overflow-y:auto;display:grid;gap:5px}
+.stage1Room{border:1px solid #53736a6a;border-radius:6px;padding:7px 8px;background:#0e272a}
+.stage1Room strong{display:block;color:#f1ece2;font:700 10px/1.5 "DM Sans",sans-serif}
+.stage1Room span{display:block;color:#abc3ba;font:500 9px/1.55 "DM Sans",sans-serif}
+.stage1AuditPanel .stage1AuditFoot{color:#e2c49b;font-size:9px}
+.stage1AuditPanel.hidden{display:none}
