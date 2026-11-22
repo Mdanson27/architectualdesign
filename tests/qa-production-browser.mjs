@@ -122,8 +122,8 @@ try{
  try{
   const shot=await cdp('Page.captureScreenshot',
    {format:'png',fromSurface:true},20000);
-  if(shot?.data)fs.writeFileSync('analysis/stage1-dining-draft.png',
-   Buffer.from(shot.data,'base64'));
+  if(shot?.result?.data)fs.writeFileSync('analysis/stage1-dining-draft.png',
+   Buffer.from(shot.result.data,'base64'));
   else console.warn('STAGE1_SCREENSHOT_UNAVAILABLE','Screenshot response had no bytes');
  }catch(error){console.warn('STAGE1_SCREENSHOT_UNAVAILABLE',String(error))}
  const stage1Cleared=await evaluate("window.__AutoMindsQA.removeStage1DraftOutline()");
@@ -146,7 +146,8 @@ try{
   sourceHomeS1Reviewed:true,provisionalPolygons:10,
   certifiedPolygons:0,maidenRoomAreaConflictFlagged:true,
   nonDestructivePreview:true,siteRevisionProtected:true,
-  roomCandidatesReported:crosswalk.entries.map(x=>({id:x.id,n:x.candidateIfcGuids.length}))
+  roomCandidatesReported:crosswalk.entries.map(x=>({id:x.id,n:x.sourceCandidateCountTotal,
+   detailListTruncated:x.candidateListTruncated}))
  }));
  const openGeometry=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.auditOpenConceptGeometry())"));
  fs.mkdirSync('analysis',{recursive:true});
