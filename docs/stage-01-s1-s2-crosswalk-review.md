@@ -31,16 +31,16 @@ These are simplified outlines manually traced from the architectural drawing and
 |---|---:|---:|---:|---|
 | G-SITTING | 35m² | 34.67m² | -0.9% | Moderate |
 | G-DINING | 19m² | 18.99m² | -0.1% | Moderate |
-| G-KITCHEN | 25m² | 26.31m² | +5.2% | Moderate (irregular L sketch) |
+| G-KITCHEN | 25m² | 25.08m² | +0.3% | Moderate (irregular L sketch excluding store) |
 | G-BEDROOM | 20m² | 20.15m² | +0.7% | Moderate |
 | G-MAID | 11m² | 8.26m² | **-24.9%** | **Low — needs professional boundary check** |
 | F-MASTER | 35m² | 34.96m² | -0.1% | Moderate |
 | F-BEDROOM-2 | 17m² | 17.27m² | +1.6% | Moderate |
 | F-BEDROOM-3 | 13m² | 13.35m² | +2.7% | Moderate |
 | F-FAMILY | 19m² | 18.80m² | -1.0% | Higher source-furnishing corroboration |
-| F-READING | 8m² | 8.13m² | +1.7% | Moderate |
+| F-READING | 8m² | 8.04m² | +0.5% | Moderate (circulation excluded) |
 
-**Caution:** Close area agreement does **not** establish a correct wall outline. Large room outlines may match printed areas by chance; real door positions and wall thicknesses must be checked individually. The maid room sketch is specifically flagged rather than stretched to produce a misleading matching number.
+**Caution:** Close area agreement does **not** establish a correct wall outline. The ground-bedroom draft may still include part of an adjoining WC/shower zone; its exact footprint requires partition-level review. Large room outlines may match printed areas by chance; real door positions and wall thicknesses must be checked individually. The maid room sketch is specifically flagged rather than stretched to produce a misleading matching number.
 
 ### Evidence workflow
 
