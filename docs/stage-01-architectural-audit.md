@@ -2,7 +2,7 @@
 
 **Status: technical inventory implemented; Stage 1 is NOT yet architecturally signed off.**
 
-**Evidence basis:** Original IFC index and conversion manifest in the repository; previously transcribed Home S1/S2 plan labels and areas; Studio Anne's 46-page Emmanuel Design Brief. The original complete Home drawings are not bundled with the public repository, and their room polygons must be independently verified against the client drawings before furnishing.
+**Evidence basis:** Original IFC index and conversion manifest in the repository; previously transcribed Home S1/S2 plan labels and areas; Studio Anne's 46-page Emmanuel Design Brief. The original full Home drawings remain outside the public GitHub repository. Home(4).pdf S1/S2 was visually inspected on 22 November 2026; the ten printed room labels are confirmed, while exact IFC room polygons and GUID assignments remain pending professional verification.
 
 ## 1. Source geometry inventory
 
@@ -25,7 +25,7 @@ The three excluded source batches are ground-proxies-r076, ground-proxies-r290 a
 
 ## 2. Ten named spaces from the earlier Home S1 transcription
 
-The area values below are **plan-label transcriptions**, not mesh-derived measurements. Recheck each against the original Home drawing.
+The area values below were **checked directly against the original S1 plan labels**, but they are not mesh-derived, surveyed room polygons. See [the S1/S2 crosswalk review](stage-01-s1-s2-crosswalk-review.md) for draft footprints, source evidence and outstanding architectural checks.
 
 | ID | Floor | Label | Reported area | Studio Anne pages | Source room polygon |
 |---|---|---|---:|---|---|
@@ -42,7 +42,7 @@ The area values below are **plan-label transcriptions**, not mesh-derived measur
 
 Named-space area totals: ground 110 m², first 92 m². **These are NOT gross floor areas**; stairs, bathrooms, utility spaces, closets, balconies and circulation areas have not been counted.
 
-The technical handoff describes **four main bedrooms and a maid room**, but an older client instruction said **13 self-contained rooms**. The 14 legacy R01–R14 reference labels in the viewer likewise do not prove there are 14 surveyed rooms. This discrepancy requires client/architect reconciliation; no additional bedrooms or partitions may be fabricated.
+The original S1 now confirms **four main bedrooms and a maid room**, while an older client instruction mentioned **13 self-contained rooms**. The 14 legacy R01–R14 reference labels in the viewer likewise do not prove there are 14 surveyed rooms. This discrepancy requires client/architect reconciliation; no additional bedrooms or partitions may be fabricated.
 
 ### Ancillary areas awaiting floor-plan matching
 
@@ -80,12 +80,12 @@ Preserve the fully open ground-floor Kitchen–Dining, Sitting–Dining and Stai
 
 ## 6. Stage 1 audit deliverables and sign-off gate
 
-**Now implemented:** immutable room and ancillary-area register, design-decision matrix with unresolved approvals, automatic IFC index/level/layer/count checks, failed conversion list, candidate furniture evidence, read-only viewer panel and dedicated regression checks. Source IFC geometry is untouched.
+**Now implemented:** direct Home S1/S2 source drawing reinspection, ten-room plan register, preliminary source-aligned polygon previews, candidate IFC GUID detection, design-decision matrix with unresolved approvals, index/level/layer/count validation, excluded conversion list, inspectable non-colliding 3D room outlines, browser and source tests. Source IFC geometry remains untouched.
 
 **Still outstanding for full architectural completion:**
 
-1. Reopen the complete original Home S1/S2 sheets and trace room polygons, openings and measured levels.
-2. Match source GUIDs to the actual rooms by their spatial outlines, not furniture proximity or apparent room names.
+1. Have the issuing architect confirm or correct the newly drafted S1/S2 room polygons, openings and measured levels.
+2. Review source GUID candidates generated from their spatial overlap against architect-confirmed polygons; confirm actual room ownership rather than accepting proximity as proof.
 3. Individually verify every bathroom, pantry, closet, balcony and service-space location.
 4. Compare doors and windows with the source schedules, including IFC proxies and the three excluded batches.
 5. Resolve the 13-suite versus four-bedroom-and-maid discrepancy.
