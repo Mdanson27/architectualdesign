@@ -91,7 +91,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: autominds-architectural-qa
-          path: architecture-browser-qa.json
+          path: |
+            architecture-browser-qa.json
+            analysis/stage1-room-candidate-crosswalk.json
+            analysis/stage1-dining-draft.png
           if-no-files-found: ignore
       - name: Upload pages artifact
         uses: actions/upload-pages-artifact@v3
