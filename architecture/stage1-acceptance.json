@@ -1,0 +1,36 @@
+{
+  "schema": "autominds.stage1-acceptance.v1",
+  "source": {
+    "plan": "Home(4).pdf, S1 and S2",
+    "designBrief": "Detailed - Emmanuel's design brief (2).pdf",
+    "sourceIfc": "Original Archicad IFC, kept outside public GitHub",
+    "publicGeometry": "public/ifc/house/manifest.json"
+  },
+  "verification": {
+    "sourceInventory": {"status":"verified", "evidence":"tests/verify-stage1-room-audit.mjs"},
+    "drawingLabelsAndDatums": {"status":"verified", "evidence":"docs/stage-01-s1-s2-crosswalk-review.md"},
+    "provisionalRoomSketches": {"status":"verified", "evidence":"tests/verify-stage1-plan-crosswalk.mjs"},
+    "roomBoundaryCertification": {"status":"pending", "reviewer":null, "evidence":null},
+    "roomIfcGuidOwnership": {"status":"pending", "reviewer":null, "evidence":null},
+    "doorWindowBalconySchedules": {"status":"pending", "reviewer":null, "evidence":null},
+    "maidRoomBoundaryMismatch": {"status":"pending", "reviewer":null, "evidence":null},
+    "ifcProxyExclusionsIdentified": {"status":"pending", "reviewer":null, "evidence":null},
+    "legacy13SuiteConflictResolved": {"status":"pending", "reviewer":null, "evidence":null},
+    "clientStyleChoice": {"status":"pending", "reviewer":null, "evidence":null},
+    "clientRoomFinishSelections": {"status":"pending", "reviewer":null, "evidence":null},
+    "clientArchitectApproval": {"status":"pending", "reviewer":null, "evidence":null}
+  },
+  "roomAcceptance": [
+    {"id":"G-SITTING","polygonVerified":false,"guidCrosswalkVerified":false,"openingScheduleVerified":false,"finishApproved":false},
+    {"id":"G-DINING","polygonVerified":false,"guidCrosswalkVerified":false,"openingScheduleVerified":false,"finishApproved":false},
+    {"id":"G-KITCHEN","polygonVerified":false,"guidCrosswalkVerified":false,"openingScheduleVerified":false,"finishApproved":false},
+    {"id":"G-BEDROOM","polygonVerified":false,"guidCrosswalkVerified":false,"openingScheduleVerified":false,"finishApproved":false},
+    {"id":"G-MAID","polygonVerified":false,"guidCrosswalkVerified":false,"openingScheduleVerified":false,"finishApproved":false},
+    {"id":"F-MASTER","polygonVerified":false,"guidCrosswalkVerified":false,"openingScheduleVerified":false,"finishApproved":false},
+    {"id":"F-BEDROOM-2","polygonVerified":false,"guidCrosswalkVerified":false,"openingScheduleVerified":false,"finishApproved":false},
+    {"id":"F-BEDROOM-3","polygonVerified":false,"guidCrosswalkVerified":false,"openingScheduleVerified":false,"finishApproved":false},
+    {"id":"F-FAMILY","polygonVerified":false,"guidCrosswalkVerified":false,"openingScheduleVerified":false,"finishApproved":false},
+    {"id":"F-READING","polygonVerified":false,"guidCrosswalkVerified":false,"openingScheduleVerified":false,"finishApproved":false}
+  ],
+  "approval": {"status":"pending", "approver":null, "date":null, "evidence":null}
+}
