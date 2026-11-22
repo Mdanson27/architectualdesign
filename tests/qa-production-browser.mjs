@@ -126,8 +126,8 @@ try{
    Buffer.from(shot.data,'base64'));
   else console.warn('STAGE1_SCREENSHOT_UNAVAILABLE','Screenshot response had no bytes');
  }catch(error){console.warn('STAGE1_SCREENSHOT_UNAVAILABLE',String(error))}
- const cleared=await evaluate("window.__AutoMindsQA.removeStage1DraftOutline()");
- if(!cleared)throw Error('Stage 1 provisional line could not be removed');
+ const stage1Cleared=await evaluate("window.__AutoMindsQA.removeStage1DraftOutline()");
+ if(!stage1Cleared)throw Error('Stage 1 provisional line could not be removed');
  await evaluate("document.querySelector('#floorButtons [data-floor=all]').click()");
  const stage1Camera=JSON.parse(await evaluate(
   "JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
