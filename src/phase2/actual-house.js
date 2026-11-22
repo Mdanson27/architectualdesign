@@ -19,6 +19,7 @@ import {createSourceBalconyRestoration} from './balcony-restoration.js';
 import {createHouseLighting} from './lighting-system.js';
 import {applyStudioAnneScheme,STUDIO_ANNE_SCHEMES,applyStudioAnneFloorPreview} from './studio-anne-brief.js';
 import {PLAN_ROUTE_TARGETS,findPhysicalRoute} from './circulation-routes.js';
+import {buildStage1RoomAudit} from './stage1-room-audit.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
 
@@ -89,7 +90,7 @@ const loader=new GLTFLoader();
 const keys={};
 const world=new THREE.Vector3();
 const state={
- sourceManifest:null,elements:{},origin:new THREE.Vector3(),
+ sourceManifest:null,elements:{},stage1RoomAudit:null,origin:new THREE.Vector3(),
  layers:new Map(),meshes:[],floors:[],solids:[],doors:[],
  center:new THREE.Vector3(),bounds:new THREE.Box3(),architectureBounds:new THREE.Box3(),
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
@@ -447,6 +448,27 @@ function focusMainBuilding(){
  $('locationText').textContent='RESIDENCE · IFC STRUCTURE';
  $('levelText').textContent=state.floor==='all'?'ALL LEVELS':levelNames[state.floor];
 }
+function renderStage1Audit(){
+ const audit=state.stage1RoomAudit;
+ if(!audit)return;
+ const status=$('stage1AuditStatus'),list=$('stage1AuditRooms');
+ status.textContent=audit.plan.namedSpaceCount+' plan-listed rooms · '+
+  audit.source.sourceIndexedElements+' indexed IFC objects · '+
+  audit.source.unavailableSourceBatchCount+' conversion exclusions · '+
+  audit.plan.measuredRoomPolygons+' verified room polygons';
+ list.textContent='';
+ for(const room of audit.plan.rooms){
+  const item=document.createElement('div');item.className='stage1Room';
+  const title=document.createElement('strong');
+  title.textContent=room.label+' · '+(room.level==='ground'?'Ground':'First')+' · '+
+   room.reportedAreaM2+' m² (plan transcription)';
+  const meta=document.createElement('span');
+  meta.textContent='Room polygon not yet verified · Studio Anne p. '+
+   room.studioAnnePages.join(', ')+' · '+room.candidateFurnishingSourceMeshes.length+
+   ' nearby furniture GUID candidates (not room assignments)';
+  item.append(title,meta);list.appendChild(item);
+ }
+}
 function setupEnhancements(){
  if(state.decor)return;
  state.decor=buildBedroomDecorations(state.meshes.filter(isResidenceRecord),scene);
@@ -499,6 +521,16 @@ function setupEnhancements(){
  state.dining=createPlanDiningFurniture(scene,state.origin,state.meshes.filter(isResidenceRecord));
  state.designSchemeSummary=applyStudioAnneScheme(mat,state.meshes,state.designScheme);
  state.floorPreviewSummary=applyStudioAnneFloorPreview(mat.floor,maps,state.floorPreview);
+ state.stage1RoomAudit=buildStage1RoomAudit(state.sourceManifest,state.elements,
+  state.meshes,state.origin);
+ renderStage1Audit();
+ console.info('[AutoMinds Stage 1 Room Source Audit]',{
+  listedRooms:state.stage1RoomAudit.plan.namedSpaceCount,
+  ifcSpaceCount:state.stage1RoomAudit.source.ifcSpaceCount,
+  checkedGuids:state.stage1RoomAudit.source.indexedGuidsPresentInLoadedMeshes,
+  sourceExclusions:state.stage1RoomAudit.source.unavailableSourceBatches,
+  readyForFurnishing:state.stage1RoomAudit.readiness.stage1SignedOff
+ });
  buildBedroomNavigator();
  buildDoorNavigator();
  refreshVisibility();
@@ -1366,6 +1398,10 @@ $('sectionToggle').addEventListener('change',e=>{
 });
 $('lightBtn').addEventListener('click',toggleLighting);
 $('houseLightsBtn').addEventListener('click',toggleHouseLights);
+$('stage1AuditBtn').addEventListener('click',()=>{
+ const panel=$('stage1AuditPanel'),open=panel.classList.toggle('hidden')===false;
+ $('stage1AuditBtn').setAttribute('aria-expanded',String(open));
+});
 $('designStudioBtn').addEventListener('click',()=>{
  const panel=$('designStudioPanel'),open=!panel.classList.toggle('hidden');
  $('designStudioBtn').setAttribute('aria-expanded',String(open));
@@ -1740,6 +1776,11 @@ if(isLocalQA){
     lighting:state.lightingSystem?.status()??null,
     studioAnne:state.designSchemeSummary??null,
     studioAnneFloor:state.floorPreviewSummary??null,
+    stage1Audit:state.stage1RoomAudit?{
+     namedSpaces:state.stage1RoomAudit.plan.namedSpaceCount,
+     verifiedPolygons:state.stage1RoomAudit.plan.measuredRoomPolygons,
+     sourceExclusions:state.stage1RoomAudit.source.unavailableSourceBatchCount,
+     signedOff:state.stage1RoomAudit.readiness.stage1SignedOff}:null,
     circulation:state.lastRouteReport?{passed:state.lastRouteReport.passed,total:state.lastRouteReport.total}:null,
     stairSafetyShown:state.stairSafety?.root?.visible??false,
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
@@ -1868,6 +1909,7 @@ if(isLocalQA){
   diagnoseS1Openings:()=>diagnoseS1Openings(),
   diagnoseRouteGridPassages:()=>diagnoseRouteGridPassages(),
   lightingStatus:()=>state.lightingSystem?.status()??null,
+  stage1RoomAudit:()=>state.stage1RoomAudit,
   designBriefStatus:()=>({...state.designSchemeSummary,
    floor:state.floorPreviewSummary??null,
    lighting:state.lightingSystem?.status()??null}),
