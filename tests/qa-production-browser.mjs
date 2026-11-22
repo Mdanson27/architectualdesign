@@ -104,6 +104,51 @@ try{
   verifiedRoomPolygons:0,clientApprovedFinishes:false,
   panelAccessible:true,sourceUnmodified:audit.source.originalElementsUntouched
  }));
+ const crosswalk=audit.plan.preliminarySourceCrosswalk;
+ if(!crosswalk?.source?.visuallyReviewed||crosswalk.entries.length!==10||
+    crosswalk.verifiedRoomPolygonCount!==0||
+    crosswalk.entries.some(x=>x.polygonVerified||x.clientApproved)||
+    !crosswalk.source.clientCompoundRevisionSupersedesOriginalGate||
+    !crosswalk.entries.find(x=>x.id==='G-MAID'&&x.provisionalAreaDeltaPct< -15))
+   throw Error('Stage 1 original S1 crosswalk unexpectedly treated draft as verified');
+ const stage1Focus=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.inspectStage1Room('G-DINING'))"));
+ if(!stage1Focus?.ok||!stage1Focus.provisional||stage1Focus.verifiedRoomPolygon)
+   throw Error('Stage 1 source-plan room inspection did not remain provisional');
+ fs.mkdirSync('analysis',{recursive:true});
+ // Headless WebGL screenshots may time out on software GPUs. Preserve any
+ // successful visual evidence without letting screenshot availability bypass
+ // the actual model geometry and walking-route regression checks.
+ try{
+  const shot=await cdp('Page.captureScreenshot',
+   {format:'png',fromSurface:true},20000);
+  if(shot?.result?.data)fs.writeFileSync('analysis/stage1-dining-draft.png',
+   Buffer.from(shot.result.data,'base64'));
+  else console.warn('STAGE1_SCREENSHOT_UNAVAILABLE','Screenshot response had no bytes');
+ }catch(error){console.warn('STAGE1_SCREENSHOT_UNAVAILABLE',String(error))}
+ const stage1Cleared=await evaluate("window.__AutoMindsQA.removeStage1DraftOutline()");
+ if(!stage1Cleared)throw Error('Stage 1 provisional line could not be removed');
+ await evaluate("document.querySelector('#floorButtons [data-floor=all]').click()");
+ const stage1Camera=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.sceneStatus())"));
+ if(stage1Camera.floor!=='all'||stage1Camera.section)
+  throw Error('Stage 1 room inspection did not restore original building view');
+ fs.writeFileSync('analysis/stage1-room-candidate-crosswalk.json',
+  JSON.stringify({source:crosswalk.source,
+   entries:crosswalk.entries.map(({id,level,reportedAreaM2,
+    provisionalSketchedAreaM2,provisionalAreaDeltaPct,
+    registrationConfidence,candidateIfcGuids})=>({
+     id,level,reportedAreaM2,provisionalSketchedAreaM2,
+     provisionalAreaDeltaPct,registrationConfidence,
+     candidateIfcGuids:candidateIfcGuids.slice(0,25)
+   })),signedOff:false},null,2));
+ console.log('STAGE1_PLAN_ROOM_LOCATOR_BROWSER_PASSED',JSON.stringify({
+  sourceHomeS1Reviewed:true,provisionalPolygons:10,
+  certifiedPolygons:0,maidenRoomAreaConflictFlagged:true,
+  nonDestructivePreview:true,siteRevisionProtected:true,
+  roomCandidatesReported:crosswalk.entries.map(x=>({id:x.id,n:x.sourceCandidateCountTotal,
+   detailListTruncated:x.candidateListTruncated}))
+ }));
  const openGeometry=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.auditOpenConceptGeometry())"));
  fs.mkdirSync('analysis',{recursive:true});
  fs.writeFileSync('analysis/open-plan-live-geometry.json',JSON.stringify(openGeometry,null,2));

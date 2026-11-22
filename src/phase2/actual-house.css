@@ -114,3 +114,10 @@ button,input,a{font:inherit}button{cursor:pointer}a{color:inherit;text-decoratio
 .stage1Room span{display:block;color:#abc3ba;font:500 9px/1.55 "DM Sans",sans-serif}
 .stage1AuditPanel .stage1AuditFoot{color:#e2c49b;font-size:9px}
 .stage1AuditPanel.hidden{display:none}
+
+/* Provisional room-position inspection; overlays are not IFC source geometry. */
+.stage1Room .stage1Inspect{width:100%;margin-top:6px;min-height:28px;
+ border:1px solid #bba17d;color:#f4cf9e;background:#1e3b3e;
+ font:800 9px "Manrope",sans-serif;border-radius:4px;cursor:pointer}
+.stage1Room .stage1Inspect:hover,.stage1Room .stage1Inspect:focus-visible{
+ background:#315458;outline:2px solid #edc593;outline-offset:1px}

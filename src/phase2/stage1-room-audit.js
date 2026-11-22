@@ -1,20 +1,23 @@
+import {buildStage1PlanCrosswalk,HOME_S1_SOURCE_REVIEW} from './stage1-plan-crosswalk.js';
+
 /**
  * AutoMinds Spaces / Stage 1: architectural evidence register.
  *
  * IMPORTANT:
- * - Home S1/S2 room areas below were transcribed into an earlier technical
- *   handoff. The Home drawing itself is NOT bundled in this public repository.
+ * - The Home(4).pdf S1/S2 source was visually inspected again. The architectural
+ *   PDF remains private and is deliberately NOT bundled in the public repo.
+ * - Room printed area labels are verified, but their true IFC polygons are not.
  * - The IFC manifest reports zero IfcSpace entities, so there are NO verified
  *   room polygons or room-specific IFC GUID assignments yet.
  * - Studio Anne's 46-page finishes brief does not alter house room footprints.
  * - All mappings here are READ-ONLY audit evidence, never design geometry.
  */
 export const ROOM_AREA_PROVENANCE=
- 'Home S1 plan labels as transcribed in architectural technical handoff; recheck original drawing before room sign-off';
+ 'Home(4).pdf original S1 room labels visually confirmed 2026-11-22; IFC outlines and site measurements remain unverified';
 const R=(id,level,label,area,briefPages,kind='habitable',anchor=null)=>Object.freeze({
  id,level,label,reportedAreaM2:area,kind,
- evidence:'plan-label-transcription',sourceDocument:'Home architectural S1',
- areaStatus:'requires-original-drawing-recheck',roomPolygon:null,
+ evidence:'source-pdf-original-s1-read',sourceDocument:'Home(4).pdf sheet S1',
+ areaStatus:'printed-label-confirmed-but-boundaries-not-certified',roomPolygon:null,
  verifiedRoomIfcGuids:[],sourceGeometryStatus:'unassigned-no-ifcspace',
  provisionalFurnitureHint:anchor,studioAnnePages:briefPages,
  finalPalette:null,finalFlooring:null,finalCeiling:null,clientApproved:false
@@ -104,12 +107,13 @@ export function buildStage1RoomAudit(manifest,elements,records=[],origin={x:0,z:
   // Hints can narrow a later manual review; they do not establish a room.
   candidateFurnishingSourceMeshes:candidatesForRoom(room,records,origin)
  }));
+ const crosswalk=buildStage1PlanCrosswalk(rooms,records,origin);
  const areasByFloor=Object.fromEntries(['ground','first'].map(level=>
   [level,round(rooms.filter(r=>r.level===level).reduce((sum,r)=>sum+r.reportedAreaM2,0))]));
  const notes=[
   'The IFC model has no IfcSpace entities; no room polygon or room-specific source GUID can be automatically certified.',
-  'Room areas come from an earlier S1 plan transcription; original HOME sheet must be checked before sign-off.',
-  'The older 13-suite brief conflicts with the four main bedrooms plus maid room identified in the plan transcription.',
+  'Home(4).pdf S1/S2 sheets were visually rechecked; printed room names/areas are confirmed, but traced IFC polygons remain provisional.',
+  'The older 13-suite instruction differs from the source plan: four main bedrooms plus maid room. Treat the S1 drawing as current geometry until a later signed architectural revision is supplied.',
   'Bedroom furniture / sofa / light positions are NOT proof of room boundaries or room identities.',
   'Three original IFC proxy batches were excluded in source conversion and need separate recovery review.',
   'Studio Anne references include optional alternatives; none is selected or signed off for each room.'
@@ -125,7 +129,8 @@ export function buildStage1RoomAudit(manifest,elements,records=[],origin={x:0,z:
    indexedGuidsPresentInLoadedMeshes:[...loadedSourceGuids].filter(g=>sourceIndexes.has(g)).length,
    originalElementsUntouched:true},
   plan:{
-   evidence:ROOM_AREA_PROVENANCE,rooms,
+   evidence:ROOM_AREA_PROVENANCE,rooms,sourcePlanReview:HOME_S1_SOURCE_REVIEW,
+   preliminarySourceCrosswalk:crosswalk,
    namedSpaceCount:rooms.length,
    mainBedroomCount:rooms.filter(r=>r.id==='G-BEDROOM'||r.id==='F-MASTER'||
      r.id==='F-BEDROOM-2'||r.id==='F-BEDROOM-3').length,
@@ -140,11 +145,11 @@ export function buildStage1RoomAudit(manifest,elements,records=[],origin={x:0,z:
    constraints:STAGE1_APPROVED_CONSTRAINTS},
   readiness:{
    stage1SignedOff:false,
-   reason:'Original Home plan polygon mapping, IFC crosswalk and client design decisions pending',
+   reason:'Source drawing reviewed and provisional room-to-IFC candidate crosswalk built; certified room polygons, exceptional proxy recovery and client material selections remain pending',
    nextActions:[
-    'Reopen original Home S1/S2 sheets and trace each room, door, window and balcony polygon',
-    'Map real IFC GUIDs to those polygons by actual spatial overlap, not name guesses',
-    'Resolve the client 13-room vs plan four-bedroom discrepancy',
+    'Verify provisional traced S1 room footprints and room/door/window/balcony polygons against the issuing architect; source sheet was inspected but the contours are not certified',
+    'Review proposed IFC GUID candidates by their actual geometry and room boundary, then sign off assignments; do not automatically equate overlap with room ownership',
+    'Keep four plan-confirmed main bedrooms plus maid room unless the client provides a revised 13-suite architectural sheet',
     'Identify every bathroom, pantry, closet and balcony and verify exact count',
     'Review three excluded IFC proxy batches without changing live source geometry',
     'Request client room-by-room finishes and style approval'
