@@ -79,6 +79,31 @@ try{
   await sleep(500);
  }
  if(!ready?.loaded||ready.loadedLayers!==ready.expected)throw Error('IFC not fully loaded (expected '+ready?.expected+', loaded '+ready?.loadedLayers+')');
+ const audit=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.stage1RoomAudit())"));
+ const auditUI=JSON.parse(await evaluate("JSON.stringify((()=>{\n  const panel=document.querySelector('#stage1AuditPanel');\n  const btn=document.querySelector('#stage1AuditBtn');\n  const initial=panel.classList.contains('hidden');\n  btn.click();\n  const opened=!panel.classList.contains('hidden')&&\n   btn.getAttribute('aria-expanded')==='true';\n  const rows=panel.querySelectorAll('.stage1Room').length;\n  const summary=panel.querySelector('#stage1AuditStatus')?.textContent||'';\n  btn.click();\n  const closed=panel.classList.contains('hidden')&&\n   btn.getAttribute('aria-expanded')==='false';\n  return {initial,opened,closed,rows,summary};\n})())"));
+ if(!audit||audit.source.sourceIndexedElements!==2575||
+    audit.source.sourceLayerCount!==76||audit.source.ifcSpaceCount!==0||
+    audit.source.unavailableSourceBatchCount!==3||
+    audit.plan.namedSpaceCount!==10||audit.plan.mainBedroomCount!==4||
+    audit.plan.separateMaidRoomCount!==1||
+    audit.plan.measuredRoomPolygons!==0||audit.plan.verifiedRoomIfcAssignments!==0||
+    audit.plan.sumOfNamedRoomAreasNotTotalFloorArea.ground!==110||
+    audit.plan.sumOfNamedRoomAreasNotTotalFloorArea.first!==92||
+    audit.readiness.stage1SignedOff!==false||
+    audit.plan.rooms.some(x=>x.roomPolygon!==null||
+     x.verifiedRoomIfcGuids.length||x.clientApproved)||
+    !auditUI.initial||!auditUI.opened||!auditUI.closed||auditUI.rows!==10||
+    !auditUI.summary.includes('3 conversion exclusions'))
+   throw Error('Stage 1 source/room audit browser regression: '+
+    JSON.stringify({source:audit?.source,plan:audit?.plan,
+     ready:audit?.readiness?.stage1SignedOff,ui:auditUI}));
+ console.log('STAGE1_ARCHITECTURAL_AUDIT_PASSED',JSON.stringify({
+  indexedElements:audit.source.sourceIndexedElements,
+  layers:audit.source.sourceLayerCount,excluded:audit.source.unavailableSourceBatches,
+  namedSpaces:audit.plan.namedSpaceCount,
+  verifiedRoomPolygons:0,clientApprovedFinishes:false,
+  panelAccessible:true,sourceUnmodified:audit.source.originalElementsUntouched
+ }));
  const openGeometry=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.auditOpenConceptGeometry())"));
  fs.mkdirSync('analysis',{recursive:true});
  fs.writeFileSync('analysis/open-plan-live-geometry.json',JSON.stringify(openGeometry,null,2));
