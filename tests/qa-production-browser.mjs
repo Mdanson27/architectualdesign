@@ -111,6 +111,28 @@ try{
     !crosswalk.source.clientCompoundRevisionSupersedesOriginalGate||
     !crosswalk.entries.find(x=>x.id==='G-MAID'&&x.provisionalAreaDeltaPct< -15))
    throw Error('Stage 1 original S1 crosswalk unexpectedly treated draft as verified');
+ const stage2Before=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage2Finishes())"));
+ if(!stage2Before||stage2Before.style!=='source'||
+    stage2Before.visible||stage2Before.placedTiles!==0)
+  throw Error('Stage 2 should not alter IFC before explicit sample selection');
+ const stage2Dining=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.selectStage2RoomFinish('G-DINING','porcelain'))"));
+ const stage2Family=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.selectStage2RoomFinish('F-FAMILY','ash'))"));
+ const stage2Restored=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.selectStage2RoomFinish('G-DINING','source'))"));
+ if(!stage2Dining?.sourceGeometryUnmodified||!stage2Dining?.sourceCollisionUnmodified||
+    !stage2Dining?.visualComparisonOnly||stage2Dining?.clientFinishApproved||
+    !stage2Family?.sourceGeometryUnmodified||
+    !stage2Family?.sourceCollisionUnmodified||
+    stage2Restored.style!=='source'||stage2Restored.placedTiles!==0||
+    stage2Restored.visible)
+   throw Error('Stage 2 floor samples must preserve IFC and reset: '+
+     JSON.stringify({stage2Dining,stage2Family,stage2Restored}));
+ console.log('STAGE2_SOURCE_FLOOR_BROWSER_PREVIEW',JSON.stringify({
+  diningTiles:stage2Dining.placedTiles,familyTiles:stage2Family.placedTiles,
+  reset:stage2Restored.style,sourceCollisionsUntouched:true}));
  const stage1Focus=JSON.parse(await evaluate(
   "JSON.stringify(window.__AutoMindsQA.inspectStage1Room('G-DINING'))"));
  if(!stage1Focus?.ok||!stage1Focus.provisional||stage1Focus.verifiedRoomPolygon)
