@@ -1585,6 +1585,20 @@ $('designStudioBtn').addEventListener('click',()=>{
   open&&window.innerWidth<=680);
 });
 $('stage2MobileBtn').addEventListener('click',()=>$('designStudioBtn').click());
+// Mobile production navigation shows every useful room/ground control without
+// requiring a finishes studio or exposing engineering diagnostics.
+function closeMobileExplore(){
+ $('exploreSidebar').classList.remove('mobileExpanded');
+ $('mobileExploreBtn').setAttribute('aria-expanded','false');
+}
+$('mobileExploreBtn').addEventListener('click',()=>{
+ const expanded=$('exploreSidebar').classList.toggle('mobileExpanded');
+ $('mobileExploreBtn').setAttribute('aria-expanded',String(expanded));
+});
+$('exploreSidebar').addEventListener('click',event=>{
+ if(event.target.closest('button[data-floor], #stairFocusBtn, #gateBtn, #measureBtn, #bedroomsBtn, #doorNavigatorBtn, #diningBtn'))
+  closeMobileExplore();
+});
 $('stage3Preview').addEventListener('click',()=>{
  const status=enableStage3Kitchen(true);
  toast(status?.enabled?'Stage 3: source-worktop kitchen comparison enabled':
