@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import * as THREE from 'three';
 import {
  createStage2SurfaceSystem,STAGE2_FINISH_ROOMS,STAGE2_ROOM_PROPOSALS,
@@ -27,6 +28,16 @@ const system=createStage2SurfaceSystem({
  floorSampler:(x,z,datum)=>{floorCalls.push([x,z,datum]);return {y:datum};},
  ceilingSampler:(x,z,datum)=>{ceilingCalls.push([x,z,datum]);return {y:datum+3.3};}
 });
+const schedule=JSON.parse(fs.readFileSync('architecture/stage2-finishes-schedule.json','utf8'));
+assert.equal(schedule.schema,'autominds.stage2-finishes-schedule.v1');
+assert.equal(schedule.rooms.length,10);
+assert.equal(schedule.status,'draft-not-approved');
+for(const room of schedule.rooms){
+ assert.deepEqual(room.proposed,STAGE2_ROOM_PROPOSALS[room.id],
+  'Stage 2 client-facing materials schedule must agree with implemented proposal');
+ assert.equal(room.clientApproved,false);
+ assert.equal(room.architecturalOutlineCertified,false);
+}
 assert.equal(STAGE2_FINISH_ROOMS.length,10);
 assert.deepEqual(STAGE2_FINISH_ROOMS.map(x=>x.id),STAGE1_ROOMS.map(x=>x.id));
 assert.deepEqual(STAGE2_FLOOR_CHOICES,['source','porcelain','ash','caramel']);
@@ -43,6 +54,7 @@ let result=system.setRoom('G-DINING',choices);
 assert.equal(result.enhancedRooms,1);
 assert(result.tiles>30,'real floor tiles needed');
 assert(result.finishedSourceWallParts>=1,'painted source wall mesh should be a real material clone');
+assert.equal(system.roomStatus('G-DINING').counts.skirtingAllowanceM,.006);
 assert(result.skirtingPieces>0,'source-wall-aligned flush baseboards needed');
 assert(result.ceilingPanels>0,'source-backed ceiling panels needed');
 assert(result.ceilingDetails>0,'source-backed ceiling decorative accents needed');
