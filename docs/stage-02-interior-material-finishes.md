@@ -78,3 +78,8 @@ The IFC export has no `IfcSpace` room boundaries. Stage 1's ten polygons are han
 Also, the render's ceiling and skirting geometry represent visual options only; the brief does not provide dimensioned construction drawings for those treatments, and we must not claim architect approval from working switches in a web preview. The final material samples, grout specifications, ceiling plans, stone accent locations, electrical integration, level tolerances and client selection still require normal design review.
 
 **Verdict:** Stage 2 whole-house **engineering implementation** is complete as a non-destructive, inspectable materials and finish-options system. Final design approval and definitive surface installation remain outside the scope of code-only completion.
+
+
+## Superseding viewer behavior — integrated production (23 November 2026)
+
+The original opt-in visual-comparison development workflow above remains available as a local QA tool. **The deployed visitor viewer now automatically applies the whole-house Stage 2 material schedule on initial load** through `src/phase2/production-design.js`. The nine source-supported rooms are shown with their current coordinated treatment; the unresolved maid outline retains source presentation. No public preview button is required. This does not constitute architect/client material sign-off.
