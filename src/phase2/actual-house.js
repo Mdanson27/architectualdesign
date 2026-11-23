@@ -2212,6 +2212,24 @@ if(isLocalQA){
   stage3KitchenStatus:()=>state.stage3Kitchen?.status()??null,
   stage4LivingDiningStatus:()=>state.stage4LivingDining?.status()??null,
   stage5BedroomsStudyStatus:()=>state.stage5BedroomsStudy?.status()??null,
+  auditWetFixtureCandidates:()=>{
+   // Diagnostic ONLY: dimensions, names and location from loaded source IFC.
+   // Furniture is NOT presumed to be a sanitary fixture without a validated
+   // source-room relationship. No original geometry is changed here.
+   const list=state.meshes.filter(r=>r.category==='furniture'&&
+    (r.layer?.level==='ground'||r.layer?.level==='first')&&r.box);
+   return list.map(r=>{
+    const b=r.box,c=b.getCenter(new THREE.Vector3()),d=b.getSize(new THREE.Vector3());
+    return {guid:r.mesh.userData.ifc?.guid,name:r.mesh.userData.ifc?.name,
+     level:r.layer.level,visible:r.mesh.visible,
+     center:[c.x+state.origin.x,c.y,c.z+state.origin.z].map(n=>+n.toFixed(3)),
+     extent:[d.x,d.y,d.z].map(n=>+n.toFixed(3)),
+     bottom:+b.min.y.toFixed(3)};
+   }).filter(r=>r.center[0]>105.5&&r.center[0]<123&&
+    r.center[2]>-15.5&&r.center[2]<2).sort((a,b)=>a.name.localeCompare(b.name)||
+     a.center[0]-b.center[0]||a.center[2]-b.center[2]);
+  },
+
   productionDesignStatus:()=>({
    ...state.productionDesign,
    currentSurfaceRooms:state.stage2SurfaceSystem?.summary().enhancedRooms??0,
