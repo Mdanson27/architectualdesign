@@ -78,6 +78,8 @@ jobs:
         run: npm run test:stage4
       - name: Verify Stage 5 source-backed beds, wardrobes, reading desk and production defaults
         run: npm run test:stage5
+      - name: Verify Stage 6 IFC-anchored porcelain, wall finishes and service lighting
+        run: npm run test:stage6
       - name: Build public GitHub Pages site
         run: npm run build
         env:
