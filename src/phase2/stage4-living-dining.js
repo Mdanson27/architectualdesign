@@ -143,7 +143,9 @@ export function createStage4LivingDining({
  }
  function stage4Rug(room,x,z,width,depth,y,kind){
   const inset=.08;
-  if(!inside(room,x,z,Math.max(width,depth)/2))return false;
+  const poly=roomPoly(room);
+  if(!poly||[[-1,-1],[-1,1],[1,-1],[1,1]].some(([a,b])=>
+   !insidePolygon([x+a*(width/2+.035),z+b*(depth/2+.035)],poly)))return false;
   rounded(room,kind+'-area-rug',[width,.023,depth],.09,mats.rug,x,y+.022,z);
   rounded(room,kind+'-rug-inner',[width-.14,.004,depth-.14],.05,mats.ivory,x,y+.036,z);
   // Subtle low-profile border with two weave-tones; no raised walk obstacle.
