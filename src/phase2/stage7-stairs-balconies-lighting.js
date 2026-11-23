@@ -172,7 +172,7 @@ export function createStage7StairsBalconiesLighting({
   balconies.push(data);
   if(!accepted)continue;
   stats.sourceBalconiesFinished++;
-  const tileStep=.465;
+  const tileStep=.33;
   const seen=new Set();
   for(const region of BALCONY_DECK_REGIONS[spec.id]??[]){
    const [xmin,xmax,zmin,zmax]=region;
@@ -241,7 +241,7 @@ export function createStage7StairsBalconiesLighting({
    }
   }
   const p=spec.id==='front-west'?[109.62,1.07]:
-    spec.id==='front-family'?[118.35,.95]:[121.80,-5.92];
+    spec.id==='front-family'?[118.55,-.93]:[121.80,-5.92];
   if(furnish('plant',p[0],p[1])){
    rec(makePlanter(group,p[0],stepY,p[1],origin,materials,spec.id),
      'planter-'+spec.id);stats.balconyPlants++;data.plants++;
