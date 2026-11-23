@@ -21,6 +21,7 @@
    </a>
    <div class="headerCenter"><span class="statusDot"></span><span>INTERACTIVE RESIDENCE</span><i></i><span>INTERIOR DESIGN INCLUDED</span></div>
    <div class="headerActions">
+     <button id="mobileExploreBtn" type="button" title="Open house navigation" aria-label="Open house navigation" aria-expanded="false" aria-controls="exploreSidebar"><span class="symbol">☷</span><span class="long">Explore</span></button>
      <button id="stage2MobileBtn" type="button" title="Open the interior finish studio" aria-label="Open interior finish studio" aria-expanded="false"><span class="symbol">◇</span><span class="long">Finishes</span></button>
      <button id="lightBtn" title="Toggle daylight or night" aria-pressed="false"><span class="symbol">☼</span><span class="long">Daylight</span></button>
      <button id="houseLightsBtn" title="Switch house and balcony lights on or off" aria-pressed="true"><span class="symbol">✹</span><span class="long">Lights on</span></button>
@@ -30,19 +31,19 @@
      <button id="fullscreenBtn" title="Fullscreen" aria-label="Fullscreen">⛶</button>
    </div>
  </header>
- <aside class="sidebar">
-   <div class="overline"><span></span> BIM-BASED RECONSTRUCTION</div>
-   <h1>The house.<br/><em>As modelled.</em></h1>
-   <p class="sidebarDesc">Explore geometry extracted from the original architectural IFC. The structure is source-derived; the warm material treatment is an interior visual approximation.</p>
+ <aside class="sidebar" id="exploreSidebar">
+   <div class="overline"><span></span> AUTOMINDS SPACES · INTERACTIVE HOME</div>
+   <h1>Explore the<br/><em>residence.</em></h1>
+   <p class="sidebarDesc">Experience the furnished rooms, kitchen, balconies and landscaped grounds. Each implemented design update is already part of the house.</p>
    <div class="stats"><div><b>3</b><small>IFC LEVELS</small></div><div><b id="elementTotal">2,575</b><small>IFC ELEMENTS INDEXED</small></div></div>
-   <div class="sideTitle">LEVEL SELECTION <span>2 FLOORS + ROOF</span></div>
+   <div class="sideTitle">EXPLORE BY LEVEL <span>2 FLOORS + ROOF</span></div>
    <div class="floorButtons" id="floorButtons">
      <button data-floor="all" class="floorBtn active"><span class="floorIcon">▥</span><span><b>Complete building</b><small>View all modelled levels</small></span><span class="endArrow">↗</span></button>
      <button data-floor="ground" class="floorBtn"><span class="floorIcon">G</span><span><b>Ground floor</b><small>Architectural elevation · 0.00m</small></span><span class="endArrow">↗</span></button>
      <button data-floor="first" class="floorBtn"><span class="floorIcon">1</span><span><b>First floor</b><small>Architectural elevation · +3.30m</small></span><span class="endArrow">↗</span></button>
      <button data-floor="second" class="floorBtn"><span class="floorIcon">R</span><span><b>Roof level</b><small>Architectural roof datum · +6.60m</small></span><span class="endArrow">↗</span></button>
    </div>
-   <div class="sideTitle">STRUCTURE VIEW <span>NON-DESTRUCTIVE</span></div>
+   <div class="sideTitle">VIEW OPTIONS <span>PERSONALIZE EXPLORATION</span></div>
    <div class="layerToggles">
      <label class="toggleLine"><span><b>Landscaped compound</b><small>Visible with the house · gate, parking, pavers and lawns</small></span><input id="surroundingsToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
      <label class="toggleLine"><span><b>Section / remove roof above floor</b><small>Reveal wall layout and rooms from above</small></span><input id="sectionToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
@@ -165,30 +166,30 @@
      <p id="designStudioStatus" role="status" aria-live="polite">Preview only · Studio Anne pages 3–5, 10–12.</p>
    </section>
    <button id="stairFocusBtn" class="structAction">↗ INSPECT REAL STAIRCASE</button>
-   <button id="circulationBtn" class="structAction" title="Source-floor and obstacle-aware test, not a teleporter">⌁ VERIFY STAIR → ROOM ACCESS</button>
-   <div id="circulationStatus" class="measureStatus">Stair-to-sitting, dining, kitchen and Family Room routes not yet tested.</div>
-   <label class="toggleLine"><span><b>Stair handrails & guards</b><small>Source-anchored safety concept; compare with original IFC</small></span><input id="stairSafetyToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
-   <div id="stairSafetyStatus" class="measureStatus">Checking source flights, landing and floor connection...</div>
-   <label class="toggleLine"><span><b>Glass balconies · architectural elevations</b><small>S1/S2 source-supported external decks and guards</small></span><input id="balconyToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
-   <div id="balconyAuditStatus" class="measureStatus">Locating verified balconies and external enclosure meshes...</div>
-   <div id="siteAuditStatus" class="measureStatus">Loading plan-supported compound and IFC audit...</div>
+   <button id="circulationBtn" class="devOnly structAction" title="Source-floor and obstacle-aware test, not a teleporter">⌁ VERIFY STAIR → ROOM ACCESS</button>
+   <div id="circulationStatus" class="devOnly measureStatus">Stair-to-sitting, dining, kitchen and Family Room routes not yet tested.</div>
+   <label class="toggleLine devOnly"><span><b>Stair handrails & guards</b><small>Source-anchored safety concept; compare with original IFC</small></span><input id="stairSafetyToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
+   <div id="stairSafetyStatus" class="devOnly measureStatus">Checking source flights, landing and floor connection...</div>
+   <label class="toggleLine devOnly"><span><b>Glass balconies · architectural elevations</b><small>S1/S2 source-supported external decks and guards</small></span><input id="balconyToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
+   <div id="balconyAuditStatus" class="devOnly measureStatus">Locating verified balconies and external enclosure meshes...</div>
+   <div id="siteAuditStatus" class="devOnly measureStatus">Loading plan-supported compound and IFC audit...</div>
  <button id="gateBtn" class="structAction">▣ INSPECT SLIDING GATE / BOUNDARY</button>
    <button id="measureBtn" class="structAction">⌁ MEASURE ROOM DISTANCE</button>
    <div id="measureStatus" class="measureStatus">Measurement tool is off.</div>
    <button id="bedroomsBtn" class="structAction">⌂ NAVIGATE TO BEDROOMS</button>
-   <div id="doorSystemCount" class="measureStatus">Checking all IFC door assemblies...</div>
-   <label class="toggleLine"><span><b>Reveal door openings</b><small>Reversible preview repair for occluding IFC walls</small></span><input id="doorRevealToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
+   <div id="doorSystemCount" class="devOnly measureStatus">Checking all IFC door assemblies...</div>
+   <label class="toggleLine devOnly"><span><b>Reveal door openings</b><small>Reversible preview repair for occluding IFC walls</small></span><input id="doorRevealToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
    <button id="doorNavigatorBtn" class="structAction">🚪 NAVIGATE TO ANY DOOR</button>
    <button id="diningBtn" class="structAction">▣ VISIT DINING ROOM · SIX SEATS</button>
-   <div class="sideTitle">DETAIL LAYERS <span>LIVE GEOMETRY</span></div>
+   <div class="sideTitle">INTERIOR VISIBILITY <span>FURNISHINGS INCLUDED</span></div>
    <div class="layerToggles">
-     <label class="toggleLine"><span><b>Architecture</b><small>Walls, floors, doors, windows, railings</small></span><input id="architectureToggle" type="checkbox" checked disabled/><span class="checkVisual">✓</span></label>
-     <label class="toggleLine"><span><b>Built-in details</b><small>Columns, stairs, trims, fixtures</small></span><input id="detailsToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
+     <label class="toggleLine devOnly"><span><b>Architecture</b><small>Walls, floors, doors, windows, railings</small></span><input id="architectureToggle" type="checkbox" checked disabled/><span class="checkVisual">✓</span></label>
+     <label class="toggleLine devOnly"><span><b>Built-in details</b><small>Columns, stairs, trims, fixtures</small></span><input id="detailsToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
      <label class="toggleLine"><span><b>Furniture & interiors</b><small>Source IFC furnishings and fittings</small></span><input id="furnitureToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
-     <label class="toggleLine"><span><b>Enhanced bedroom furniture</b><small>Real 3D beds anchored to IFC furniture footprints</small></span><input id="styledBedsToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
+     <label class="toggleLine devOnly"><span><b>Enhanced bedroom furniture</b><small>Real 3D beds anchored to IFC furniture footprints</small></span><input id="styledBedsToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
    </div>
-   <div class="sourceNote"><span>MEASURED PLAN SPACE</span><p>35 m² sitting room, 35 m² master bedroom, 20/17/13 m² bedrooms and 11 m² maid's room. Model units remain true metres.</p></div>
-   <div class="sourceNote"><span>HOME.PDF · CLIENT ARCHITECTURAL PLAN</span><p>2 occupied floors, roof at +6.60m. Plans label four bedrooms plus maid room. Previous 13-suite claim is not confirmed by these drawings.</p></div>
+   <div class="sourceNote devOnly"><span>MEASURED PLAN SPACE</span><p>35 m² sitting room, 35 m² master bedroom, 20/17/13 m² bedrooms and 11 m² maid's room. Model units remain true metres.</p></div>
+   <div class="sourceNote devOnly"><span>HOME.PDF · CLIENT ARCHITECTURAL PLAN</span><p>2 occupied floors, roof at +6.60m. Plans label four bedrooms plus maid room. Previous 13-suite claim is not confirmed by these drawings.</p></div>
  </aside>
  <div class="sceneTag"><span class="liveDot"></span><strong id="locationText">SOURCE MODEL · OVERVIEW</strong><i></i><span id="levelText">ALL LEVELS</span></div>
  <div id="crosshair" class="crosshair hidden">+</div>
