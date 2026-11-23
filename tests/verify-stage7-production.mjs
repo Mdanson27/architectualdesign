@@ -161,5 +161,5 @@ console.log('STAGE7_PRODUCTION_SOURCE_QA_PASSED',JSON.stringify({
  stepLEDs:status.sourceStepLEDs,sourceBalconies:status.sourceBalconiesFinished,
  deckTiles:status.balconyDeckPieces,railLEDs:status.balconyRailLEDs,
  furnitureColliders:stage7.colliders.length,ifcUnchanged:true,
- 26DoorsAndFiveRoutesMustStillPass:true,clientApprovalsStillPending:true
+ doorAndRouteRegressionRequired:true,clientApprovalsStillPending:true
 }));
