@@ -34,3 +34,7 @@ Stage 4 is automatically part of the house and does not require any stage activa
 ### Stage 5 — Bedrooms, wardrobes and first-floor study (production integrated)
 
 Directly integrated on scene load: enhanced existing IFC-derived bedroom beds with upholstery/headboard LEDs/bedside trays, floor-supported rugs, source-wall-mounted wardrobe façade concepts and conditional first-floor reading-room desk/shelving. No second beds or fabricated closet enclosures. All original corridor, door and balcony constraints remain protected. See `docs/stage-05-bedrooms-wardrobes-study.md` and `npm run test:stage5`.
+
+### Stage 6 — Wet-area porcelain and bathroom-source fitting refinements
+
+Studio Anne bathroom reference pages 37–40 are translated into automatically loaded source-grounded porcelain flooring, finishing on original walls, brushed-metal trim to real FU-011/FU-012 source service fittings and neutral-white task lighting. These changes do not require a preview button. No synthetic shower/toilet plumbing or new walls are created while IFC bathroom polygons and sanitary coordinates remain unapproved. See `docs/stage-06-bathrooms-wet-areas.md`, `architecture/stage6-wet-areas.json`, and `npm run test:stage6`.
