@@ -10,7 +10,7 @@
  */
 export const PRODUCTION_DESIGN_POLICY=Object.freeze({
  mode:'integrated-house',
- firstRender:'finished-surface-and-kitchen-visible',
+ firstRender:'finished-surfaces-kitchen-living-dining-visible',
  visitorMustEnableStages:false,
  preserveOpenPlan:true,
  preserveIFCGeometry:true,
@@ -18,14 +18,20 @@ export const PRODUCTION_DESIGN_POLICY=Object.freeze({
  sourcePlansStillNeedArchitectApproval:true,
  independentPantryFootprintConfirmed:false
 });
-export function activateIntegratedHouseDesign({surfaces,kitchen}={}){
+export function activateIntegratedHouseDesign({surfaces,kitchen,livingDining}={}){
  if(typeof surfaces?.applyProposal!=='function'||typeof kitchen?.enable!=='function')
   throw Error('Production house requires the room finishes and kitchen systems');
  const finishes=surfaces.applyProposal();
  const kitchenStatus=kitchen.enable(true);
+ const stage4=livingDining?.status?.()??null;
  if(!finishes.sourceGeometryUnmodified||!finishes.sourceColliderCountUnchanged||
     !kitchenStatus.sourceGeometryUnmodified||!kitchenStatus.sourceCollidersUnmodified)
   throw Error('Integrated interior must not alter original IFC architecture');
+ if(stage4&&(!stage4.originalIFCGeometryPreserved||
+    !stage4.sourceIFCCollidersPreserved||
+    stage4.openPlanWallsCreated!==0||stage4.interiorDoorsCreated!==0||
+    stage4.diningChairsTotal!==6||stage4.previewActivationRequired))
+  throw Error('Stage 4 must furnish the source house without obstructing architectural openings');
  if(!finishes.enhancedRooms)throw Error('No source-backed room finishes available');
  // If the source kitchen slab is absent, do NOT invent one just to satisfy a
  // readiness badge. Surface design may proceed but the kitchen must report
@@ -38,6 +44,9 @@ export function activateIntegratedHouseDesign({surfaces,kitchen}={}){
   kitchenSourceAvailable:kitchenStatus.sourceWorktopVerified,
   kitchenCabinetPanels:kitchenStatus.baseCabinetPanels,
   kitchenApplianceParts:kitchenStatus.appliancePieces,
+  stage4LivingDiningIntegrated:Boolean(stage4?.productionIntegrated),
+  stage4RoomZones:stage4?.rooms??[],
+  stage4FurniturePieces:stage4?.pieces??null,
   finalClientSignoff:false
  });
 }
