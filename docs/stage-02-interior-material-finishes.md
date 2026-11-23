@@ -65,6 +65,12 @@ Thin decorative thresholds are sampled against real floor support and only propo
 - [ ] Certified S1 room polygons and complete IFC GUID ownership (Stage 1 approval gate)
 - [ ] Final wall/ceiling/skirting installation detailing, construction measurements and sign-off
 
+### Latest real-browser verification
+
+The 2026-11-23 development-branch Chrome QA observed **423 real tile pieces, 31 source-wall material segments, 134 source-backed ceiling panels, 89 flush skirting pieces and 11 threshold strips** when the coordinated nine-room proposal was activated. It verified that the proposal could be changed room-by-room and removed again, returning all material overrides to their original IFC references. Both normal and 26-door/5-route exhaustive browser tests passed with zero JavaScript exceptions.
+
+**Visual limitation:** Headless Chrome's software-rendered WebGL screenshot capture timed out (`Page.captureScreenshot`). The tests prove instance counts, source sampling, materials restoration and route function; they do **not** prove photorealistic visual approval. A human should inspect the live preview in real hardware, especially where provisional room edges, skirting, ceilings and source-wall assignments meet. No screenshot evidence is claimed where none was produced.
+
 ## Important limitations and review requirements
 
 The IFC export has no `IfcSpace` room boundaries. Stage 1's ten polygons are hand-traced inspection references, not construction-certified geometry. The maid's-room sketch is approximately 8.26 m² versus the 11 m² printed plan label; it is explicitly excluded from the automatic concept. Three unconverted IFC proxy batches remain unidentified. If a source wall, slab or floor cannot be verified, the corresponding finish is **not fabricated**.
