@@ -84,13 +84,13 @@ export function createStage7StairsBalconiesLighting({
 }={}){
  if(!scene)throw Error('Stage 7 requires the existing house scene');
  const original=records.map(r=>({
-  mesh:r.mesh,geometry:r.mesh?.geometry,
+  record:r,mesh:r.mesh,geometry:r.mesh?.geometry,
   p:r.mesh?.position.clone(),s:r.mesh?.scale.clone(),
   box:r.box?.clone()
  }));
  const sourceUnchanged=()=>original.every(r=>
   r.mesh?.geometry===r.geometry&&r.mesh?.position.equals(r.p)&&
-  r.mesh?.scale.equals(r.s)&&r.box?.equals(r.box));
+  r.mesh?.scale.equals(r.s)&&r.record.box?.equals(r.box));
  const root=new THREE.Group();
  root.name='STAGE7_INTEGRATED_STAIRS_BALCONIES_LIGHTING';
  root.userData={stage7:true,productionIntegrated:true};scene.add(root);
