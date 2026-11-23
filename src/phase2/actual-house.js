@@ -2216,12 +2216,14 @@ if(isLocalQA){
    // Diagnostic ONLY: dimensions, names and location from loaded source IFC.
    // Furniture is NOT presumed to be a sanitary fixture without a validated
    // source-room relationship. No original geometry is changed here.
-   const list=state.meshes.filter(r=>r.category==='furniture'&&
+   const list=state.meshes.filter(r=>
+    (r.category==='furniture'||(r.category==='proxies'&&
+      /^FU\s*-\s*/i.test(r.mesh?.userData.ifc?.name||'')))&&
     (r.layer?.level==='ground'||r.layer?.level==='first')&&r.box);
    return list.map(r=>{
     const b=r.box,c=b.getCenter(new THREE.Vector3()),d=b.getSize(new THREE.Vector3());
     return {guid:r.mesh.userData.ifc?.guid,name:r.mesh.userData.ifc?.name,
-     level:r.layer.level,visible:r.mesh.visible,
+     level:r.layer.level,category:r.category,visible:r.mesh.visible,
      center:[c.x+state.origin.x,c.y,c.z+state.origin.z].map(n=>+n.toFixed(3)),
      extent:[d.x,d.y,d.z].map(n=>+n.toFixed(3)),
      bottom:+b.min.y.toFixed(3)};
