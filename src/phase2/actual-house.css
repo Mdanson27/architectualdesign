@@ -176,3 +176,43 @@ button,input,a{font:inherit}button{cursor:pointer}a{color:inherit;text-decoratio
 .stage3Status{font:600 10px/1.5 "DM Sans",sans-serif;color:#d9e9df;
  padding:8px;background:#102b2c;border:1px solid #4f7366;border-radius:4px}
 @media(max-width:680px){.sidebar.stage2Expanded .stage3Actions{grid-template-columns:1fr}}
+
+
+/*
+ * Production visitor view: the full material schedule, fitted kitchen,
+ * residential site and all existing furnished scenes are activated from JS.
+ * These inspection controls remain accessible only to local QA, never
+ * displayed as a requirement for seeing completed work.
+ */
+.production-design #stage1AuditBtn,
+.production-design #stage1AuditPanel,
+.production-design #designStudioBtn,
+.production-design #designStudioPanel,
+.production-design #stage2MobileBtn {
+ display:none!important;
+}
+
+
+/* Production navigation — real composed house; no engineering switches. */
+.production-design .devOnly{display:none!important}
+#mobileExploreBtn{display:none}
+@media(max-width:680px){
+ #mobileExploreBtn{display:flex;align-items:center;justify-content:center}
+ .sidebar.mobileExpanded{
+  top:68px;bottom:10px;max-height:none;overflow-y:auto;overflow-x:hidden;
+  box-shadow:0 0 0 100vw #071d22aa,0 22px 60px #0009;
+  border-color:#e4bf90;z-index:19;
+ }
+ .sidebar.mobileExpanded h1,
+ .sidebar.mobileExpanded .sidebarDesc,
+ .sidebar.mobileExpanded .overline{display:block}
+ .sidebar.mobileExpanded .stats,
+ .sidebar.mobileExpanded .layerToggles{display:grid}
+ .sidebar.mobileExpanded .sideTitle{display:flex}
+ .sidebar.mobileExpanded .floorButtons{
+  height:auto;flex-direction:column;overflow:visible;flex-shrink:0
+ }
+ .sidebar.mobileExpanded .floorBtn{width:100%;min-width:0}
+ .sidebar.mobileExpanded .sourceNote{display:block}
+ .production-design .sidebar.mobileExpanded .sourceNote.devOnly{display:none!important}
+}

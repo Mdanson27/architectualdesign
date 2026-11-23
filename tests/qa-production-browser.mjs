@@ -135,10 +135,22 @@ try{
   reset:stage2Restored.style,sourceCollisionsUntouched:true}));
  const fullStatus0=JSON.parse(await evaluate(
   "JSON.stringify(window.__AutoMindsQA.stage2SurfaceStatus())"));
- if(!fullStatus0||fullStatus0.mappedRooms!==10||fullStatus0.enhancedRooms!==0||
-    fullStatus0.tiles!==0||fullStatus0.finalPaletteApproved!==false||
-    fullStatus0.roomPolygonsCertified!==false)
-  throw Error('Full Stage 2 must have ten registered rooms and no implicit approval');
+ const integratedStart=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.productionDesignStatus())"));
+ if(!fullStatus0||fullStatus0.mappedRooms!==10||fullStatus0.enhancedRooms!==9||
+    fullStatus0.tiles<40||fullStatus0.finishedSourceWallParts<1||
+    fullStatus0.finalPaletteApproved!==false||
+    fullStatus0.roomPolygonsCertified!==false||
+    !integratedStart?.active||integratedStart.visitorMustEnableStages||
+    integratedStart.currentSurfaceRooms!==9||!integratedStart.currentKitchenEnabled)
+  throw Error('PRODUCTION must load full-house room finishes and kitchen before the first view: '+
+   JSON.stringify({fullStatus0,integratedStart}));
+ console.log('PRODUCTION_INTERIORS_AUTOMATICALLY_VISIBLE',JSON.stringify({
+  rooms:fullStatus0.enhancedRooms,tiles:fullStatus0.tiles,
+  kitchenDefaultOn:integratedStart.currentKitchenEnabled,
+  noStageEnableButtonsRequired:true,
+  sourceGeometryProtected:fullStatus0.sourceGeometryUnmodified
+ }));
  const stage2Controls=JSON.parse(await evaluate(
   "JSON.stringify((()=>({roomCount:document.querySelector('#stage2FullRoom').options.length,"+
   "hasFloor:!!document.querySelector('#stage2FullFloor'),"+
@@ -196,16 +208,22 @@ try{
   rooms:fullRestored.mappedRooms,remainingFinishes:fullRestored.enhancedRooms,
   sharedSourceMaterialsRestored:true,clientApprovalStillPending:true
  }));
+ // Restore the *finished* house after deliberately testing the developer-only
+ // reverse/restore controls. Regular visitors never see the bare source house.
+ const builtIn=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage2ApplyWholeHouse())"));
+ if(!builtIn||builtIn.enhancedRooms!==9||builtIn.tiles<40)
+  throw Error('Production room finishes did not return after QA restoration');
  const kitchenInitial=JSON.parse(await evaluate(
   "JSON.stringify(window.__AutoMindsQA.stage3KitchenStatus())"));
- if(!kitchenInitial||kitchenInitial.enabled||kitchenInitial.visible||
+ if(!kitchenInitial||!kitchenInitial.enabled||!kitchenInitial.visible||
     !kitchenInitial.sourceWorktopVerified||
     kitchenInitial.baseCabinetPanels<2||kitchenInitial.sourceFloorProbesPassed<2)
-  throw Error('Stage 3 needs genuine source worktop and floor support, off by default: '+
+  throw Error('Production kitchen must be shown automatically on the real house: '+
     JSON.stringify(kitchenInitial));
- const kitchenPreview=JSON.parse(await evaluate(
-  "JSON.stringify((()=>{document.querySelector('#stage3Preview').click();"+
-  "return window.__AutoMindsQA.stage3KitchenStatus()})())"));
+ // Assert the state WITHOUT clicking any button. The removed preview CTA is
+ // never a prerequisite for a finished visitor-facing walkthrough.
+ const kitchenPreview=kitchenInitial;
  if(!kitchenPreview.enabled||!kitchenPreview.visible||
     kitchenPreview.appliancePieces<5||!kitchenPreview.sourceGeometryUnmodified||
     !kitchenPreview.sourceCollidersUnmodified||
@@ -229,13 +247,21 @@ try{
     !kitchenRestored.sourceCollidersUnmodified)
   throw Error('Stage 3 original source kitchen restoration failed: '+
     JSON.stringify(kitchenRestored));
+ // Return to production appearance after QA tests of optional internals.
+ const kitchenProductionRestored=JSON.parse(await evaluate(
+  "JSON.stringify((()=>{window.__AutoMindsQA.stage3KitchenOptions({"+
+  "appliances:true,lighting:true,storage:true,cabinetry:true});"+
+  "return window.__AutoMindsQA.stage3KitchenPreview()})())"));
+ if(!kitchenProductionRestored.enabled||!kitchenProductionRestored.visible)
+  throw Error('Kitchen did not resume the production integrated scene after QA');
  console.log('STAGE3_KITCHEN_REAL_BROWSER_QA',JSON.stringify({
   sourceGuid:kitchenInitial.sourceWorktopGuid,
   cabinetPanels:kitchenPreview.baseCabinetPanels,
   applianceParts:kitchenPreview.appliancePieces,
   pullOuts:kitchenPreview.storageFixtures,
   taskLEDs:kitchenPreview.ledStrips,
-  pantryNotFabricated:true,sourceGeometryUnmodified:true,restored:true
+  pantryNotFabricated:true,sourceGeometryUnmodified:true,
+  initialAutomaticallyActive:true,qaRestorationAvailable:true
  }));
  const stage1Focus=JSON.parse(await evaluate(
   "JSON.stringify(window.__AutoMindsQA.inspectStage1Room('G-DINING'))"));
