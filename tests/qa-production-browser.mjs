@@ -133,6 +133,69 @@ try{
  console.log('STAGE2_SOURCE_FLOOR_BROWSER_PREVIEW',JSON.stringify({
   diningTiles:stage2Dining.placedTiles,familyTiles:stage2Family.placedTiles,
   reset:stage2Restored.style,sourceCollisionsUntouched:true}));
+ const fullStatus0=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage2SurfaceStatus())"));
+ if(!fullStatus0||fullStatus0.mappedRooms!==10||fullStatus0.enhancedRooms!==0||
+    fullStatus0.tiles!==0||fullStatus0.finalPaletteApproved!==false||
+    fullStatus0.roomPolygonsCertified!==false)
+  throw Error('Full Stage 2 must have ten registered rooms and no implicit approval');
+ const stage2Controls=JSON.parse(await evaluate(
+  "JSON.stringify((()=>({roomCount:document.querySelector('#stage2FullRoom').options.length,"+
+  "hasFloor:!!document.querySelector('#stage2FullFloor'),"+
+  "hasWall:!!document.querySelector('#stage2FullWall'),"+
+  "hasCeiling:!!document.querySelector('#stage2FullCeiling'),"+
+  "hasSkirting:!!document.querySelector('#stage2FullSkirting'),"+
+  "hasRestore:!!document.querySelector('#stage2RestoreAll')}))())"));
+ if(stage2Controls.roomCount!==10||!Object.values(stage2Controls).every(Boolean))
+  throw Error('Stage 2 room floor/wall/ceiling/skirting UI incomplete: '+JSON.stringify(stage2Controls));
+ const fullProposal=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage2ApplyWholeHouse())"));
+ if(!fullProposal||fullProposal.enhancedRooms!==9||
+    fullProposal.tiles<40||!fullProposal.sourceGeometryUnmodified||
+    !fullProposal.sourceColliderCountUnchanged||
+    fullProposal.finalPaletteApproved!==false||
+    fullProposal.roomSelections['G-MAID'].floor!=='source')
+  throw Error('Stage 2 ten-room proposal missing source-only safety: '+JSON.stringify(fullProposal));
+ console.log('STAGE2_COMPLETE_PROPOSAL_BROWSER_QA',JSON.stringify({
+  mappedRooms:fullProposal.mappedRooms,proposedRooms:fullProposal.enhancedRooms,
+  tiles:fullProposal.tiles,wallParts:fullProposal.finishedSourceWallParts,
+  ceilingPanels:fullProposal.ceilingPanels,skirting:fullProposal.skirtingPieces,
+  thresholdPieces:fullProposal.thresholds,maidUnchanged:true
+ }));
+ // Record a real rendered QA image of the opt-in surface proposal (when Chrome permits).
+ try{
+  const focus=JSON.parse(await evaluate(
+   "JSON.stringify(window.__AutoMindsQA.inspectStage1Room('G-DINING'))"));
+  if(!focus?.ok)throw Error('Cannot frame Stage 2 dining scene');
+  await sleep(300);
+  const screenshot=await cdp('Page.captureScreenshot',
+   {format:'png',fromSurface:true},20000);
+  if(screenshot?.result?.data){
+   fs.mkdirSync('analysis',{recursive:true});
+   fs.writeFileSync('analysis/stage2-source-supported-dining-finishes.png',
+    Buffer.from(screenshot.result.data,'base64'));
+  }
+ }catch(error){console.warn('STAGE2_VISUAL_SCREENSHOT_UNAVAILABLE',String(error))}
+ const afterRoom=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage2ApplyOneRoom('G-DINING',"+
+   "{floor:'caramel',wall:'stone-accent',ceiling:'beamed',palette:'mint',skirting:true}))"));
+ if(!afterRoom||afterRoom.enhancedRooms!==9||
+    afterRoom.roomSelections['G-DINING'].floor!=='caramel'||
+    afterRoom.roomSelections['G-DINING'].wall!=='stone-accent'||
+    afterRoom.roomSelections['G-DINING'].ceiling!=='beamed')
+  throw Error('Stage 2 room-specific customization failed');
+ const fullRestored=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage2RestoreWholeHouse())"));
+ if(fullRestored.enhancedRooms!==0||fullRestored.tiles!==0||
+    fullRestored.finishedSourceWallParts!==0||
+    fullRestored.ceilingPanels!==0||fullRestored.skirtingPieces!==0||
+    fullRestored.sourceWallMaterialsOverriddenReversibly!==0||
+    !fullRestored.sourceGeometryUnmodified||!fullRestored.sourceColliderCountUnchanged)
+  throw Error('Stage 2 original source restoration failed: '+JSON.stringify(fullRestored));
+ console.log('STAGE2_FINISHES_FULL_RESTORATION_PASSED',JSON.stringify({
+  rooms:fullRestored.mappedRooms,remainingFinishes:fullRestored.enhancedRooms,
+  sharedSourceMaterialsRestored:true,clientApprovalStillPending:true
+ }));
  const stage1Focus=JSON.parse(await evaluate(
   "JSON.stringify(window.__AutoMindsQA.inspectStage1Room('G-DINING'))"));
  if(!stage1Focus?.ok||!stage1Focus.provisional||stage1Focus.verifiedRoomPolygon)
