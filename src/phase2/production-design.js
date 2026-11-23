@@ -10,7 +10,7 @@
  */
 export const PRODUCTION_DESIGN_POLICY=Object.freeze({
  mode:'integrated-house',
- firstRender:'finished-surfaces-kitchen-living-bedrooms-source-wet-areas-visible',
+ firstRender:'finished-house-source-stairs-balconies-and-layered-lighting-visible',
  visitorMustEnableStages:false,
  preserveOpenPlan:true,
  preserveIFCGeometry:true,
@@ -18,7 +18,7 @@ export const PRODUCTION_DESIGN_POLICY=Object.freeze({
  sourcePlansStillNeedArchitectApproval:true,
  independentPantryFootprintConfirmed:false
 });
-export function activateIntegratedHouseDesign({surfaces,kitchen,livingDining,bedroomsStudy,wetAreas}={}){
+export function activateIntegratedHouseDesign({surfaces,kitchen,livingDining,bedroomsStudy,wetAreas,stairsBalconiesLighting}={}){
  if(typeof surfaces?.applyProposal!=='function'||typeof kitchen?.enable!=='function')
   throw Error('Production house requires the room finishes and kitchen systems');
  const finishes=surfaces.applyProposal();
@@ -26,6 +26,7 @@ export function activateIntegratedHouseDesign({surfaces,kitchen,livingDining,bed
  const stage4=livingDining?.status?.()??null;
  const stage5=bedroomsStudy?.status?.()??null;
  const stage6=wetAreas?.status?.()??null;
+ const stage7=stairsBalconiesLighting?.status?.()??null;
  if(!finishes.sourceGeometryUnmodified||!finishes.sourceColliderCountUnchanged||
     !kitchenStatus.sourceGeometryUnmodified||!kitchenStatus.sourceCollidersUnmodified)
   throw Error('Integrated interior must not alter original IFC architecture');
@@ -47,6 +48,13 @@ export function activateIntegratedHouseDesign({surfaces,kitchen,livingDining,bed
     stage6.newUnverifiedToiletsCreated!==0||
     stage6.exactBathroomPolygonsCertified))
   throw Error('Stage 6 wet areas must preserve source walls, doors and sanitary uncertainty');
+ if(stage7&&(!stage7.productionIntegrated||stage7.previewActivationRequired||
+    !stage7.sourceGeometryPreserved||!stage7.sourceCollidersPreserved||
+    stage7.addedStairFlights!==0||stage7.addedSafetyGuards!==0||
+    stage7.addedPartitionWalls!==0||
+    !stage7.originalBalconyGuardsPreserved||
+    !stage7.originalBalconyDoorsPreserved||!stage7.originalOpenPlanPreserved))
+  throw Error('Stage 7 must retain IFC stair, balcony rail, door and open-plan geometry');
  if(!finishes.enhancedRooms)throw Error('No source-backed room finishes available');
  // If the source kitchen slab is absent, do NOT invent one just to satisfy a
  // readiness badge. Surface design may proceed but the kitchen must report
@@ -70,6 +78,11 @@ export function activateIntegratedHouseDesign({surfaces,kitchen,livingDining,bed
   stage6SourceSupportedWetZones:stage6?.activeSourceWetZones??0,
   stage6PorcelainTiles:stage6?.porcelainFloorTiles??0,
   stage6SourceFixturesAccented:stage6?.identifiedSourceProxyFittings??0,
+  stage7Integrated:Boolean(stage7?.productionIntegrated),
+  stage7StairTreadsEnhanced:stage7?.sourceTreadsEnhanced??0,
+  stage7SourceBalconiesFinished:stage7?.sourceBalconiesFinished??0,
+  stage7BalconyDeckPieces:stage7?.balconyDeckPieces??0,
+  stage7SwitchableLEDs:(stage7?.sourceStepLEDs??0)+(stage7?.balconyRailLEDs??0),
   finalClientSignoff:false
  });
 }

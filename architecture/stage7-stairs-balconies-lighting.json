@@ -1,0 +1,64 @@
+{
+  "schema": "autominds.spaces.stage7.stairs-balconies-lighting.v1",
+  "date": "2026-11-23",
+  "status": "production-integrated-visual-design-pending-client-and-engineer-approval",
+  "sourceDocuments": [
+    "Home(4).pdf S1/S2 plan/elevations",
+    "Detailed - Emmanuel’s design brief (2).pdf pp. 11–12,34–36",
+    "Original Archicad IFC2X3 converted GLBs"
+  ],
+  "production": {
+    "visibleAtFirstRender": true,
+    "stagePreviewButtonRequired": false,
+    "integratedWithPriorStages": true
+  },
+  "existingSource": {
+    "confirmedStairFlights": 2,
+    "intermediateLanding": 1,
+    "sourceTreadsExpected": 18,
+    "existingStairGuardsRetained": true,
+    "firstFloorGuardForVoidRetained": true,
+    "sourceSupportedBalconies": [
+      {
+        "id": "front-west",
+        "label": "West-facing bedroom balcony",
+        "expectedGlazedGuard": true
+      },
+      {
+        "id": "front-family",
+        "label": "Wraparound family balcony",
+        "expectedGlazedGuard": true
+      },
+      {
+        "id": "east-projection",
+        "label": "East projection balcony",
+        "expectedGlazedGuard": true
+      }
+    ],
+    "sourceIFCGeometryEdited": false
+  },
+  "implementation": {
+    "stair": "Thin 12mm timber-look nosings on each source tread; surface LED strips at 2900K, controlled by house light/accent/night state",
+    "balcony": "Source-slab-anchored, low-profile exterior-treated tile layouts, wraparound deck included, existing glazed guards remain",
+    "furnishings": "Source-balcony-slab-backed small conversation seating, low table and potted plants located away from source doors",
+    "balconyLighting": "2900K under-handrail visual strips on already-verified guard segments; original soffit lighting remains",
+    "control": "All installed with house; day/night, all lights, accent layer, section/floor and walking controls remain active",
+    "walkwayCollision": "Balcony chairs/tables/planters included as first-floor furniture collision; thin tiles and LEDs noncolliding",
+    "noNewStructuralWork": true
+  },
+  "additionalStairFlights": 0,
+  "structuralGuardsAdded": 0,
+  "balconySlabsAdded": 0,
+  "additionalBalconyDoors": 0,
+  "changedArchitecturalWalls": 0,
+  "sourceIfcMeshesModified": false,
+  "pendingApprovals": [
+    "Final timber/tile/handrail finish choices, exact measured treads and threshold tolerances",
+    "Stair balustrade engineering and building code compliance, real fixing detail to source steps",
+    "Electrical design, switched circuits, transformer and IP-rated fixtures for stair and outdoor LEDs",
+    "Balcony slope, waterproofing, drain path and actual surface tile specification",
+    "Furniture and planter water loads / door clearances / final client preference",
+    "Confirm all family balcony edges, side return and guards with architect/site survey",
+    "Photorealistic visual comparison against reference drawings and client approval"
+  ]
+}

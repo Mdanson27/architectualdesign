@@ -234,6 +234,33 @@ try{
   noInventedWetWallsOrDoors:true,
   zeroExtraStageClicks:true
  }));
+ const stage7Initial=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage7StairsBalconiesLightingStatus())"));
+ if(!stage7Initial?.productionIntegrated||stage7Initial.previewActivationRequired||
+    !stage7Initial.sourceGeometryPreserved||!stage7Initial.sourceCollidersPreserved||
+    !stage7Initial.originalBalconyGuardsPreserved||
+    !stage7Initial.originalBalconyDoorsPreserved||
+    !stage7Initial.originalOpenPlanPreserved||
+    stage7Initial.addedStairFlights!==0||stage7Initial.addedSafetyGuards!==0||
+    stage7Initial.addedPartitionWalls!==0||!integratedStart.stage7Integrated||
+    stage7Initial.sourceTreadsEnhanced<14||stage7Initial.sourceStepLEDs<14||
+    stage7Initial.sourceBalconiesFinished!==3||
+    stage7Initial.balconyDeckPieces<45||
+    stage7Initial.balconyRailLEDs<7||
+    !stage7Initial.accentLEDsVisible)
+  throw Error('Stage 7 source-based staircase, balcony decks and lighting must be auto-visible: '+
+    JSON.stringify({stage7Initial,integratedStart}));
+ console.log('STAGE7_STAIRS_BALCONIES_LIGHTING_AUTO_VISIBLE',JSON.stringify({
+   sourceTreads:stage7Initial.sourceTreadsEnhanced,
+   treadLEDs:stage7Initial.sourceStepLEDs,
+   balconyDecks:stage7Initial.sourceBalconiesFinished,
+   deckTiles:stage7Initial.balconyDeckPieces,
+   underHandrailLEDs:stage7Initial.balconyRailLEDs,
+   balconySeats:stage7Initial.balconyChairs,
+   balconyPlants:stage7Initial.balconyPlants,
+   originalGuardsRetained:true,sourceIFCUnmodified:true,
+   userMustEnableStage:false
+ }));
  const stage2Controls=JSON.parse(await evaluate(
   "JSON.stringify((()=>({roomCount:document.querySelector('#stage2FullRoom').options.length,"+
   "hasFloor:!!document.querySelector('#stage2FullFloor'),"+

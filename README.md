@@ -38,3 +38,7 @@ Directly integrated on scene load: enhanced existing IFC-derived bedroom beds wi
 ### Stage 6 — Wet-area porcelain and bathroom-source fitting refinements
 
 Studio Anne bathroom reference pages 37–40 are translated into automatically loaded source-grounded porcelain flooring, finishing on original walls, brushed-metal trim to real FU-011/FU-012 source service fittings and neutral-white task lighting. These changes do not require a preview button. No synthetic shower/toilet plumbing or new walls are created while IFC bathroom polygons and sanitary coordinates remain unapproved. See `docs/stage-06-bathrooms-wet-areas.md`, `architecture/stage6-wet-areas.json`, and `npm run test:stage6`.
+
+### Stage 7 — Staircases, source balconies and advanced lighting (production integrated)
+
+The existing two-flight source stairs, middle landing, verified three balcony slabs/doors and actual S2 glazing are preserved. Reversible Stage 7 design refinements now appear automatically on initial house load: timber-look tread nosings, visible 2900K step-light details, source-limited balcony weather-treated deck tiles including the family wraparound return, balcony seating/planting and discreet 2900K under-handrail LED accents. Balcony furniture joins walk collisions; no new structural flights, guards or walls are fabricated. See `docs/stage-07-stair-balcony-lighting.md` and `npm run test:stage7-production`.
