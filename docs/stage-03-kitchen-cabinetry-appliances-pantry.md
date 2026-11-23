@@ -30,3 +30,8 @@
 Never reintroduce `SW - 019` Kitchen–Dining, `SW - 023` Sitting–Dining, `SW - 017` Stair–Sitting, `SW - 014` Stair–Kitchen, the obsolete low `SLA - 002` dividers, maid's inside door, false stair glazing or blocked balcony connections. No new scene furniture is added to `state.solids`, `state.floors`, source records, or door collision registers.
 
 **Next design gate:** source-verified counter and pantry outlines from architect, equipment/utility schedule and realistic browser-eye-height cabinet photographs. Engineering QA cannot stand in for human visual acceptance.
+
+
+## Superseding viewer behavior — integrated production (23 November 2026)
+
+The former opt-in Stage 3 kitchen comparison is now part of the public house **on its first rendered view**. Verified existing source-counter geometry receives its slim cabinetry, sink/cooktop/hood and storage display without any click. Developer-only comparison, restoration and selective components remain available in local QA, not in the public navigation. Full-house materials, exterior compound and designed kitchen all show together, including through day/night and floor modes. The original IFC geometry and open-plan passages are unchanged. Pantry footprint and cabinet/appliance construction approvals remain outstanding.
