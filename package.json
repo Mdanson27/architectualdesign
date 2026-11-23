@@ -34,7 +34,8 @@
     "test:kitchen-clearance": "node tests/verify-kitchen-door-clearance.mjs",
     "test:stage3": "node tests/verify-stage3-kitchen.mjs",
     "test:production": "node tests/verify-production-design.mjs",
-    "test:stage4": "node tests/verify-stage4-living-dining.mjs"
+    "test:stage4": "node tests/verify-stage4-living-dining.mjs",
+    "test:stage5": "node tests/verify-stage5-bedrooms-study.mjs"
   },
   "dependencies": {
     "three": "^0.181.0"

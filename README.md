@@ -30,3 +30,7 @@ The shipped `actual-house.html` immediately loads the designed residence, landsc
 ### Stage 4 — Living, Dining, Entrance and Family Sitting (production integrated)
 
 Stage 4 is automatically part of the house and does not require any stage activation. The approved open living/kitchen/dining geometry and all IFC source surfaces remain unchanged. Existing six-seat dining and IFC sitting sofas gain coordinated furniture, rugs, entrance details, décor and lighting, subject to source-floor and clearance checks. See `docs/stage-04-living-dining-entrance.md` and the new `npm run test:stage4` suite. This is a digitally functional interior proposal pending design sign-off.
+
+### Stage 5 — Bedrooms, wardrobes and first-floor study (production integrated)
+
+Directly integrated on scene load: enhanced existing IFC-derived bedroom beds with upholstery/headboard LEDs/bedside trays, floor-supported rugs, source-wall-mounted wardrobe façade concepts and conditional first-floor reading-room desk/shelving. No second beds or fabricated closet enclosures. All original corridor, door and balcony constraints remain protected. See `docs/stage-05-bedrooms-wardrobes-study.md` and `npm run test:stage5`.

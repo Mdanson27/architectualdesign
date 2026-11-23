@@ -180,6 +180,27 @@ try{
   entranceMirror:stage4Initial.pieces.foyerMirror,
   sourceIFCUnchanged:true,stagesRequiredToEnable:0
  }));
+ const stage5=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage5BedroomsStudyStatus())"));
+ if(!stage5?.productionIntegrated||stage5.previewActivationRequired||
+   !stage5.originalIFCGeometryPreserved||!stage5.sourceCollidersPreserved||
+   stage5.addedPartitionWalls!==0||stage5.addedDoors!==0||
+   stage5.walkInClosetGeometryInvented||!integratedStart.stage5BedroomsStudyIntegrated||
+   stage5.sourceSupportedBedsFinished<1||stage5.headboardMoodLightStrips<1||
+   stage5.integratedBedsideShelves<2||stage5.sourceFloorProbesPassed<1)
+  throw Error('Stage 5 bedroom/reading furnishings must be source-backed and auto-on: '+
+   JSON.stringify({stage5,integratedStart}));
+ console.log('STAGE5_BEDROOMS_STUDY_PRODUCTION_AUTO_VISIBLE',JSON.stringify({
+  sourceBeds:stage5.sourceBedCount,finishedBeds:stage5.sourceSupportedBedsFinished,
+  headboardLights:stage5.headboardMoodLightStrips,
+  bedsideTrays:stage5.integratedBedsideShelves,
+  rugs:stage5.bedroomRugs,wardrobePanels:stage5.wardrobePanels,
+  wardrobeRooms:stage5.wardrobeRooms,readingDesk:stage5.readingDesks,
+  readingShelves:stage5.readingShelves,
+  exclusions:stage5.skipped,
+  clientApproved:false,noPhasePreviewClick:true,
+  sourceIFCUnmodified:true
+ }));
  const stage2Controls=JSON.parse(await evaluate(
   "JSON.stringify((()=>({roomCount:document.querySelector('#stage2FullRoom').options.length,"+
   "hasFloor:!!document.querySelector('#stage2FullFloor'),"+
