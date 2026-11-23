@@ -203,7 +203,7 @@ export function createStage4LivingDining({
    m.position.set(0,.79,.165);chair.add(m);pieces.diningChairsImproved++;
   }
   if(getFloor('G-DINING',wx,wz)!==null&&
-     stage4Rug('G-DINING',wx,wz,3.32,2.21,0,'dining')){
+     stage4Rug('G-DINING',wx,wz,3.32,2.04,0,'dining')){
     pieces.diningRug++;
   }
  }else skip.dining='Six-chair dining source group not loaded';
