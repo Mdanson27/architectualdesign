@@ -158,3 +158,21 @@ button,input,a{font:inherit}button{cursor:pointer}a{color:inherit;text-decoratio
  .sidebar.stage2Expanded .structAction{flex-shrink:0}
  .sidebar.stage2Expanded .stage2Actions{grid-template-columns:1fr 1fr}
 }
+
+
+/* Stage 3 kitchen fixture options remain proposals; never imply measured fit. */
+.stage3Header{color:#a8dbc8;margin-top:12px}
+.stage3Intro{font:600 10px/1.55 "DM Sans",sans-serif;color:#d3ded7}
+.stage3Actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.stage3Actions button{background:#254b47;border:1px solid #80b4a1;color:#f3faf5;
+ border-radius:5px;min-height:37px;padding:8px 7px;cursor:pointer;
+ font:800 9px/1.35 "Manrope",sans-serif}
+.stage3Actions button:focus-visible,.stage3Actions button:hover{outline:2px solid #b7d2b9;outline-offset:1px}
+.stage3Actions #stage3Restore{background:#1a3031;border-color:#ac9c82}
+.stage3Options{display:grid;grid-template-columns:1fr;gap:6px;margin-top:9px}
+.stage3Options label{display:flex;align-items:center;gap:9px;min-height:30px;
+ font:600 10px/1.4 "DM Sans",sans-serif;color:#e4eee8}
+.stage3Options input{width:17px;height:17px;accent-color:#92cdb8;flex-shrink:0}
+.stage3Status{font:600 10px/1.5 "DM Sans",sans-serif;color:#d9e9df;
+ padding:8px;background:#102b2c;border:1px solid #4f7366;border-radius:4px}
+@media(max-width:680px){.sidebar.stage2Expanded .stage3Actions{grid-template-columns:1fr}}

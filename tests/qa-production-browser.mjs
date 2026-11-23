@@ -196,6 +196,47 @@ try{
   rooms:fullRestored.mappedRooms,remainingFinishes:fullRestored.enhancedRooms,
   sharedSourceMaterialsRestored:true,clientApprovalStillPending:true
  }));
+ const kitchenInitial=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage3KitchenStatus())"));
+ if(!kitchenInitial||kitchenInitial.enabled||kitchenInitial.visible||
+    !kitchenInitial.sourceWorktopVerified||
+    kitchenInitial.baseCabinetPanels<2||kitchenInitial.sourceFloorProbesPassed<2)
+  throw Error('Stage 3 needs genuine source worktop and floor support, off by default: '+
+    JSON.stringify(kitchenInitial));
+ const kitchenPreview=JSON.parse(await evaluate(
+  "JSON.stringify((()=>{document.querySelector('#stage3Preview').click();"+
+  "return window.__AutoMindsQA.stage3KitchenStatus()})())"));
+ if(!kitchenPreview.enabled||!kitchenPreview.visible||
+    kitchenPreview.appliancePieces<5||!kitchenPreview.sourceGeometryUnmodified||
+    !kitchenPreview.sourceCollidersUnmodified||
+    !kitchenPreview.openConceptConnectionsUnchanged||
+    kitchenPreview.pantryShelvesCreated!==0||
+    kitchenPreview.clearanceMeasuredAndApproved||kitchenPreview.clientApproved)
+  throw Error('Stage 3 kitchen preview must remain source-backed, removable and unapproved: '+
+    JSON.stringify(kitchenPreview));
+ const kitchenOptions=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage3KitchenOptions({appliances:false,lighting:false}))"));
+ if(kitchenOptions.options.appliances||kitchenOptions.options.lighting)
+  throw Error('Stage 3 appliance and task-light controls did not separate');
+ const kitchenStorage=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage3KitchenStorage(true))"));
+ if(!kitchenStorage.storageOpen)throw Error('Stage 3 interactive storage toggle failed');
+ const kitchenRestored=JSON.parse(await evaluate(
+  "JSON.stringify((()=>{document.querySelector('#stage3Restore').click();"+
+  "return window.__AutoMindsQA.stage3KitchenStatus()})())"));
+ if(kitchenRestored.enabled||kitchenRestored.visible||
+    !kitchenRestored.sourceGeometryUnmodified||
+    !kitchenRestored.sourceCollidersUnmodified)
+  throw Error('Stage 3 original source kitchen restoration failed: '+
+    JSON.stringify(kitchenRestored));
+ console.log('STAGE3_KITCHEN_REAL_BROWSER_QA',JSON.stringify({
+  sourceGuid:kitchenInitial.sourceWorktopGuid,
+  cabinetPanels:kitchenPreview.baseCabinetPanels,
+  applianceParts:kitchenPreview.appliancePieces,
+  pullOuts:kitchenPreview.storageFixtures,
+  taskLEDs:kitchenPreview.ledStrips,
+  pantryNotFabricated:true,sourceGeometryUnmodified:true,restored:true
+ }));
  const stage1Focus=JSON.parse(await evaluate(
   "JSON.stringify(window.__AutoMindsQA.inspectStage1Room('G-DINING'))"));
  if(!stage1Focus?.ok||!stage1Focus.provisional||stage1Focus.verifiedRoomPolygon)

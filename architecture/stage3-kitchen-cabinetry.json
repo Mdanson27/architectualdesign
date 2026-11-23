@@ -1,0 +1,109 @@
+{
+  "schema": "autominds.stage3-kitchen-cabinetry.v1",
+  "status": "source-anchored-visual-proposal-not-approved",
+  "sources": [
+    "Home(4).pdf / S1 ground floor kitchen/store labels",
+    "Studio Anne / Detailed - Emmanuel's design brief (2).pdf / pp. 26-32 and 41",
+    "source IFR/GLB ground SLA - 002 worktop geometry"
+  ],
+  "preservation": {
+    "removedPartitionsRemainAbsent": true,
+    "kitchenDiningSittingOpen": true,
+    "stairAccessUnobstructed": true,
+    "originalIFCUnmodified": true,
+    "originalDoorSystemUnmodified": true,
+    "collisionSystemUnchanged": true,
+    "pantryNotInvented": true
+  },
+  "rendering": {
+    "anchorType": "visible-source-IFC-SLA-002-ground-level-worktop",
+    "selection": "highest-area-eligible-slab-within-provisional-kitchen",
+    "defaults": "disabled",
+    "requiredFloorEvidence": true,
+    "nonColliding": true,
+    "reversible": true,
+    "syntheticWalls": 0,
+    "sourceEdits": 0
+  },
+  "briefItems": [
+    {
+      "component": "L-shaped cabinetry",
+      "pages": [
+        26,
+        31
+      ],
+      "status": "only source-backed counter run shown; second leg pending source confirmation"
+    },
+    {
+      "component": "concealed/integrated appliances",
+      "pages": [
+        26,
+        31
+      ],
+      "status": "optional sink/hob/hood visual proposals; fridge/oven bays awaiting survey"
+    },
+    {
+      "component": "double undermount sink and wall tap",
+      "pages": [
+        27
+      ],
+      "status": "non-destructive visual representation; source slab never cut for plumbing"
+    },
+    {
+      "component": "soft-close storage / pull-out bins / spice storage",
+      "pages": [
+        28,
+        32
+      ],
+      "status": "non-colliding drawer preview; detailed internal layout still to be selected"
+    },
+    {
+      "component": "recessed stainless steel toe kick",
+      "pages": [
+        30,
+        32
+      ],
+      "status": "visual cabinet-front recessed plinth option"
+    },
+    {
+      "component": "ventilation hood / electrical planning",
+      "pages": [
+        29,
+        31,
+        32
+      ],
+      "status": "hood visual only; no verified duct, electrical or external penetration"
+    },
+    {
+      "component": "under-cabinet LEDs and task lighting",
+      "pages": [
+        29,
+        32
+      ],
+      "status": "visual lighting only; independent of structural models"
+    },
+    {
+      "component": "clearance and work triangle",
+      "pages": [
+        31
+      ],
+      "status": "42-48 in and 4-9 ft reference only; dimensioned passage certification pending"
+    },
+    {
+      "component": "pantry & bulk storage",
+      "pages": [
+        41
+      ],
+      "status": "separate GROUND-STORE footprint unverified; no pantry shelving placed"
+    }
+  ],
+  "approvals": {
+    "clientStyle": false,
+    "architectCounterLayout": false,
+    "kitchenWindowCoordination": false,
+    "powerAndWater": false,
+    "ventilation": false,
+    "pantryRoomPolygon": false,
+    "applianceClearance": false
+  }
+}

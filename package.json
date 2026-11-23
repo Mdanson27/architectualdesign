@@ -31,7 +31,8 @@
     "test:open-plan": "node tests/verify-open-plan-clarity.mjs",
     "test:stair-wall-window": "node tests/verify-stair-window-open-wall.mjs",
     "test:kitchen-outdoor": "node tests/verify-kitchen-outdoor.mjs",
-    "test:kitchen-clearance": "node tests/verify-kitchen-door-clearance.mjs"
+    "test:kitchen-clearance": "node tests/verify-kitchen-door-clearance.mjs",
+    "test:stage3": "node tests/verify-stage3-kitchen.mjs"
   },
   "dependencies": {
     "three": "^0.181.0"
