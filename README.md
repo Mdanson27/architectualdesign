@@ -26,3 +26,7 @@ This is a preview, not an architect-certified representation or a completed walk
 ## Integrated production presentation (from November 2026)
 
 The shipped `actual-house.html` immediately loads the designed residence, landscaped compound, Studio Anne room finishes and source-backed kitchen cabinetry/appliances. Visitors do **not** have to enable Stage 2 or Stage 3 or enter a comparison studio to see completed work. The first render is the current project, not the bare IFC house. Future stages must integrate by default through `src/phase2/production-design.js`, retaining the automated architectural, door and circulation test suite. Local QA tools remain accessible only for development. Read `docs/integrated-production-design.md` for source-approval constraints.
+
+### Stage 4 — Living, Dining, Entrance and Family Sitting (production integrated)
+
+Stage 4 is automatically part of the house and does not require any stage activation. The approved open living/kitchen/dining geometry and all IFC source surfaces remain unchanged. Existing six-seat dining and IFC sitting sofas gain coordinated furniture, rugs, entrance details, décor and lighting, subject to source-floor and clearance checks. See `docs/stage-04-living-dining-entrance.md` and the new `npm run test:stage4` suite. This is a digitally functional interior proposal pending design sign-off.
