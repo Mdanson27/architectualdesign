@@ -25,6 +25,7 @@ import {createStage2SurfaceSystem} from './stage2-surface-system.js';
 import {createStage3KitchenSystem} from './stage3-kitchen-system.js';
 import {createStage4LivingDining} from './stage4-living-dining.js';
 import {createStage5BedroomsStudy} from './stage5-bedroom-study.js';
+import {createStage6WetAreas} from './stage6-wet-areas.js';
 import {activateIntegratedHouseDesign} from './production-design.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
@@ -107,7 +108,7 @@ const state={
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,houseLightsOn:true,designScheme:'source',designSchemeSummary:null,
  floorPreview:'source',floorPreviewSummary:null,stage2Room:'G-DINING',stage2Floor:'source',stage2Finishes:null,
- stage2SurfaceSystem:null,stage2FullRoom:'G-SITTING',stage3Kitchen:null,stage4LivingDining:null,stage5BedroomsStudy:null,productionDesign:null,
+ stage2SurfaceSystem:null,stage2FullRoom:'G-SITTING',stage3Kitchen:null,stage4LivingDining:null,stage5BedroomsStudy:null,stage6WetAreas:null,productionDesign:null,
  lightLayers:{ambient:true,task:true,accent:true},balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -321,6 +322,9 @@ function refreshVisibility(){
  state.stage5BedroomsStudy?.update({floor:state.floor,walking:state.mode==='walk',
   furnitureVisible:state.showFurniture&&state.enhancedFurniture,
   night:state.night,enabled:state.houseLightsOn,lightLayers:state.lightLayers});
+ state.stage6WetAreas?.update({floor:state.floor,walking:state.mode==='walk',
+  furnitureVisible:state.showDetails,night:state.night,
+  enabled:state.houseLightsOn,lightLayers:state.lightLayers});
  if(state.stairSafety?.root)state.stairSafety.root.visible=state.showStairSafety;
  if(state.balconies?.root)state.balconies.root.visible=state.showBalconies;
  if(state.maidAccess?.root)state.maidAccess.root.visible=
@@ -614,12 +618,20 @@ function setupEnhancements(){
   floorSampler:(x,z,datum)=>sampleGround(x,z,datum,.30,.48)
  });
  state.solids.push(...state.stage5BedroomsStudy.colliders);
- // PRODUCTION RULE: Stages 2–5 are installed into the real house
+ state.stage6WetAreas=createStage6WetAreas({
+  scene,origin:state.origin,records:state.meshes,
+  doors:state.doorSystem?.doors??[],
+  floorSampler:(x,z,datum)=>sampleGround(x,z,datum,.30,.48)
+ });
+ // All Stage 6 tile and fitting details are non-colliding and source
+ // anchored. Existing bathroom wall and door colliders remain unchanged.
+ // PRODUCTION RULE: Stages 2–6 are installed into the real house
  // before the first viewport frame. Visitors do not activate phase previews.
  state.productionDesign=activateIntegratedHouseDesign({
   surfaces:state.stage2SurfaceSystem,kitchen:state.stage3Kitchen,
   livingDining:state.stage4LivingDining,
-  bedroomsStudy:state.stage5BedroomsStudy
+  bedroomsStudy:state.stage5BedroomsStudy,
+  wetAreas:state.stage6WetAreas
  });
  updateFullStage2Controls();
  renderStage3Status();
@@ -1506,6 +1518,7 @@ function toggleStudioAnneLayer(layer,enabled){
  state.stage3Kitchen?.updateVisibility(state.floor,state.mode==='walk',state.showFurniture,state.lightLayers.task,state.houseLightsOn);
  state.stage4LivingDining?.update({lightLayers:state.lightLayers});
  state.stage5BedroomsStudy?.update({lightLayers:state.lightLayers});
+ state.stage6WetAreas?.update({lightLayers:state.lightLayers});
  const status=$('designStudioStatus');
  if(status)status.textContent='Studio Anne lighting: '+Object.entries(state.lightLayers)
   .map(([key,on])=>key+' '+(on?'on':'off')).join(' · ')+' · preview only';
@@ -1521,6 +1534,7 @@ function toggleLighting(){
  state.lightingSystem?.update({night:state.night});
  state.stage4LivingDining?.update({night:state.night});
  state.stage5BedroomsStudy?.update({night:state.night});
+ state.stage6WetAreas?.update({night:state.night});
  $('lightBtn').querySelector('.long').textContent=state.night?'Night':'Daylight';
  $('lightBtn').setAttribute('aria-pressed',String(state.night));
  toast(state.night?'Night environment · house lights '+(state.houseLightsOn?'on':'off'):'Daylight restored');
@@ -1530,6 +1544,7 @@ function toggleHouseLights(){
  state.lightingSystem?.update({enabled:state.houseLightsOn});
  state.stage4LivingDining?.update({enabled:state.houseLightsOn});
  state.stage5BedroomsStudy?.update({enabled:state.houseLightsOn});
+ state.stage6WetAreas?.update({enabled:state.houseLightsOn});
  state.stage3Kitchen?.updateVisibility(state.floor,state.mode==='walk',state.showFurniture,state.lightLayers.task,state.houseLightsOn);
  $('houseLightsBtn').setAttribute('aria-pressed',String(state.houseLightsOn));
  $('houseLightsBtn').querySelector('.long').textContent=state.houseLightsOn?'Lights on':'Lights off';
@@ -2212,6 +2227,7 @@ if(isLocalQA){
   stage3KitchenStatus:()=>state.stage3Kitchen?.status()??null,
   stage4LivingDiningStatus:()=>state.stage4LivingDining?.status()??null,
   stage5BedroomsStudyStatus:()=>state.stage5BedroomsStudy?.status()??null,
+  stage6WetAreasStatus:()=>state.stage6WetAreas?.status()??null,
   auditWetFixtureCandidates:()=>{
    // Diagnostic ONLY: dimensions, names and location from loaded source IFC.
    // Furniture is NOT presumed to be a sanitary fixture without a validated
@@ -2239,6 +2255,7 @@ if(isLocalQA){
    currentStage4Rooms:state.stage4LivingDining?.status().visibleRooms??[],
    currentStage5Beds:state.stage5BedroomsStudy?.status().sourceSupportedBedsFinished??0,
    currentStage5Study:state.stage5BedroomsStudy?.status().readingDesks??0,
+   currentStage6WetZones:state.stage6WetAreas?.status().activeSourceWetZones??0,
    visitorStageButtonsVisible:!document.documentElement.classList.contains('production-design')
   }),
   stage3KitchenPreview:()=>enableStage3Kitchen(true),
