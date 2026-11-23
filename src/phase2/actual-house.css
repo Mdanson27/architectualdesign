@@ -142,3 +142,19 @@ button,input,a{font:inherit}button{cursor:pointer}a{color:inherit;text-decoratio
 #stage2FullStatus{color:#e9d8bc!important;min-height:33px;font-size:10px!important;
  padding:8px 9px;background:#0c2428;border-radius:4px;border:1px solid #47645f5e}
 .stage2LegacyQA{display:none}
+
+/* Mobile: make Stage 2 controls reachable rather than trapping them below a
+   104px floor selector. The mobile header button is always present. */
+#stage2MobileBtn{display:none}
+@media(max-width:680px){
+ #stage2MobileBtn{display:flex}
+ .sidebar.stage2Expanded{
+  top:68px;bottom:10px;max-height:none;overflow-y:auto;overflow-x:hidden;
+  box-shadow:0 0 0 100vw #071d22aa,0 22px 60px #0009;
+  border-color:#e4bf90;z-index:19;
+ }
+ .sidebar.stage2Expanded .floorButtons{display:none}
+ .sidebar.stage2Expanded #designStudioPanel{display:flex}
+ .sidebar.stage2Expanded .structAction{flex-shrink:0}
+ .sidebar.stage2Expanded .stage2Actions{grid-template-columns:1fr 1fr}
+}
