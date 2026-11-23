@@ -201,6 +201,12 @@ try{
   clientApproved:false,noPhasePreviewClick:true,
   sourceIFCUnmodified:true
  }));
+ const wetCandidates=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.auditWetFixtureCandidates())"));
+ console.log('STAGE6_SOURCE_IFC_FURNISHING_AUDIT',JSON.stringify(
+  wetCandidates.filter(x=>!['FU - 005','FU - 002'].includes(x.name)).slice(0,100)));
+ console.log('STAGE6_FURNISHING_TYPE_COUNTS',JSON.stringify(
+  wetCandidates.reduce((a,x)=>(a[x.name]=(a[x.name]||0)+1,a),{})));
  const stage2Controls=JSON.parse(await evaluate(
   "JSON.stringify((()=>({roomCount:document.querySelector('#stage2FullRoom').options.length,"+
   "hasFloor:!!document.querySelector('#stage2FullFloor'),"+
