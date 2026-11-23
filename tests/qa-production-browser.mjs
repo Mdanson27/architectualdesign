@@ -172,6 +172,8 @@ try{
   sculptedDiningTable:stage4Initial.pieces.diningTabletop,
   sixUpholsteredDiningChairs:stage4Initial.pieces.diningChairsImproved,
   loungeCoffeeTables:stage4Initial.pieces.sittingCoffeeTable,
+  existingIFCCoffeeTablesEnhanced:stage4Initial.pieces.existingSourceCoffeeTables,
+  conditionalPlacementNotes:stage4Initial.skipped,
   accentLoungeChairs:stage4Initial.pieces.sittingChairs,
   rugs:stage4Initial.pieces.diningRug+
    stage4Initial.pieces.groundRug+stage4Initial.pieces.firstFloorRug,
