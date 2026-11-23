@@ -1,0 +1,89 @@
+{
+  "schema": "autominds.spaces.stage5.bedrooms-study.v1",
+  "status": "source-anchored-production-design-not-client-approved",
+  "originalSources": [
+    "Detailed - Emmanuel’s design brief (2).pdf pages 12 and 22-25",
+    "Home(4).pdf S1/S2",
+    "existing FU - 010 source-fitted bedroom meshes and balcony-door clearance corrections"
+  ],
+  "production": {
+    "automaticOnLoad": true,
+    "stagePreviewButtonRequired": false,
+    "sourceGeometryPreserved": true
+  },
+  "planRooms": [
+    {
+      "id": "G-BEDROOM",
+      "kind": "bedroom",
+      "registered": false,
+      "level": 0
+    },
+    {
+      "id": "F-MASTER",
+      "kind": "master bedroom",
+      "registered": false,
+      "level": 3.3
+    },
+    {
+      "id": "F-BEDROOM-2",
+      "kind": "bedroom",
+      "registered": false,
+      "level": 3.3
+    },
+    {
+      "id": "F-BEDROOM-3",
+      "kind": "bedroom",
+      "registered": false,
+      "level": 3.3
+    },
+    {
+      "id": "F-READING",
+      "kind": "reading/study",
+      "registered": false,
+      "level": 3.3
+    },
+    {
+      "id": "G-MAID",
+      "kind": "maid's room",
+      "registered": false,
+      "level": 0,
+      "flag": "Unverified room polygon; do not add speculative joinery"
+    }
+  ],
+  "implementation": {
+    "sourceSupportedBedroomBedAccents": true,
+    "bedsideUnderTrayLights": true,
+    "warmHeadboardMoodLights": true,
+    "linenDecorativeBedArt": true,
+    "lowProfileRugs": true,
+    "fullHeightWardrobePanels": "only on intact IFC walls with source floor + clearances",
+    "separateMasterWalkIn": false,
+    "measuredWalkInCloset": false,
+    "builtInStorageLayoutCertified": false,
+    "studyDesk": "where certified source floor and provisional room polygons support safe clearance",
+    "studyShelves": "light fixtures attached to new source-floor-supported furniture, not fabricated walls",
+    "sourceBedRelocationChanged": false,
+    "existingStairAndDoorwayApproachesProtected": true
+  },
+  "additionalPartitionWalls": 0,
+  "newDoors": 0,
+  "sourceIFCModified": false,
+  "architectureNotes": {
+    "originalPlanBedroomsCount": 4,
+    "maidRoomCount": 1,
+    "masterClosetPolygonsCertified": false,
+    "sourceWardrobeJoineryCertified": false,
+    "studyDeskElectricalOutletsVerified": false,
+    "openKitchenDiningSittingPreserved": true,
+    "upperBalconyAccessPreserved": true
+  },
+  "pending": [
+    "Architect certification of every bedroom perimeter and wardrobe GUID/availability",
+    "Client selection of upholstered bed, rugs, closet doors, dimensions and finished palette",
+    "Master bedroom walk-in closet footprint, parallel configuration and storage accessories",
+    "Bedside light electrical locations and actual power point routing",
+    "Study furniture orientation relative to window, door and supply outlets",
+    "Maid's room footprint discrepancy and feasible storage provision",
+    "Visual walkthrough closeups and real-world construction/shop-drawing sign-off"
+  ]
+}
