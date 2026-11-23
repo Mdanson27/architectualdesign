@@ -23,6 +23,7 @@ import {buildStage1RoomAudit} from './stage1-room-audit.js';
 import {createStage2RoomFloorPreview} from './stage2-room-finishes.js';
 import {createStage2SurfaceSystem} from './stage2-surface-system.js';
 import {createStage3KitchenSystem} from './stage3-kitchen-system.js';
+import {activateIntegratedHouseDesign} from './production-design.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
 
@@ -35,6 +36,9 @@ const $ = id => document.getElementById(id);
 // Use Vite's base URL for all static assets (project-root deployment on GitHub Pages).
 const assetURL = file => import.meta.env.BASE_URL + String(file).replace(/^\/+/, '');
 const publicPreview = import.meta.env.VITE_PUBLIC_PREVIEW === 'true';
+const qaPage=new URLSearchParams(location.search).has('qa')&&
+ (location.hostname==='localhost'||location.hostname==='127.0.0.1');
+if(publicPreview&&!qaPage)document.documentElement.classList.add('production-design');
 if(publicPreview){
  // Private plans and client render references are intentionally excluded from the public site.
  for(const id of ['drawingsBtn','referenceBtn'])$(id).style.display='none';
@@ -97,11 +101,11 @@ const state={
  layers:new Map(),meshes:[],floors:[],solids:[],doors:[],
  center:new THREE.Vector3(),bounds:new THREE.Box3(),architectureBounds:new THREE.Box3(),
  mode:'orbit',floor:'all',showDetails:true,showFurniture:true,
- showSurroundings:false,sectionEnabled:false,
+ showSurroundings:true,sectionEnabled:false,
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,houseLightsOn:true,designScheme:'source',designSchemeSummary:null,
  floorPreview:'source',floorPreviewSummary:null,stage2Room:'G-DINING',stage2Floor:'source',stage2Finishes:null,
- stage2SurfaceSystem:null,stage2FullRoom:'G-SITTING',stage3Kitchen:null,
+ stage2SurfaceSystem:null,stage2FullRoom:'G-SITTING',stage3Kitchen:null,productionDesign:null,
  lightLayers:{ambient:true,task:true,accent:true},balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -586,7 +590,14 @@ function setupEnhancements(){
   scene,origin:state.origin,records:state.meshes,
   floorSampler:(x,z,datum)=>sampleGround(x,z,datum,.30,.48)
  });
+ // PRODUCTION RULE: Stage 2 and Stage 3 are installed into the real house
+ // before the first viewport frame. Visitors do not activate phase previews.
+ state.productionDesign=activateIntegratedHouseDesign({
+  surfaces:state.stage2SurfaceSystem,kitchen:state.stage3Kitchen
+ });
+ updateFullStage2Controls();
  renderStage3Status();
+ console.info('[AutoMinds integrated house design]',state.productionDesign);
  state.stage1RoomAudit=buildStage1RoomAudit(state.sourceManifest,state.elements,
   state.meshes,state.origin);
  renderStage1Audit();
@@ -814,7 +825,9 @@ async function syncNewLayers(){
  }
  setupEnhancements();
  if(!state.initialReady)startIntro();
- else if(state.mode==='orbit'&&!state.stairHighlight&&!state.showGatePreview)focusMainBuilding();
+ else if(state.mode==='orbit'&&!state.stairHighlight&&!state.showGatePreview){
+  if(publicPreview)frameBuilding();else focusMainBuilding();
+ }
  progress(100,state.layers.size+'/'+state.totalLayers+' IFC geometry tiles ready · 5 source bed positions enriched');
  // Dedicated source stair QA deep link, activated once proxy components exist.
  if(!state.stairPreviewDone && new URLSearchParams(location.search).get('focus')==='stairs'){
@@ -829,9 +842,11 @@ function startIntro(){
  if(state.initialReady)return;
  state.initialReady=true;
  $('loading').classList.add('hidden');
- if(new URLSearchParams(location.search).has('preview')){
+ if(publicPreview||new URLSearchParams(location.search).has('preview')){
   $('intro').classList.add('hidden');
-  focusMainBuilding();
+  // Show the actual designed house and landscaped compound immediately.
+  // focusMainBuilding() would turn the compound off, so frame instead.
+  frameBuilding();
   const requestedDrawing=new URLSearchParams(location.search).get('drawing');
   if(requestedDrawing){
    const i=clientDrawings.findIndex(d=>d.floor===requestedDrawing || d.label.toLowerCase().includes(requestedDrawing.toLowerCase()));
@@ -1895,8 +1910,7 @@ function qaDoorWalk(door,side=1,opened=true,lateral=0){
   door.current=prev.current;door.target=prev.target;state.doorSystem.update(.016);
  }
 }
-const isLocalQA=(location.hostname==='localhost'||location.hostname==='127.0.0.1')
- && new URLSearchParams(location.search).has('qa');
+const isLocalQA=qaPage;
 if(isLocalQA){
  window.__AutoMindsQA={
   auditNov21ClientAreas:()=>{
@@ -2150,6 +2164,12 @@ if(isLocalQA){
   stage1RoomAudit:()=>state.stage1RoomAudit,
   stage2Finishes:()=>state.stage2Finishes?.status()??null,
   stage3KitchenStatus:()=>state.stage3Kitchen?.status()??null,
+  productionDesignStatus:()=>({
+   ...state.productionDesign,
+   currentSurfaceRooms:state.stage2SurfaceSystem?.summary().enhancedRooms??0,
+   currentKitchenEnabled:state.stage3Kitchen?.status().enabled??false,
+   visitorStageButtonsVisible:!document.documentElement.classList.contains('production-design')
+  }),
   stage3KitchenPreview:()=>enableStage3Kitchen(true),
   stage3KitchenRestore:()=>enableStage3Kitchen(false),
   stage3KitchenOptions:(patch)=>{const out=state.stage3Kitchen?.setOptions(patch);
