@@ -1,0 +1,74 @@
+{
+  "schema": "autominds.spaces.stage4-living-dining.v1",
+  "source": [
+    "Detailed - Emmanuel’s design brief (2).pdf pages 10, 13-21",
+    "Home(4).pdf S1 and S2; provisional room register",
+    "Existing source IFC FU - 007 living/family sofas",
+    "Existing six-seat Dining source-aligned furniture"
+  ],
+  "status": "production-integrated-visual-design-pending-client-approval",
+  "production": {
+    "visibleByDefault": true,
+    "extraUserClickRequired": false,
+    "existingRoomsReused": true,
+    "integratedWithStage2AndStage3": true
+  },
+  "roomZones": [
+    {
+      "id": "G-SITTING",
+      "name": "Ground sitting room",
+      "level": 0,
+      "sourceAreaM2": 35,
+      "existing": "Source-backed sofa, approved open access to stairs and dining",
+      "new": "Rounded coffee table, two accent chairs subject to source-floor clearance, woven area rug, cushions, side table and warm lighting",
+      "phase": "active",
+      "clientApproved": false
+    },
+    {
+      "id": "G-DINING",
+      "name": "Dining room",
+      "level": 0,
+      "sourceAreaM2": 19,
+      "existing": "Existing six-chair dining table and pendant at the original S1 location",
+      "new": "Rounded wood tabletop overlay, six upholstered chair backs, six table settings, woven area rug",
+      "phase": "active",
+      "clientApproved": false
+    },
+    {
+      "id": "ENTRY",
+      "name": "Main entrance",
+      "level": 0,
+      "sourceAreaM2": null,
+      "existing": "Main double door 27; SW-022 source confirmed enclosing cheeks",
+      "new": "Wall-mounted bronze-framed mirror and slim drop-zone shelf beside door when verified cheek permits",
+      "phase": "conditional-on-source-cheek",
+      "clientApproved": false
+    },
+    {
+      "id": "F-FAMILY",
+      "name": "First floor family sitting",
+      "level": 3.3,
+      "sourceAreaM2": 19,
+      "existing": "Repositioned source sofa and coffee table within original room",
+      "new": "Quiet rug and slender floor lamp where source supported and collision clear",
+      "phase": "active",
+      "clientApproved": false
+    }
+  ],
+  "newInternalPartitionWalls": 0,
+  "doorsRemoved": 0,
+  "sourceIFCElementsChanged": 0,
+  "openPlanProtected": true,
+  "openKitchenDiningSitting": true,
+  "stairsUnchanged": true,
+  "balconyOpeningsUnchanged": true,
+  "entryOttomanDeferredUntilClearance": true,
+  "unresolved": [
+    "Exact ground living room furniture measurements and finishes",
+    "Entry shoe-storage ottoman: door 27 swing and corridor clearance require dimensioned check",
+    "Interior wall art and media centre location must avoid windows and source openings",
+    "Living/dining electrical outlets and final decorative fixture types",
+    "Final colours, fabrics, furniture suppliers, architect and client selections",
+    "Interior room polygon GUID assignment and surveyed clearances"
+  ]
+}

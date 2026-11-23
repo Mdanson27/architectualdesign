@@ -151,6 +151,35 @@ try{
   noStageEnableButtonsRequired:true,
   sourceGeometryProtected:fullStatus0.sourceGeometryUnmodified
  }));
+ const stage4Initial=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage4LivingDiningStatus())"));
+ if(!stage4Initial?.productionIntegrated||stage4Initial.previewActivationRequired||
+    !stage4Initial.originalIFCGeometryPreserved||
+    !stage4Initial.sourceIFCCollidersPreserved||
+    stage4Initial.openPlanWallsCreated!==0||
+    stage4Initial.interiorDoorsCreated!==0||
+    stage4Initial.diningChairsTotal!==6||
+    stage4Initial.pieces.diningTabletop!==1||
+    stage4Initial.pieces.diningChairsImproved!==6||
+    !stage4Initial.visibleRooms.includes('G-DINING')||
+    !stage4Initial.visibleRooms.includes('G-SITTING')||
+    !integratedStart.stage4LivingDiningIntegrated||
+    !integratedStart.currentStage4Rooms.includes('F-FAMILY'))
+  throw Error('Stage 4 must be a complete integrated default living/dining scene, no preview action: '+
+   JSON.stringify({stage4Initial,integratedStart}));
+ console.log('STAGE4_PRODUCTION_LIVING_DINING_AUTO_VISIBLE',JSON.stringify({
+  rooms:stage4Initial.visibleRooms,
+  sculptedDiningTable:stage4Initial.pieces.diningTabletop,
+  sixUpholsteredDiningChairs:stage4Initial.pieces.diningChairsImproved,
+  loungeCoffeeTables:stage4Initial.pieces.sittingCoffeeTable,
+  existingIFCCoffeeTablesEnhanced:stage4Initial.pieces.existingSourceCoffeeTables,
+  conditionalPlacementNotes:stage4Initial.skipped,
+  accentLoungeChairs:stage4Initial.pieces.sittingChairs,
+  rugs:stage4Initial.pieces.diningRug+
+   stage4Initial.pieces.groundRug+stage4Initial.pieces.firstFloorRug,
+  entranceMirror:stage4Initial.pieces.foyerMirror,
+  sourceIFCUnchanged:true,stagesRequiredToEnable:0
+ }));
  const stage2Controls=JSON.parse(await evaluate(
   "JSON.stringify((()=>({roomCount:document.querySelector('#stage2FullRoom').options.length,"+
   "hasFloor:!!document.querySelector('#stage2FullFloor'),"+
