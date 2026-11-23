@@ -80,7 +80,7 @@ export function createStage4LivingDining({
   g.name='STAGE4_'+id.replace(/-/g,'_');g.userData.stage4Room=id;root.add(g);
  }
  const mats=palette(),colliders=[];
- const pieces={groundRug:0,sittingCoffeeTable:0,sittingChairs:0,sittingSideTables:0,
+ const pieces={groundRug:0,sittingCoffeeTable:0,existingSourceCoffeeTables:0,sittingChairs:0,sittingSideTables:0,
   sofaCushions:0,firstFloorRug:0,familyAccent:0,diningRug:0,diningChairsImproved:0,
   diningTabletop:0,diningPlaceSettings:0,foyerMirror:0,foyerShelf:0,accentLights:0};
  const originalSources=records.map(r=>({
@@ -215,20 +215,61 @@ export function createStage4LivingDining({
   const [sx,sz]=global(center);
   const y=getFloor('G-SITTING',sx,sz);
   if(y!==null){
-   const coffeeX=box.max.x+(origin.x||0)+1.04,coffeeZ=sz;
-   if(allowPlacement('G-SITTING',coffeeX,coffeeZ,1.07,.61,y)){
-    const g=new THREE.Group();g.name='STAGE4_SITTING_ROUNDED_COFFEE_TABLE';
-    g.position.set(...local(coffeeX,y,coffeeZ));groups['G-SITTING'].add(g);
-    for(const [xx,zz] of [[-.37,-.19],[.37,-.19],[-.37,.19],[.37,.19]]){
-     const leg=visual(new THREE.Mesh(new THREE.CylinderGeometry(.055,.075,.35,12),mats.timber),
-      'living-coffee-leg');
-     leg.position.set(xx,.21,zz);g.add(leg);
-    }
-    const top=visual(new THREE.Mesh(new RoundedBoxGeometry(1.07,.075,.61,4,.085),mats.stone),'rounded-stone-coffee-table');
-    top.position.y=.43;g.add(top);
-    recordCollider(g,'G-SITTING','ground-coffee-table');
+   // Prefer enhancing an actual pre-existing FU-008 source coffee table
+   // rather than placing a second table on top of it. Exactly one table
+   // becomes part of the designed living room.
+   const groundedSourceTable=records.find(r=>{
+    if(r.category!=='furniture'||r.layer?.level!=='ground'||!r.mesh?.visible||
+      sofaSystem.sourceSet?.has(r)||diningSystem.sourceSet?.has(r)||
+      String(r.mesh.userData?.ifc?.name||'').trim().toUpperCase()!=='FU - 008')return false;
+    const c=r.box.getCenter(new THREE.Vector3()),szr=r.box.getSize(new THREE.Vector3());
+    const [x,z]=global(c);
+    return inside('G-SITTING',x,z,.30)&&
+      Math.hypot(x-sx,z-sz)<3.5&&
+      szr.x>.45&&szr.z>.30&&szr.x<1.8&&szr.z<1.5&&
+      r.box.max.y-y>.27&&r.box.max.y-y<.89;
+   });
+   if(groundedSourceTable){
+    const c=groundedSourceTable.box.getCenter(new THREE.Vector3());
+    const dims=groundedSourceTable.box.getSize(new THREE.Vector3());
+    const [x,z]=global(c);
+    rounded('G-SITTING','existing-ifc-coffee-table-stone-top',
+     [dims.x+.045,.045,dims.z+.045],.07,mats.stone,
+     x,groundedSourceTable.box.max.y+.02,z);
     pieces.sittingCoffeeTable++;
-   }else skip.coffeeTable='No unblocked, verified position near corrected source sofa';
+    pieces.existingSourceCoffeeTables++;
+   }else{
+    // Try several source-floor-supported positions on the sofa's sitting
+    // side. Do not remove original source furniture or block an opening to
+    // force the coffee table into a single preselected point.
+    const proposals=[
+     [1.04,0],[1.34,0],[.86,-.48],[1.13,-.48],
+     [1.44,-.58],[.85,.53],[1.20,.58],[1.55,.29]
+    ];
+    let accepted=null;
+    for(const [dx,dz] of proposals){
+     const x=box.max.x+(origin.x||0)+dx,z=sz+dz;
+     const datum=getFloor('G-SITTING',x,z);
+     if(datum!==null&&allowPlacement('G-SITTING',x,z,1.07,.61,datum)){
+      accepted={x,z,y:datum};break;
+     }
+    }
+    if(accepted){
+     const g=new THREE.Group();g.name='STAGE4_SITTING_ROUNDED_COFFEE_TABLE';
+     g.position.set(...local(accepted.x,accepted.y,accepted.z));
+     groups['G-SITTING'].add(g);
+     for(const [xx,zz] of [[-.37,-.19],[.37,-.19],[-.37,.19],[.37,.19]]){
+      const leg=visual(new THREE.Mesh(new THREE.CylinderGeometry(.055,.075,.35,12),mats.timber),
+       'living-coffee-leg');
+      leg.position.set(xx,.21,zz);g.add(leg);
+     }
+     const top=visual(new THREE.Mesh(new RoundedBoxGeometry(1.07,.075,.61,4,.085),mats.stone),
+      'rounded-stone-coffee-table');
+     top.position.y=.43;g.add(top);
+     recordCollider(g,'G-SITTING','ground-coffee-table');
+     pieces.sittingCoffeeTable++;
+    }else skip.coffeeTable='No source-backed clear table location after eight footprint checks';
+   }
    if(stage4Rug('G-SITTING',Math.min(117.5,sx+1.37),sz,2.55,1.79,y,'sitting'))
     pieces.groundRug++;
    // Cushions rest on an actual IFC-backed sofa; not duplicate sofa geometry.
@@ -245,14 +286,22 @@ export function createStage4LivingDining({
  }else skip.sitting='Source IFC ground sofa unavailable';
  // Conversation seating is opposite the sofa and away from stair→sitting
  // (x ~112.3) and sitting→dining (z ~-4.4) open passages.
- for(const [name,x,z,angle] of [
-  ['south',118.03,-8.35,-Math.PI/2],
-  ['north',118.03,-5.76,-Math.PI/2]
- ]){
-  const y=getFloor('G-SITTING',x,z);
-  if(y===null||!allowPlacement('G-SITTING',x,z,.82,.82,y))continue;
-  makeAccentChair(x,z,y,angle,name);pieces.sittingChairs++;
+ const chairSolutions=[
+  {name:'south',tries:[[118.03,-8.35],[117.93,-8.73],[118.58,-8.51],[117.43,-8.50]]},
+  {name:'north',tries:[[118.03,-5.76],[118.58,-5.81],[117.52,-5.69],[118.65,-6.37],[117.65,-6.04]]}
+ ];
+ const placedChairs=[];
+ for(const chair of chairSolutions){
+  for(const [x,z] of chair.tries){
+   const y=getFloor('G-SITTING',x,z);
+   if(y===null||placedChairs.some(p=>Math.hypot(x-p[0],z-p[1])<1.20)||
+      !allowPlacement('G-SITTING',x,z,.82,.82,y))continue;
+   makeAccentChair(x,z,y,-Math.PI/2,chair.name);
+   placedChairs.push([x,z]);pieces.sittingChairs++;break;
+  }
  }
+ if(placedChairs.length<2)skip.accentChairs=
+  'Only '+placedChairs.length+' source-supported clear conversation chair placements';
  const sideY=getFloor('G-SITTING',116.33,-8.68);
  if(sideY!==null&&allowPlacement('G-SITTING',116.33,-8.68,.4,.4,sideY)){
   tinySideTable('G-SITTING',116.33,-8.68,sideY,'living');pieces.sittingSideTables++;
