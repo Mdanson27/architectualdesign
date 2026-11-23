@@ -5,7 +5,7 @@
 <meta name="theme-color" content="#102428"/>
 <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg"/>
 <meta name="robots" content="noindex,nofollow"/>
-<meta name="description" content="Source-accurate interactive BIM-based architectural walkthrough, built from Archicad IFC and original interior renders."/>
+<meta name="description" content="Walk through an IFC-grounded 3D residence with integrated interior finishes, kitchen fittings, lighting and landscaped compound."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <title>Actual House | AutoMinds SPACES</title>
@@ -19,7 +19,7 @@
      <span class="logoMark">A<span>.</span></span>
      <span class="logoText"><strong>AUTOMINDS <em>SPACES</em></strong><small>ARCHITECTURAL EXPERIENCES</small></span>
    </a>
-   <div class="headerCenter"><span class="statusDot"></span><span>IFC SOURCE MODEL</span><i></i><span>REAL 3D GEOMETRY</span></div>
+   <div class="headerCenter"><span class="statusDot"></span><span>INTERACTIVE RESIDENCE</span><i></i><span>INTERIOR DESIGN INCLUDED</span></div>
    <div class="headerActions">
      <button id="stage2MobileBtn" type="button" title="Open the interior finish studio" aria-label="Open interior finish studio" aria-expanded="false"><span class="symbol">◇</span><span class="long">Finishes</span></button>
      <button id="lightBtn" title="Toggle daylight or night" aria-pressed="false"><span class="symbol">☼</span><span class="long">Daylight</span></button>
@@ -44,7 +44,7 @@
    </div>
    <div class="sideTitle">STRUCTURE VIEW <span>NON-DESTRUCTIVE</span></div>
    <div class="layerToggles">
-     <label class="toggleLine"><span><b>Show curated site context</b><small>S1 plan · perimeter, 3 parking bays, pavers and lawns</small></span><input id="surroundingsToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
+     <label class="toggleLine"><span><b>Landscaped compound</b><small>Visible with the house · gate, parking, pavers and lawns</small></span><input id="surroundingsToggle" type="checkbox" checked/><span class="checkVisual">✓</span></label>
      <label class="toggleLine"><span><b>Section / remove roof above floor</b><small>Reveal wall layout and rooms from above</small></span><input id="sectionToggle" type="checkbox"/><span class="checkVisual">✓</span></label>
    </div>
    <button id="stage1AuditBtn" class="structAction" type="button" aria-expanded="false" aria-controls="stage1AuditPanel">▤ STAGE 1 · ARCHITECTURE AUDIT</button>
@@ -55,7 +55,7 @@
      <div id="stage1AuditRooms" class="stage1AuditRooms"></div>
      <p class="stage1AuditFoot">Room polygons, bathroom and pantry count, and the 13-suite discrepancy require source-plan / client confirmation. No architecture is changed by this audit.</p>
    </section>
-   <button id="designStudioBtn" class="structAction" type="button" aria-expanded="false" aria-controls="designStudioPanel">◇ STUDIO ANNE · FINISHES & LIGHTING</button>
+   <button id="designStudioBtn" class="structAction" type="button" aria-expanded="false" aria-controls="designStudioPanel">◇ DESIGN INSPECTION · DEVELOPMENT TOOLS</button>
    <section id="designStudioPanel" class="designStudioPanel hidden" aria-label="Studio Anne design alternatives">
      <strong>Emmanuel's design brief</strong>
      <p>Pages 2–5: comparison previews, not confirmed final selections. Original IFC geometry remains unchanged.</p>
@@ -123,7 +123,7 @@
        <button id="stage2ClearRoom" type="button">Restore this room</button>
        <button id="stage2RestoreAll" type="button">Restore all IFC finishes</button>
      </div>
-     <p id="stage2FullStatus" role="status" aria-live="polite">Source finishes are displayed. No room-specific changes have been applied.</p>
+     <p id="stage2FullStatus" role="status" aria-live="polite">Loading the room-by-room interior finishes.</p>
      <div class="stage2FinishNote">Architectural boundaries remain provisional. Samples render only where matching source floors, walls or ceiling slabs are found. Missing source elements and pending client design decisions are not fabricated.</div>
      <div class="stage2Header stage3Header">STAGE 3 · KITCHEN STUDIO <span>PAGES 26–32 &amp; 41</span></div>
      <p class="stage3Intro">Source-worktop-anchored, reversible cabinetry and appliance concepts. No new partition, closed kitchen doorway or unverified pantry enclosure.</p>
@@ -139,7 +139,7 @@
        <label><input id="stage3Storage" type="checkbox" checked/> Soft-close pull-out storage</label>
        <label><input id="stage3TaskLighting" type="checkbox" checked/> Optional task LED preview</label>
      </div>
-     <p id="stage3Status" class="stage3Status" role="status" aria-live="polite">Kitchen preview off. Original IFC worktops and circulation remain in place.</p>
+     <p id="stage3Status" class="stage3Status" role="status" aria-live="polite">Loading fitted kitchen and the integrated interior design.</p>
      <p class="stage2FinishNote">The S1 kitchen/store outline, appliance coordinates, 42–48 in clearance, work triangle, plumbing, ducting and standalone pantry footprint still require architect/site verification. Pantry shelving is deliberately not built into an unidentified room.</p>
      <div class="stage2LegacyQA hidden" aria-hidden="true">
      <div class="stage2Header">STAGE 2 · ROOM-SPECIFIC FLOOR FINISHES <span>PAGE 7</span></div>
