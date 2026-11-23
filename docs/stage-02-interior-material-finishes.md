@@ -1,50 +1,74 @@
-# AutoMinds Spaces — Stage 2 Interior Finishes: first implementation
+# AutoMinds Spaces — Stage 02: Architectural Materials & Interior Finish System
 
-**Status:** Stage 2 development has begun. This is a non-destructive room-level flooring pilot, not the completed Stage 2 finish installation.
+**Technical status:** Room-by-room material engine implemented for all ten named plan spaces. Source-aligned rendered surfaces are available as reversible design proposals. **Client and architect approval remains pending**; this is not an as-built finish schedule.
 
-## Source and authority
+## Source references checked
 
-- Source: Studio Anne, *Emmanuel's Design Brief*, page 6 (flat, beamed and suspended/dropped ceilings), page 7 (porcelain/ceramic and ash/caramel wood-look tiles), page 8 (paint, textured/stone walls and flush/recessed skirting).
-- Architecture: Home(4).pdf S1/S2, current source-derived IFC model and the existing approved client corrections.
-- Stage 1's candidate footprints are **provisional design aids**. These are not construction-surveyed room outlines, source IFC space objects, or independently approved client finishes.
+**Studio Anne / Emmanuel's Design Brief, 46 pages:**
+- Page 2 — Modern versus Classic/Traditional design directions (alternatives)
+- Pages 3–5 — Mint / Taupe / Powder Blue 60/30/10 palette alternatives
+- Page 6 — Suspended/dropped, beamed and flat ceiling choices
+- Page 7 — Porcelain/ceramic and ash/caramel wood-look **tiles**
+- Page 8 — Painted, textured and stone-clad walls; flush skirting requiring an allowance of at least 6 mm
 
-## First deliverable: actual room-local floor surface tiles
+The brief explicitly presents choices, not a signed-off room-by-room schedule. The project remains anchored in the source Home S1/S2 plans and IFC mesh geometry, with all later user-approved open-concept, maid-room, stair, balcony, window and exterior corrections retained.
 
-A new room-only choice appears in the Studio Anne panel. The visitor can preview three flooring choices in the **ground-floor Dining Room**, **ground-floor Sitting Room**, or **first-floor Family Room**. They are no longer limited to the older whole-home shared-material preview.
+## Implemented engineering deliverables
 
-Each tile is a real, individual Three.js instance snapped to an existing walkable source floor using the viewer's verified floor-raycast logic:
+### 1. Ten-room scheduling and reversible full-house concept
 
-1. Use the specific room's preliminary S1-to-IFC outline as a **spatial reference**, with a conservative boundary inset; do not infer a certified room.
-2. Sample the actual source IFC walkable floor under the tile and reject positions without a source floor or with incompatible elevation.
-3. Render modestly sized 0.58 m tiles with visible joint spacing; sample textures represent porcelain/ceramic, ash wood-look or caramel wood-look flooring.
-4. Keep the original IFC mesh, material, world transform, collision system, floor raycast and all movement/door tests unmodified.
-5. Revert instantly to the original IFC floor with the "No room overlay" choice. The preview is **off by default**.
-6. Hide room samples on other floors when section-level inspection is active, but allow room samples during first-person walking.
-7. Display the number and estimated sample surface area only, **not** a promise of final installed quantity or a certified room measurement.
+The Studio Anne panel now offers all ten named rooms, each with a separate palette, flooring, wall finish, ceiling treatment and optional skirting. Users can apply one room, preview a coordinated nine-room concept, restore just the selected room, or restore every room and the earlier whole-home presets. The tenth room (maid's room) remains untouched by the **automatic** concept because its preliminary plan polygon disagrees with its source area label. It remains manually selectable for comparative rendering without implying approval.
 
-This pilot is intentionally limited to three visually inspectable main rooms. The master bedroom, maid room and wet/utility rooms require architectural boundary review before we show fitted surface pieces in them.
+The complete proposed room-by-room options are in `architecture/stage2-finishes-schedule.json`. These suggestions are **unapproved**, and the finish engine marks them as such.
 
-## Stage 2 remaining work
+### 2. Room-local floor finish mesh generation
 
-- Room-specific floor material schedule and precise tile bounds from signed-off polygons for all rooms.
-- Reliable grout, tile direction, transitions and physical thresholds across the full house.
-- Approved wall paint, textured treatment and any stone feature/cladding locations (page 8).
-- Correctly placed flush skirting with allowance and verification at doors and corners (page 8).
-- Ceiling choice and any architectural ceiling/cove details per room (page 6); avoid unsupported false ceilings and altered structural heights.
-- Day/night appearance and photorealistic material response, tested at eye level in Chrome and on supported mobile devices.
-- Reconcile conflict between 13-suite request and the four-bedroom-plus-maid source drawing before any new partition or room is built.
-- Obtain client/designer approval of colours, style, floor, ceiling and wall choices; never call unselected previews final.
+Porcelain/ceramic, ash and caramel wood-look samples create actual, non-colliding 3D tile instance meshes. Every tile position is checked against the room's **provisional** S1 polygon and raycasted against the existing IFC walkable floor. Rooms with no matching floor surfaces receive no fabricated floor. Colour, tile spacing, grout and roughness are proposed for visualization, not construction quantity estimation. The old three-room floor sampler remains as a hidden QA hook to avoid breaking the prior regression suite.
 
-## Stage 1 technical handover status
+### 3. Source-wall paint, texture and stone accent
 
-Stage 1 repository-side engineering audit and 10-room preliminary crosswalk are complete, source counts/levels and S1 labels were reviewed, and all major approved navigation and envelope constraints are regression-protected.
+Wall treatments use **existing IFC wall meshes** only. A segment must have one unambiguous candidate room and must not be an approved removed partition or duplicate facade infill. A cloned render material is substituted temporarily; the mesh geometry and original material reference are saved and restored when clearing the preview.
 
-The **formal Stage 1 architectural sign-off ledger remains open**, because source IFC contains no `IfcSpace` room assignments; the maid sketch differs materially from its S1 area label, three original proxy conversions are missing, room GUID crosswalks require architect/IFC review, and client selections are not recorded. The original Archicad IFC is not contained in the public repository; remote file access was offline during this pass.
+The three treatments are painted plaster, textured plaster and a restrained stone-accent feature wall with the remaining eligible room surfaces painted. No new wall is created. For rooms without supported source wall segments, the treatment is skipped and the QA report counts zero source walls.
 
-This permits safe, reversible Stage 2 engineering work without misrepresenting architectural sign-off.
+### 4. Flush-skirt preview and circulation protection
 
-## QA
+Skirting uses approximately **6 mm visual depth**, following Studio Anne page 8's allowance suggestion. Piece placement requires a nearby real source wall and a source floor measurement. Door approaches are excluded based on the viewer's actual door assembly positions. Skirting remains non-colliding and is automatically discarded when the preview is cleared. It does not alter real wall thickness or building tolerances.
 
-- `npm run test:stage2`: tile mesh creation in all pilot rooms and styles, polygon containment, first/ground floor datums, source-object references and reversal.
-- `npm run test:browser`: source inventory and viewer panel, select/reset Stage 2 samples, existing architectural and navigation checks.
-- `QA_ALL_DOORS=1 npm run test:browser`: 26 active door crossings and 5 continuous route checks.
+### 5. Actual source-supported ceiling previews
+
+The three ceiling alternatives are **flat**, **subtle beamed**, and **suspended/accent**. Rendered samples require actual IFC overhead slab raycast hits at a plausible storey height. Unsupported roof openings and the stair void are left untouched. Ceiling treatments are hidden in section/cutaway mode, visible in first-person mode, and are explicitly decorative render previews rather than structurally specified beams or dropped-ceiling installations.
+
+### 6. Door transition finishing
+
+Thin decorative thresholds are sampled against real floor support and only proposed near the room's polygon edge where an existing interactive door is present. Open-concept locations without actual doors do not receive fabricated doorway thresholds. Transition pieces have no collision participation.
+
+### 7. Interaction and restoration
+
+- Studio Anne `Finishes & Lighting` panel includes the ten-room finishes studio with all palettes/material types and independent room controls.
+- Mobile viewers get a direct **Finishes** action in the header that expands the sidebar into a scrollable full-height inspector.
+- `window.__AutoMindsQA.stage2SurfaceStatus()` reports actual rendered tile, wall, ceiling, skirting and threshold counts during local `?qa` browser runs.
+- `stage2ApplyWholeHouse()`, `stage2ApplyOneRoom(...)` and `stage2RestoreWholeHouse()` can be tested in headless Chrome.
+- The original source IFC mesh geometry, door/collider registry, roof, window openings, circulation and compound model remain intact.
+
+## QA criteria
+
+- [x] All ten S1 named room IDs have independently selectable and inspectable floor/wall/ceiling specifications
+- [x] Three Studio Anne palette alternatives and three tile styles supported
+- [x] Real floor tile geometry placed only on source walkable floor samples
+- [x] Wall materials use restored source mesh material references, not invented walls
+- [x] Skirting visual pieces need nearby source wall, source floor and door exclusion
+- [x] Ceilings require an actual overhead IFC slab at a plausible level
+- [x] Original finishes restored with no source geometry/collider mutation
+- [x] QA tests for unit surface creation, live Chrome interactions and all existing door/route regressions included in CI
+- [ ] Actual client material and design direction selection (pages 2–8)
+- [ ] Certified S1 room polygons and complete IFC GUID ownership (Stage 1 approval gate)
+- [ ] Final wall/ceiling/skirting installation detailing, construction measurements and sign-off
+
+## Important limitations and review requirements
+
+The IFC export has no `IfcSpace` room boundaries. Stage 1's ten polygons are hand-traced inspection references, not construction-certified geometry. The maid's-room sketch is approximately 8.26 m² versus the 11 m² printed plan label; it is explicitly excluded from the automatic concept. Three unconverted IFC proxy batches remain unidentified. If a source wall, slab or floor cannot be verified, the corresponding finish is **not fabricated**.
+
+Also, the render's ceiling and skirting geometry represent visual options only; the brief does not provide dimensioned construction drawings for those treatments, and we must not claim architect approval from working switches in a web preview. The final material samples, grout specifications, ceiling plans, stone accent locations, electrical integration, level tolerances and client selection still require normal design review.
+
+**Verdict:** Stage 2 whole-house **engineering implementation** is complete as a non-destructive, inspectable materials and finish-options system. Final design approval and definitive surface installation remain outside the scope of code-only completion.
