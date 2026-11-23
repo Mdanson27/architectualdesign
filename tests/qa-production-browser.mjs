@@ -207,6 +207,33 @@ try{
   wetCandidates.filter(x=>!['FU - 005','FU - 002'].includes(x.name)).slice(0,100)));
  console.log('STAGE6_FURNISHING_TYPE_COUNTS',JSON.stringify(
   wetCandidates.reduce((a,x)=>(a[x.name]=(a[x.name]||0)+1,a),{})));
+ const stage6Initial=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage6WetAreasStatus())"));
+ if(!stage6Initial?.productionIntegrated||stage6Initial.previewActivationRequired||
+    !stage6Initial.sourceGeometryPreserved||
+    !stage6Initial.sourceDoorCollidersPreserved||
+    !stage6Initial.sourceWallCollidersPreserved||
+    stage6Initial.addedInternalWalls!==0||stage6Initial.addedDoors!==0||
+    stage6Initial.newShowerPartitionsCreated!==0||
+    stage6Initial.newUnverifiedToiletsCreated!==0||
+    stage6Initial.exactBathroomPolygonsCertified||
+    !integratedStart.stage6WetAreasIntegrated||
+    stage6Initial.activeSourceWetZones<2||
+    stage6Initial.identifiedSourceProxyFittings<3)
+  throw Error('Stage 6 bathrooms must be source supported and already in the production house: '+
+   JSON.stringify({stage6Initial,integratedStart}));
+ console.log('STAGE6_SOURCE_WET_AREA_PRODUCTION_AUTO_VISIBLE',JSON.stringify({
+  activeServiceZones:stage6Initial.activeSourceWetZones,
+  originalProxyAnchors:stage6Initial.identifiedSourceProxyFittings,
+  porcelainTiles:stage6Initial.porcelainFloorTiles,
+  sourceWallTiling:stage6Initial.sourceWallTilePanels,
+  existingRaisedFittingsLit:stage6Initial.illuminatedServiceMirrors,
+  existingLowerFittingsTrimmed:stage6Initial.lowerFittingsAccented,
+  sourceZoneAudit:stage6Initial.sourceZoneAudit,
+  verifiedPlumbingOrSanitaryFitouts:false,
+  noInventedWetWallsOrDoors:true,
+  zeroExtraStageClicks:true
+ }));
  const stage2Controls=JSON.parse(await evaluate(
   "JSON.stringify((()=>({roomCount:document.querySelector('#stage2FullRoom').options.length,"+
   "hasFloor:!!document.querySelector('#stage2FullFloor'),"+
