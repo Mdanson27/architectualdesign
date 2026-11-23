@@ -1,0 +1,185 @@
+{
+  "schema": "autominds.stage2-finishes-schedule.v1",
+  "source": "Studio Anne / Emmanuel's Design Brief pages 2–8; original Home(4).pdf S1 floor-plan labels; IFC source mesh previews",
+  "status": "draft-not-approved",
+  "architecture": "non-destructive comparison, no construction drawings or layout changes",
+  "caveats": [
+    "Studio Anne shows colour/material/ceiling alternatives; it does not approve these specific room choices",
+    "No IfcSpace boundaries in IFC; ten S1 room sketches are provisional",
+    "Maid-room preliminary 8.26m² sketch disagrees with 11m² plan label; no default finish is assigned",
+    "All source floor, wall, or ceiling previews are clipped to available model evidence and may omit unsupported surfaces",
+    "Original client-approved open-plan partitions, entries, roof, windows, balconies and site retained"
+  ],
+  "rooms": [
+    {
+      "id": "G-SITTING",
+      "name": "Sitting Room",
+      "level": "ground",
+      "planLabelAreaM2": 35,
+      "proposed": {
+        "palette": "taupe",
+        "floor": "porcelain",
+        "wall": "textured",
+        "ceiling": "suspended",
+        "skirting": true
+      },
+      "clientApproved": false,
+      "architecturalOutlineCertified": false,
+      "sourceSurfaceVerification": "source-mesh and S1-sketch filtered visual preview; not construction certification",
+      "reviewStatus": "proposed-for-client-review"
+    },
+    {
+      "id": "G-DINING",
+      "name": "Dining Room",
+      "level": "ground",
+      "planLabelAreaM2": 19,
+      "proposed": {
+        "palette": "taupe",
+        "floor": "porcelain",
+        "wall": "painted",
+        "ceiling": "flat",
+        "skirting": true
+      },
+      "clientApproved": false,
+      "architecturalOutlineCertified": false,
+      "sourceSurfaceVerification": "source-mesh and S1-sketch filtered visual preview; not construction certification",
+      "reviewStatus": "proposed-for-client-review"
+    },
+    {
+      "id": "G-KITCHEN",
+      "name": "Kitchen",
+      "level": "ground",
+      "planLabelAreaM2": 25,
+      "proposed": {
+        "palette": "mint",
+        "floor": "porcelain",
+        "wall": "painted",
+        "ceiling": "flat",
+        "skirting": true
+      },
+      "clientApproved": false,
+      "architecturalOutlineCertified": false,
+      "sourceSurfaceVerification": "source-mesh and S1-sketch filtered visual preview; not construction certification",
+      "reviewStatus": "proposed-for-client-review"
+    },
+    {
+      "id": "G-BEDROOM",
+      "name": "Ground Bedroom",
+      "level": "ground",
+      "planLabelAreaM2": 20,
+      "proposed": {
+        "palette": "powder",
+        "floor": "ash",
+        "wall": "painted",
+        "ceiling": "flat",
+        "skirting": true
+      },
+      "clientApproved": false,
+      "architecturalOutlineCertified": false,
+      "sourceSurfaceVerification": "source-mesh and S1-sketch filtered visual preview; not construction certification",
+      "reviewStatus": "proposed-for-client-review"
+    },
+    {
+      "id": "G-MAID",
+      "name": "Maid's Room",
+      "level": "ground",
+      "planLabelAreaM2": 11,
+      "proposed": {
+        "palette": "source",
+        "floor": "source",
+        "wall": "source",
+        "ceiling": "source",
+        "skirting": false
+      },
+      "clientApproved": false,
+      "architecturalOutlineCertified": false,
+      "sourceSurfaceVerification": "source-mesh and S1-sketch filtered visual preview; not construction certification",
+      "reviewStatus": "hold-pending-room-boundary"
+    },
+    {
+      "id": "F-MASTER",
+      "name": "Master Bedroom",
+      "level": "first",
+      "planLabelAreaM2": 35,
+      "proposed": {
+        "palette": "taupe",
+        "floor": "ash",
+        "wall": "textured",
+        "ceiling": "beamed",
+        "skirting": true
+      },
+      "clientApproved": false,
+      "architecturalOutlineCertified": false,
+      "sourceSurfaceVerification": "source-mesh and S1-sketch filtered visual preview; not construction certification",
+      "reviewStatus": "proposed-for-client-review"
+    },
+    {
+      "id": "F-BEDROOM-2",
+      "name": "Bedroom (17 m²)",
+      "level": "first",
+      "planLabelAreaM2": 17,
+      "proposed": {
+        "palette": "powder",
+        "floor": "ash",
+        "wall": "painted",
+        "ceiling": "flat",
+        "skirting": true
+      },
+      "clientApproved": false,
+      "architecturalOutlineCertified": false,
+      "sourceSurfaceVerification": "source-mesh and S1-sketch filtered visual preview; not construction certification",
+      "reviewStatus": "proposed-for-client-review"
+    },
+    {
+      "id": "F-BEDROOM-3",
+      "name": "Bedroom (13 m²)",
+      "level": "first",
+      "planLabelAreaM2": 13,
+      "proposed": {
+        "palette": "powder",
+        "floor": "caramel",
+        "wall": "painted",
+        "ceiling": "flat",
+        "skirting": true
+      },
+      "clientApproved": false,
+      "architecturalOutlineCertified": false,
+      "sourceSurfaceVerification": "source-mesh and S1-sketch filtered visual preview; not construction certification",
+      "reviewStatus": "proposed-for-client-review"
+    },
+    {
+      "id": "F-FAMILY",
+      "name": "Family Room",
+      "level": "first",
+      "planLabelAreaM2": 19,
+      "proposed": {
+        "palette": "taupe",
+        "floor": "porcelain",
+        "wall": "stone-accent",
+        "ceiling": "suspended",
+        "skirting": true
+      },
+      "clientApproved": false,
+      "architecturalOutlineCertified": false,
+      "sourceSurfaceVerification": "source-mesh and S1-sketch filtered visual preview; not construction certification",
+      "reviewStatus": "proposed-for-client-review"
+    },
+    {
+      "id": "F-READING",
+      "name": "Reading Room",
+      "level": "first",
+      "planLabelAreaM2": 8,
+      "proposed": {
+        "palette": "mint",
+        "floor": "ash",
+        "wall": "painted",
+        "ceiling": "flat",
+        "skirting": true
+      },
+      "clientApproved": false,
+      "architecturalOutlineCertified": false,
+      "sourceSurfaceVerification": "source-mesh and S1-sketch filtered visual preview; not construction certification",
+      "reviewStatus": "proposed-for-client-review"
+    }
+  ]
+}
