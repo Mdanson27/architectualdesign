@@ -1,0 +1,88 @@
+{
+  "schema": "autominds.spaces.stage6.wet-areas.v1",
+  "status": "production-visual-integration-pending-architect-sanitary-signoff",
+  "references": [
+    "Home(4).pdf S1 ground/first floor (zoom inspected 23 Nov 2026)",
+    "Studio Anne Emmanuel brief (2) p. 11, 37, 38, 39, 40",
+    "Source Archicad IFC2X3 GLB proxies FU - 011 and FU - 012"
+  ],
+  "production": {
+    "zeroClickUpdates": true,
+    "existingProject": true,
+    "reversible": true
+  },
+  "sourceAudit": {
+    "ifcSpaceCount": 0,
+    "ifcSanitaryTerminalCount": 0,
+    "sourceProxyFamilyConfirmed": [
+      "FU - 011",
+      "FU - 012"
+    ],
+    "aliasesNotCertifiedAsFixtureType": true,
+    "threeMissingSourceProxyBatches": true,
+    "standaloneToiletPositionsApproved": false,
+    "surveyRequiredBeforePlumbing": true
+  },
+  "serviceAreas": [
+    {
+      "id": "G-POWDER-WC",
+      "level": "ground",
+      "area": "source S1 visually traced",
+      "fixtureGuidSeeds": [
+        "3VtfarZPL2KuPVQTOI7X_M",
+        "1GpVUJI4TBGueWY$hYn1lZ"
+      ],
+      "status": "provisional"
+    },
+    {
+      "id": "G-MAID-WC-SH",
+      "level": "ground",
+      "area": "source S1 visually traced",
+      "fixtureGuidSeeds": [
+        "1XDW$RwbnAGxAPSOuMZaFq",
+        "3uMfZ45VTCCOvyI9GH6Bwg"
+      ],
+      "status": "provisional"
+    },
+    {
+      "id": "G-BEDROOM-WC-SH",
+      "level": "ground",
+      "area": "source S1 visually traced",
+      "fixtureGuidSeeds": [
+        "3L_JvLU3961hv2VDbJxaXY"
+      ],
+      "status": "provisional"
+    },
+    {
+      "id": "F-BEDROOM-WC",
+      "level": "first",
+      "area": "source S1 visually traced",
+      "fixtureGuidSeeds": [
+        "2EOQYHCuP4kP$gJ0dbhgTt",
+        "0NSU$T9QH1JAksG5QNnpyF"
+      ],
+      "status": "provisional"
+    }
+  ],
+  "implementation": [
+    "Small porcelain floor samples placed only where the IFC floor supports them",
+    "Nonstructural porcelain accents attached to existing source IFC walls",
+    "Brushed metal detailing on source-installed upper and lower service fittings",
+    "3500K mirror-area LED accents linked to existing task lights, house lights and day/night",
+    "No hard-coded plumbing penetrations, drain relocation or door/wall changes"
+  ],
+  "approvalGates": [
+    "True bathroom IFC polygons and measured sanitary item locations",
+    "Master bathroom vs WIC clarification (S1 labels WIC but legacy reference labels describe master bathroom)",
+    "Actual concealed plumbing route and pump system",
+    "Waterproofing assembly, falls and drainage below WC/SH",
+    "Shower screens: tempered privacy glass in non-maid bathrooms, masonry separator for maid bath where approved",
+    "Verified bidet and floor drain locations",
+    "Mechanical ventilation route or verified natural vent",
+    "Final ceramic brands, no black fixtures, brushed brass/chrome",
+    "Client walk-through approval"
+  ],
+  "addedArchitecturalBathroomWalls": 0,
+  "addedDoors": 0,
+  "sourceIfcModified": false
+}
