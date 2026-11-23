@@ -1529,7 +1529,11 @@ $('stage1AuditBtn').addEventListener('click',()=>{
 $('designStudioBtn').addEventListener('click',()=>{
  const panel=$('designStudioPanel'),open=!panel.classList.toggle('hidden');
  $('designStudioBtn').setAttribute('aria-expanded',String(open));
+ $('stage2MobileBtn').setAttribute('aria-expanded',String(open));
+ document.querySelector('.sidebar').classList.toggle('stage2Expanded',
+  open&&window.innerWidth<=680);
 });
+$('stage2MobileBtn').addEventListener('click',()=>$('designStudioBtn').click());
 $('designScheme').addEventListener('change',e=>{
  const result=updateStudioAnnePreview(e.target.value);
  toast('Studio Anne · '+result.label+' · comparison only');
