@@ -22,6 +22,7 @@ import {PLAN_ROUTE_TARGETS,findPhysicalRoute} from './circulation-routes.js';
 import {buildStage1RoomAudit} from './stage1-room-audit.js';
 import {createStage2RoomFloorPreview} from './stage2-room-finishes.js';
 import {createStage2SurfaceSystem} from './stage2-surface-system.js';
+import {createStage3KitchenSystem} from './stage3-kitchen-system.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
 
@@ -100,7 +101,7 @@ const state={
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,houseLightsOn:true,designScheme:'source',designSchemeSummary:null,
  floorPreview:'source',floorPreviewSummary:null,stage2Room:'G-DINING',stage2Floor:'source',stage2Finishes:null,
- stage2SurfaceSystem:null,stage2FullRoom:'G-SITTING',
+ stage2SurfaceSystem:null,stage2FullRoom:'G-SITTING',stage3Kitchen:null,
  lightLayers:{ambient:true,task:true,accent:true},balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -307,6 +308,7 @@ function refreshVisibility(){
   (state.floor==='ground'||state.floor==='all'||(state.mode==='walk'&&state.footY<1.5));
  if(state.stage2Finishes)state.stage2Finishes.updateVisibility(state.floor,state.mode==='walk');
  state.stage2SurfaceSystem?.updateVisibility(state.floor,state.mode==='walk',state.sectionEnabled&&state.mode==='orbit');
+ state.stage3Kitchen?.updateVisibility(state.floor,state.mode==='walk',state.showFurniture,state.lightLayers.task,state.houseLightsOn);
  if(state.stairSafety?.root)state.stairSafety.root.visible=state.showStairSafety;
  if(state.balconies?.root)state.balconies.root.visible=state.showBalconies;
  if(state.maidAccess?.root)state.maidAccess.root.visible=
@@ -580,6 +582,11 @@ function setupEnhancements(){
   floorSampler:(x,z,datum)=>sampleGround(x,z,datum,.30,.48),
   ceilingSampler:sampleSourceCeiling
  });
+ state.stage3Kitchen=createStage3KitchenSystem({
+  scene,origin:state.origin,records:state.meshes,
+  floorSampler:(x,z,datum)=>sampleGround(x,z,datum,.30,.48)
+ });
+ renderStage3Status();
  state.stage1RoomAudit=buildStage1RoomAudit(state.sourceManifest,state.elements,
   state.meshes,state.origin);
  renderStage1Audit();
@@ -1425,9 +1432,37 @@ function applyFullStage2Room(){
  return detail;
 }
 
+
+function renderStage3Status(){
+ const info=state.stage3Kitchen?.status();
+ if(!info)return {pending:true};
+ const target=$('stage3Status');
+ if(target)target.textContent=!info.sourceWorktopVerified?
+  'No eligible source kitchen worktop found. No speculative cabinets will be rendered.':
+  !info.enabled?
+   'Source kitchen preserved · '+info.baseCabinetPanels+' eligible source-backed cabinet fronts available · preview off.':
+   info.baseCabinetPanels+' cabinet fronts · '+info.appliancePieces+
+   ' appliance components · '+info.storageFixtures+' pull-out details · '+
+   info.ledStrips+' task LED strips · SOURCE WORKTOP PRESERVED. Pantry and measured clearances pending.';
+ const button=$('stage3OpenStorage');
+ if(button){
+  button.setAttribute('aria-pressed',String(info.storageOpen));
+  button.textContent=info.storageOpen?'Close sample drawers':'Open sample drawers';
+ }
+ return info;
+}
+function enableStage3Kitchen(enabled=true){
+ const out=state.stage3Kitchen?.enable(enabled);
+ state.stage3Kitchen?.updateVisibility(state.floor,state.mode==='walk',
+  state.showFurniture,state.lightLayers.task,state.houseLightsOn);
+ renderStage3Status();
+ return out;
+}
+
 function toggleStudioAnneLayer(layer,enabled){
  state.lightLayers[layer]=enabled;
  state.lightingSystem?.update({layers:state.lightLayers});
+ state.stage3Kitchen?.updateVisibility(state.floor,state.mode==='walk',state.showFurniture,state.lightLayers.task,state.houseLightsOn);
  const status=$('designStudioStatus');
  if(status)status.textContent='Studio Anne lighting: '+Object.entries(state.lightLayers)
   .map(([key,on])=>key+' '+(on?'on':'off')).join(' · ')+' · preview only';
@@ -1448,6 +1483,7 @@ function toggleLighting(){
 function toggleHouseLights(){
  state.houseLightsOn=!state.houseLightsOn;
  state.lightingSystem?.update({enabled:state.houseLightsOn});
+ state.stage3Kitchen?.updateVisibility(state.floor,state.mode==='walk',state.showFurniture,state.lightLayers.task,state.houseLightsOn);
  $('houseLightsBtn').setAttribute('aria-pressed',String(state.houseLightsOn));
  $('houseLightsBtn').querySelector('.long').textContent=state.houseLightsOn?'Lights on':'Lights off';
  $('houseLightsBtn').querySelector('.symbol').textContent=state.houseLightsOn?'✹':'○';
@@ -1534,6 +1570,33 @@ $('designStudioBtn').addEventListener('click',()=>{
   open&&window.innerWidth<=680);
 });
 $('stage2MobileBtn').addEventListener('click',()=>$('designStudioBtn').click());
+$('stage3Preview').addEventListener('click',()=>{
+ const status=enableStage3Kitchen(true);
+ toast(status?.enabled?'Stage 3: source-worktop kitchen comparison enabled':
+  'Kitchen source/floor evidence missing; no cabinet geometry invented');
+});
+$('stage3Focus').addEventListener('click',()=>inspectStage1Room('G-KITCHEN'));
+$('stage3Restore').addEventListener('click',()=>{
+ state.stage3Kitchen?.openStorage(false);
+ enableStage3Kitchen(false);
+ toast('Stage 3 kitchen visualization cleared; source worktops preserved');
+});
+$('stage3OpenStorage').addEventListener('click',()=>{
+ if(!state.stage3Kitchen?.status().enabled)enableStage3Kitchen(true);
+ state.stage3Kitchen?.openStorage(!state.stage3Kitchen.status().storageOpen);
+ renderStage3Status();
+});
+for(const [id,key] of Object.entries({
+ stage3Cabinetry:'cabinetry',stage3Appliances:'appliances',
+ stage3Storage:'storage',stage3TaskLighting:'lighting'
+})){
+ $(id).addEventListener('change',e=>{
+  state.stage3Kitchen?.setOptions({[key]:e.target.checked});
+  state.stage3Kitchen?.updateVisibility(state.floor,state.mode==='walk',
+   state.showFurniture,state.lightLayers.task,state.houseLightsOn);
+  renderStage3Status();
+ });
+}
 $('designScheme').addEventListener('change',e=>{
  const result=updateStudioAnnePreview(e.target.value);
  toast('Studio Anne · '+result.label+' · comparison only');
@@ -1776,6 +1839,7 @@ function animate(){
  const dt=Math.min(clock.getDelta(),.06);
  if(state.doorSystem)state.doorSystem.update(dt);
  state.planCirculation?.kitchenDoor?.update(dt);
+ state.stage3Kitchen?.update(dt);
  if(state.mode==='walk')advanceWalk(dt);
  else if(orbit.enabled)orbit.update();
  if(state.mapOpen){lastMapUpdate+=dt;if(lastMapUpdate>.12){mapDraw();lastMapUpdate=0;}}
@@ -2085,6 +2149,14 @@ if(isLocalQA){
   lightingStatus:()=>state.lightingSystem?.status()??null,
   stage1RoomAudit:()=>state.stage1RoomAudit,
   stage2Finishes:()=>state.stage2Finishes?.status()??null,
+  stage3KitchenStatus:()=>state.stage3Kitchen?.status()??null,
+  stage3KitchenPreview:()=>enableStage3Kitchen(true),
+  stage3KitchenRestore:()=>enableStage3Kitchen(false),
+  stage3KitchenOptions:(patch)=>{const out=state.stage3Kitchen?.setOptions(patch);
+   state.stage3Kitchen?.updateVisibility(state.floor,state.mode==='walk',
+    state.showFurniture,state.lightLayers.task,state.houseLightsOn);
+   renderStage3Status();return out;},
+  stage3KitchenStorage:(open)=>{const out=state.stage3Kitchen?.openStorage(open);renderStage3Status();return out;},
   stage2SurfaceStatus:()=>state.stage2SurfaceSystem?.summary()??null,
   stage2SurfaceRoom:(id)=>state.stage2SurfaceSystem?.roomStatus(id)??null,
   stage2ApplyWholeHouse:()=>{
