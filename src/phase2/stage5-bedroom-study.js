@@ -70,9 +70,12 @@ export function createStage5BedroomsStudy({
   position:r.mesh?.position.clone(),scale:r.mesh?.scale.clone(),
   visible:r.mesh?.visible
  }));
+ // Stage 2 intentionally installs REVERSIBLE wall material selections
+ // on the original IFC wall meshes after this module initializes. Protect
+ // their actual geometry and transforms here; material equivalence is owned
+ // by the independent Stage 2 restore and conservation checks.
  const sourceUnchanged=()=>srcSnapshot.every(r=>r.mesh?.geometry===r.geometry&&
-  r.mesh?.material===r.material&&r.mesh?.position.equals(r.position)&&
-  r.mesh?.scale.equals(r.scale));
+  r.mesh?.position.equals(r.position)&&r.mesh?.scale.equals(r.scale));
  const root=new THREE.Group();root.name='STAGE5_INTEGRATED_BEDROOMS_WARDROBES_STUDY';
  root.userData={stage5:true,productionIntegrated:true,sourceUnchanged:true};
  scene.add(root);
