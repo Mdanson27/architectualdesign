@@ -316,7 +316,8 @@ export function createStage2SurfaceSystem({
   restoreWalls();clearGeometry();
   for(const room of STAGE2_FINISH_ROOMS){
    const spec=selections.get(room.id);
-   if(Object.values(spec).every((v,k)=>k===4?!v:v==='source'))continue;
+   if(spec.floor==='source'&&spec.wall==='source'&&
+      spec.ceiling==='source'&&!spec.skirting)continue;
    const group=new THREE.Group();
    group.name='STAGE2_ROOM_'+room.id+'_DRAFT_NOT_APPROVED';
    group.userData={stage2:true,roomId:room.id,approved:false,
