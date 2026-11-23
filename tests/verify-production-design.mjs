@@ -19,6 +19,11 @@ assert(html.includes('id="surroundingsToggle" type="checkbox" checked'));
 assert(css.includes('.production-design #designStudioBtn'));
 assert(css.includes('.production-design #stage2MobileBtn'));
 assert(css.includes('display:none!important'));
+assert(html.includes('id="mobileExploreBtn"'));
+assert(html.includes('id="exploreSidebar"'));
+assert(sceneJs.includes("classList.toggle('mobileExpanded')"));
+assert(css.includes('.sidebar.mobileExpanded'));
+assert(css.includes('.production-design .devOnly'));
 let finishCalls=0,kitchenCalls=0;
 const surfaces={applyProposal(){finishCalls++;return {
  enhancedRooms:9,tiles:423,sourceGeometryUnmodified:true,sourceColliderCountUnchanged:true
