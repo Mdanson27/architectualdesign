@@ -21,6 +21,7 @@
    </a>
    <div class="headerCenter"><span class="statusDot"></span><span>IFC SOURCE MODEL</span><i></i><span>REAL 3D GEOMETRY</span></div>
    <div class="headerActions">
+     <button id="stage2MobileBtn" type="button" title="Open the interior finish studio" aria-label="Open interior finish studio" aria-expanded="false"><span class="symbol">◇</span><span class="long">Finishes</span></button>
      <button id="lightBtn" title="Toggle daylight or night" aria-pressed="false"><span class="symbol">☼</span><span class="long">Daylight</span></button>
      <button id="houseLightsBtn" title="Switch house and balcony lights on or off" aria-pressed="true"><span class="symbol">✹</span><span class="long">Lights on</span></button>
      <button id="referenceBtn" title="Compare with architectural renders"><span class="symbol">◫</span><span class="long">Design references</span></button>
@@ -72,6 +73,59 @@
        <option value="ash">Ash wood-look tile</option>
        <option value="caramel">Caramel wood-look tile</option>
      </select>
+     <div class="stage2Header">STAGE 2 · COMPLETE ROOM FINISHES <span>PAGES 3–8</span></div>
+     <p>Floor tiles, painted/textured/stone feature walls, flat/beamed/suspended ceiling samples, source-aligned flush skirting and door transitions. All comparisons are reversible and not architect/client-approved.</p>
+     <label for="stage2FullRoom">Choose one of the ten plan-listed rooms</label>
+     <select id="stage2FullRoom" aria-label="Room to receive proposed full surface finishes">
+       <option value="G-SITTING">Ground · Sitting Room (35 m²)</option>
+       <option value="G-DINING">Ground · Dining Room (19 m²)</option>
+       <option value="G-KITCHEN">Ground · Kitchen (25 m²)</option>
+       <option value="G-BEDROOM">Ground · Bedroom (20 m²)</option>
+       <option value="G-MAID">Ground · Maid’s Room (11 m²; outline pending)</option>
+       <option value="F-MASTER">First · Master Bedroom (35 m²)</option>
+       <option value="F-BEDROOM-2">First · Bedroom (17 m²)</option>
+       <option value="F-BEDROOM-3">First · Bedroom (13 m²)</option>
+       <option value="F-FAMILY">First · Family Room (19 m²)</option>
+       <option value="F-READING">First · Reading Room (8 m²)</option>
+     </select>
+     <label for="stage2FullPalette">Studio Anne colour direction · pages 3–5</label>
+     <select id="stage2FullPalette">
+       <option value="source">Preserve original source colours</option>
+       <option value="mint">Mint · Ivory · Warm Gold</option>
+       <option value="taupe">Taupe · Ivory · Dark Brown</option>
+       <option value="powder">Powder Blue · Ivory · Charcoal / Light Gold</option>
+     </select>
+     <label for="stage2FullFloor">Flooring tiles · page 7</label>
+     <select id="stage2FullFloor">
+       <option value="source">Original IFC flooring</option>
+       <option value="porcelain">Porcelain / ceramic tile</option>
+       <option value="ash">Ash wood-look tile</option>
+       <option value="caramel">Caramel wood-look tile</option>
+     </select>
+     <label for="stage2FullWall">Wall finish · page 8</label>
+     <select id="stage2FullWall">
+       <option value="source">Original IFC walls</option>
+       <option value="painted">Painted · muted wall tone</option>
+       <option value="textured">Textured plaster</option>
+       <option value="stone-accent">Stone feature wall + painted surfaces</option>
+     </select>
+     <label for="stage2FullCeiling">Ceiling treatment · page 6</label>
+     <select id="stage2FullCeiling">
+       <option value="source">Original source ceiling</option>
+       <option value="flat">Flat, light-toned</option>
+       <option value="beamed">Subtle beamed</option>
+       <option value="suspended">Dropped / suspended accent</option>
+     </select>
+     <label class="designLightLine"><input id="stage2FullSkirting" type="checkbox" /> Flush skirting / 6 mm allowance</label>
+     <div class="stage2Actions">
+       <button id="stage2ApplyRoom" type="button">Apply room preview</button>
+       <button id="stage2ApplyProposal" type="button">Preview full-house concept</button>
+       <button id="stage2ClearRoom" type="button">Restore this room</button>
+       <button id="stage2RestoreAll" type="button">Restore all IFC finishes</button>
+     </div>
+     <p id="stage2FullStatus" role="status" aria-live="polite">Source finishes are displayed. No room-specific changes have been applied.</p>
+     <div class="stage2FinishNote">Architectural boundaries remain provisional. Samples render only where matching source floors, walls or ceiling slabs are found. Missing source elements and pending client design decisions are not fabricated.</div>
+     <div class="stage2LegacyQA hidden" aria-hidden="true">
      <div class="stage2Header">STAGE 2 · ROOM-SPECIFIC FLOOR FINISHES <span>PAGE 7</span></div>
      <p>Use the architect's provisional room traces to compare realistic floor tile pieces on the actual source slabs. Samples are removable, do not affect walking and are not client-approved.</p>
      <label for="stage2Room">Room to preview</label>
@@ -88,6 +142,7 @@
        <option value="caramel">Caramel wood-look tile</option>
      </select>
      <p id="stage2FinishStatus" role="status" aria-live="polite">Choose a room and a finish to compare. No overlay is applied by default.</p>
+     </div>
      <label class="designLightLine"><input id="designAmbientToggle" type="checkbox" checked/> Ambient lights</label>
      <label class="designLightLine"><input id="designTaskToggle" type="checkbox" checked/> Task lights · Kitchen</label>
      <label class="designLightLine"><input id="designAccentToggle" type="checkbox" checked/> Accent lights · Dining & stairs</label>

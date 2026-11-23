@@ -24,6 +24,7 @@
     "test:stage1-plan": "node tests/verify-stage1-plan-crosswalk.mjs",
     "test:stage1-acceptance": "node tests/verify-stage1-acceptance.mjs",
     "test:stage2": "node tests/verify-stage2-room-finishes.mjs",
+    "test:stage2-whole": "node tests/verify-stage2-whole-house.mjs",
     "test:portal": "node tests/verify-source-portal-navigation.mjs",
     "test:plan-circulation": "node tests/verify-plan-circulation.mjs",
     "test:client-open-plan": "node tests/verify-client-stair-kitchen.mjs",

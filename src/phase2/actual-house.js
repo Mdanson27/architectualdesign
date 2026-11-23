@@ -21,6 +21,7 @@ import {applyStudioAnneScheme,STUDIO_ANNE_SCHEMES,applyStudioAnneFloorPreview} f
 import {PLAN_ROUTE_TARGETS,findPhysicalRoute} from './circulation-routes.js';
 import {buildStage1RoomAudit} from './stage1-room-audit.js';
 import {createStage2RoomFloorPreview} from './stage2-room-finishes.js';
+import {createStage2SurfaceSystem} from './stage2-surface-system.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
 
@@ -99,6 +100,7 @@ const state={
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,houseLightsOn:true,designScheme:'source',designSchemeSummary:null,
  floorPreview:'source',floorPreviewSummary:null,stage2Room:'G-DINING',stage2Floor:'source',stage2Finishes:null,
+ stage2SurfaceSystem:null,stage2FullRoom:'G-SITTING',
  lightLayers:{ambient:true,task:true,accent:true},balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -304,6 +306,7 @@ function refreshVisibility(){
  if(state.dining)state.dining.root.visible=state.showFurniture&&
   (state.floor==='ground'||state.floor==='all'||(state.mode==='walk'&&state.footY<1.5));
  if(state.stage2Finishes)state.stage2Finishes.updateVisibility(state.floor,state.mode==='walk');
+ state.stage2SurfaceSystem?.updateVisibility(state.floor,state.mode==='walk',state.sectionEnabled&&state.mode==='orbit');
  if(state.stairSafety?.root)state.stairSafety.root.visible=state.showStairSafety;
  if(state.balconies?.root)state.balconies.root.visible=state.showBalconies;
  if(state.maidAccess?.root)state.maidAccess.root.visible=
@@ -571,6 +574,12 @@ function setupEnhancements(){
  state.floorPreviewSummary=applyStudioAnneFloorPreview(mat.floor,maps,state.floorPreview);
  state.stage2Finishes=createStage2RoomFloorPreview(scene,state.origin,
   (x,z,level)=>sampleGround(x,z,level,.28,.4),maps);
+ state.stage2SurfaceSystem=createStage2SurfaceSystem({
+  scene,origin:state.origin,records:state.meshes,textureMaps:maps,
+  doors:state.doorSystem?.doors??[],
+  floorSampler:(x,z,datum)=>sampleGround(x,z,datum,.30,.48),
+  ceilingSampler:sampleSourceCeiling
+ });
  state.stage1RoomAudit=buildStage1RoomAudit(state.sourceManifest,state.elements,
   state.meshes,state.origin);
  renderStage1Audit();
@@ -910,6 +919,24 @@ function nearby(list,x,y,z,dist=1.8){
    z>=b.min.z-dist && z<=b.max.z+dist &&
    y>=b.min.y-2 && y<=b.max.y+3;
  });
+}
+// Stage 2 ceiling treatments are permitted only under actual IFC slab triangles.
+const upcaster=new THREE.Raycaster();
+const upVector=new THREE.Vector3(0,1,0);
+function sampleSourceCeiling(x,z,datum){
+ const start=datum+2.24,limit=datum+3.64;
+ const candidates=state.meshes.filter(r=>
+  r.category==='slabs'&&isResidenceRecord(r)&&r.mesh.visible&&
+  r.box.min.x<=x+.04&&r.box.max.x>=x-.04&&
+  r.box.min.z<=z+.04&&r.box.max.z>=z-.04&&
+  r.box.max.y>=datum+2.38&&r.box.min.y<=limit).map(r=>r.mesh);
+ if(!candidates.length)return null;
+ upcaster.set(new THREE.Vector3(x,start,z),upVector);
+ upcaster.far=limit-start;
+ const hits=upcaster.intersectObjects(candidates,false);
+ const hit=hits.find(h=>h.point.y>=datum+2.38&&h.point.y<=limit);
+ return hit?{y:hit.point.y,
+  sourceIFCGuid:hit.object.userData?.ifc?.guid??null}:null;
 }
 function sampleGround(x,z,targetY,maxRise=.9,maxFall=1.25){
  const starts=new THREE.Vector3(x,targetY+maxRise,z);
@@ -1363,6 +1390,41 @@ function updateStage2RoomFinish(){
   detail.sampledAreaM2.toFixed(1)+' m² sample · room boundary provisional · Studio Anne p. 7';
  return detail;
 }
+
+function updateFullStage2Controls(roomId=state.stage2FullRoom){
+ const status=$('stage2FullStatus'),system=state.stage2SurfaceSystem;
+ if(!system)return {ready:false};
+ const detail=system.roomStatus(roomId),summary=system.summary();
+ $('stage2FullRoom').value=roomId;
+ $('stage2FullPalette').value=detail.selection.palette;
+ $('stage2FullFloor').value=detail.selection.floor;
+ $('stage2FullWall').value=detail.selection.wall;
+ $('stage2FullCeiling').value=detail.selection.ceiling;
+ $('stage2FullSkirting').checked=detail.selection.skirting;
+ status.textContent=summary.enhancedRooms+' / 10 rooms have proposed finishes · '+
+  summary.tiles+' source-floor-backed tile pieces · '+
+  summary.finishedSourceWallParts+' existing wall segments · '+
+  summary.ceilingPanels+' overhead source-slab panels · '+
+  summary.skirtingPieces+' source-wall skirting pieces · '+
+  'No client approval is implied.';
+ return {...detail,summary};
+}
+function applyFullStage2Room(){
+ const roomId=$('stage2FullRoom').value;
+ state.stage2FullRoom=roomId;
+ const detail=state.stage2SurfaceSystem.setRoom(roomId,{
+  palette:$('stage2FullPalette').value,
+  floor:$('stage2FullFloor').value,
+  wall:$('stage2FullWall').value,
+  ceiling:$('stage2FullCeiling').value,
+  skirting:$('stage2FullSkirting').checked
+ });
+ state.stage2SurfaceSystem.updateVisibility(state.floor,state.mode==='walk',
+  state.sectionEnabled&&state.mode==='orbit');
+ updateFullStage2Controls(roomId);
+ return detail;
+}
+
 function toggleStudioAnneLayer(layer,enabled){
  state.lightLayers[layer]=enabled;
  state.lightingSystem?.update({layers:state.lightLayers});
@@ -1467,10 +1529,50 @@ $('stage1AuditBtn').addEventListener('click',()=>{
 $('designStudioBtn').addEventListener('click',()=>{
  const panel=$('designStudioPanel'),open=!panel.classList.toggle('hidden');
  $('designStudioBtn').setAttribute('aria-expanded',String(open));
+ $('stage2MobileBtn').setAttribute('aria-expanded',String(open));
+ document.querySelector('.sidebar').classList.toggle('stage2Expanded',
+  open&&window.innerWidth<=680);
 });
+$('stage2MobileBtn').addEventListener('click',()=>$('designStudioBtn').click());
 $('designScheme').addEventListener('change',e=>{
  const result=updateStudioAnnePreview(e.target.value);
  toast('Studio Anne · '+result.label+' · comparison only');
+});
+$('stage2FullRoom').addEventListener('change',e=>{
+ state.stage2FullRoom=e.target.value;
+ updateFullStage2Controls(e.target.value);
+});
+$('stage2ApplyRoom').addEventListener('click',()=>{
+ const result=applyFullStage2Room();
+ toast('Stage 2 · '+result.enhancedRooms+' rooms in proposed finish review · original IFC recoverable');
+});
+$('stage2ApplyProposal').addEventListener('click',()=>{
+ const result=state.stage2SurfaceSystem.applyProposal();
+ state.stage2SurfaceSystem.updateVisibility(state.floor,state.mode==='walk',
+  state.sectionEnabled&&state.mode==='orbit');
+ updateFullStage2Controls();
+ toast('Studio Anne draft · '+result.enhancedRooms+' rooms · proposal only');
+});
+$('stage2ClearRoom').addEventListener('click',()=>{
+ state.stage2SurfaceSystem.setRoom(state.stage2FullRoom,{
+  floor:'source',wall:'source',ceiling:'source',palette:'source',skirting:false
+ });
+ state.stage2SurfaceSystem.updateVisibility(state.floor,state.mode==='walk',
+  state.sectionEnabled&&state.mode==='orbit');
+ updateFullStage2Controls();
+ toast('Stage 2 · chosen room restored to IFC presentation');
+});
+$('stage2RestoreAll').addEventListener('click',()=>{
+ state.stage2SurfaceSystem.restoreAll();
+ state.stage2Finishes?.choose('G-DINING','source');
+ $('stage2Room').value='G-DINING';$('stage2Floor').value='source';
+ state.stage2Room='G-DINING';state.stage2Floor='source';
+ $('designScheme').value='source';$('designFloor').value='source';
+ state.designScheme='source';state.floorPreview='source';updateStudioAnnePreview();
+ state.stage2SurfaceSystem.updateVisibility(state.floor,state.mode==='walk',
+  state.sectionEnabled&&state.mode==='orbit');
+ updateFullStage2Controls();
+ toast('All room and whole-house material samples removed · IFC preview restored');
 });
 $('stage2Room').addEventListener('change',e=>{
  state.stage2Room=e.target.value;updateStage2RoomFinish();
@@ -1983,6 +2085,28 @@ if(isLocalQA){
   lightingStatus:()=>state.lightingSystem?.status()??null,
   stage1RoomAudit:()=>state.stage1RoomAudit,
   stage2Finishes:()=>state.stage2Finishes?.status()??null,
+  stage2SurfaceStatus:()=>state.stage2SurfaceSystem?.summary()??null,
+  stage2SurfaceRoom:(id)=>state.stage2SurfaceSystem?.roomStatus(id)??null,
+  stage2ApplyWholeHouse:()=>{
+   const result=state.stage2SurfaceSystem?.applyProposal();
+   state.stage2SurfaceSystem?.updateVisibility(state.floor,state.mode==='walk',
+    state.sectionEnabled&&state.mode==='orbit');
+   updateFullStage2Controls();
+   return result;
+  },
+  stage2RestoreWholeHouse:()=>{
+   const result=state.stage2SurfaceSystem?.restoreAll();
+   updateFullStage2Controls();
+   return result;
+  },
+  stage2ApplyOneRoom:(id,spec)=>{
+   state.stage2FullRoom=id;
+   const result=state.stage2SurfaceSystem?.setRoom(id,spec);
+   state.stage2SurfaceSystem?.updateVisibility(state.floor,state.mode==='walk',
+    state.sectionEnabled&&state.mode==='orbit');
+   updateFullStage2Controls(id);
+   return result;
+  },
   selectStage2RoomFinish:(room='G-DINING',style='source')=>{
    state.stage2Room=room;state.stage2Floor=style;
    $('stage2Room').value=room;$('stage2Floor').value=style;
