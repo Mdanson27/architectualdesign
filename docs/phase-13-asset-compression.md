@@ -1,0 +1,9 @@
+# Phase 13 — Lossless asset delivery
+
+Studio Anne's design brief pp. 3–8 defines mint, taupe and powder-blue palettes, ash/caramel wood-look tiles, porcelain, stone cladding and textured finishes. Pages 9–12 specify layered lighting. Compression must not erase grain, finish colors, lighting, or source architectural details.
+
+This first compression implementation creates content-addressed gzip sidecars for existing GLBs at build time, preserving the exact original bytes and keeping originals available for fallback. It uses the browser's native DecompressionStream with bounded output length, SHA-256 verification on secure origins, original GLTFLoader parsing and automatic fallback. It preserves Phase 11 loading concurrency and Phase 12 graphics adaptation. The published manifest records original/packed bytes and hashes; the repository source manifest and source GLB files are not rewritten. Gzip sidecars are optional in Vite development.
+
+Release gates: at least 20% aggregate encoded asset payload savings; exact byte equality of every decompressed layer and original fallback; controlled fallback tests; browser delivery for all 76 layers; unchanged navigation/door/architecture and reference screenshots.
+
+This is explicit file-payload compression, not a measurement of HTTP wire transfer (the host may already apply compression), GPU memory or physical FPS. Publishing both variants increases deployment storage. Current main textures are generated in CanvasTexture at runtime, not external texture image downloads; do not claim KTX2, atlas or GPU texture compression savings. Meshopt, KTX2/Basis and authored furniture LOD need separately prepared assets and codec-compatible validation. Extend those in the professional asset pipeline rather than silently altering approved source geometry. Full room-level streaming remains pending.

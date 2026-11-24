@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build",
+    "build": "vite build && node scripts/phase13-compress-assets.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "test:site": "node tests/verify-site-context.mjs",
     "test:windows": "node tests/verify-glazing.mjs",
@@ -42,7 +42,8 @@
     "test:stage9": "node tests/verify-stage9-release.mjs",
     "test:phase10": "node tests/verify-phase10-optimizer.mjs",
     "test:phase11": "node tests/verify-phase11-residency.mjs",
-    "test:phase12": "node tests/verify-phase12-adaptive-graphics.mjs"
+    "test:phase12": "node tests/verify-phase12-adaptive-graphics.mjs",
+    "test:phase13": "node tests/verify-phase13-compression.mjs"
   },
   "dependencies": {
     "three": "^0.181.0"

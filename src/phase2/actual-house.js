@@ -31,6 +31,7 @@ import {createStage8ExteriorLandscape} from './stage8-exterior-landscape.js';
 import {activateIntegratedHouseDesign} from './production-design.js';
 import {productionPixelRatio} from './stage9-quality-policy.js';
 import {createAdaptiveGraphics,graphicsPixelRatio} from './phase12-adaptive-graphics.js';
+import {createCompressedAssetLoader} from './phase13-compressed-assets.js';
 import {createPhase10Renderer,createPhase10SpatialIndex} from './phase10-render-optimizer.js';
 import {createPhase11Residency,loadLayersInOrder,loadingConcurrency} from './phase11-residency.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
@@ -107,6 +108,7 @@ const raycaster=new THREE.Raycaster();
 const downcaster=new THREE.Raycaster();
 const clock=new THREE.Clock();
 const loader=new GLTFLoader();
+const phase13Assets=createCompressedAssetLoader({loader,assetURL});
 const keys={};
 const world=new THREE.Vector3();
 const state={
@@ -439,7 +441,7 @@ function annotateMesh(mesh,layer){
  }
 }
 async function addSourceLayer(layer,gltf){
- gltf??=await loader.loadAsync(assetURL(layer.glb));
+ gltf??=await phase13Assets.load(layer);
  const group=gltf.scene;
  group.name=layer.name;
  sourceRoot.add(group);
@@ -891,7 +893,7 @@ async function syncSourceLayers(initialManifest){
  }
  phase11Loading=await loadLayersInOrder(newEntries,{
   concurrency:loadingConcurrency(navigator.deviceMemory),
-  load:layer=>loader.loadAsync(assetURL(layer.glb)),
+  load:layer=>phase13Assets.load(layer),
   attach:async(layer,gltf)=>{
    const elements=await addSourceLayer(layer,gltf);
    // Hold introduction until all structural and furnishing files have loaded.
@@ -2266,9 +2268,10 @@ if(isLocalQA){
    phase12ReferenceCapture=true;phase12Graphics.suspend();syncViewport();
    return result;
   },
+  phase13Status:()=>({loader:phase13Assets.status(),manifest:state.sourceManifest?.phase13??null,sourceLayers:state.layers.size}),
   stage9PerformanceStatus:()=>{
    const resources=performance.getEntriesByType('resource');
-   const glb=resources.filter(e=>/\.glb(?:\?|$)/i.test(e.name));
+   const glb=resources.filter(e=>/\.glb(?:\.[a-f0-9]{16}\.gz)?(?:\?|$)/i.test(e.name));
    const nav=performance.getEntriesByType('navigation')[0];
    return {
     adaptiveGraphics:phase12Graphics.status(),

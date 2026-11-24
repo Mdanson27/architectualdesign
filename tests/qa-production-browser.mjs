@@ -8,7 +8,7 @@ import {STAGE9_QA_POLICY,summarizeStage9Engineering} from '../src/phase2/stage9-
 const root=path.resolve('dist');
 const port=5188,debugPort=22000+(process.pid%15000);
 const contentTypes={'.html':'text/html','.js':'application/javascript','.json':'application/json',
- '.css':'text/css','.glb':'model/gltf-binary','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'};
+ '.css':'text/css','.gz':'application/gzip','.glb':'model/gltf-binary','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'};
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const server=http.createServer((req,res)=>{
  try{
@@ -738,6 +738,14 @@ try{
    throw Error('Phase 12 adaptive real-canvas parity failed: '+JSON.stringify(adaptive));
   console.log('PHASE12_ADAPTIVE_REAL_CANVAS',JSON.stringify(adaptive));
   report.phase12=adaptive;
+  const compressed=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase13Status())"));
+  if(!compressed?.loader.automatic||!compressed.manifest?.lossless||compressed.sourceLayers!==76||
+     compressed.loader.compressedLayers!==compressed.manifest.compressedLayers||
+     compressed.loader.compressedLayers+compressed.loader.originalLayers!==76||
+     compressed.loader.fallbacks!==0||compressed.loader.savingsPercent<20)
+   throw Error('Phase 13 real-browser compressed delivery failed: '+JSON.stringify(compressed));
+  console.log('PHASE13_BROWSER_COMPRESSED_DELIVERY',JSON.stringify(compressed));
+  report.phase13=compressed;
  const desktopPerf=JSON.parse(await rawMetrics());
  if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
     !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||

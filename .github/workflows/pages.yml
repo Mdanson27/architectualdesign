@@ -2,7 +2,7 @@ name: Deploy AutoMinds Spaces to GitHub Pages
 
 on:
   push:
-    branches: [main, phase7-architecture-circulation-balconies-lighting, stages-a-d-open-plan-maid-access, fix-stair-window-open-wall, fix-open-plan-divider-and-kitchen-envelope-20261121, fix-entire-ground-floor-open-plan-partitions-20261121, fix-site-gate-driveway-layout-20261121, fix-opposite-gate-expanded-parking-open-plan-20261121, fix-approved-right-fence-gate-green-compound-20261121, fix-drive-parking-straight-edge-20261121, studio-anne-design-brief-foundation-20261121, stage1-source-room-audit-20261122, stage1-plan-crosswalk-20261122, stage1-acceptance-gates-20261122, stage2-room-finish-preview-20261122, stage2-complete-material-surfaces-20261123, stage3-kitchen-cabinetry-20261123, production-integrated-design-20261123, stage4-integrated-living-dining-20261123, stage5-production-bedrooms-study-20261123, stage6-production-wet-areas-20261123, stage7-production-stairs-balconies-lighting-20261123, stage8-exterior-landscape-drive-parking-20261124, stage9-final-qa-performance-client-acceptance-20261124, phase10-rendering-engine-20261124, phase11-intelligent-loading-20261124, phase12-adaptive-graphics-20261124]
+    branches: [main, phase7-architecture-circulation-balconies-lighting, stages-a-d-open-plan-maid-access, fix-stair-window-open-wall, fix-open-plan-divider-and-kitchen-envelope-20261121, fix-entire-ground-floor-open-plan-partitions-20261121, fix-site-gate-driveway-layout-20261121, fix-opposite-gate-expanded-parking-open-plan-20261121, fix-approved-right-fence-gate-green-compound-20261121, fix-drive-parking-straight-edge-20261121, studio-anne-design-brief-foundation-20261121, stage1-source-room-audit-20261122, stage1-plan-crosswalk-20261122, stage1-acceptance-gates-20261122, stage2-room-finish-preview-20261122, stage2-complete-material-surfaces-20261123, stage3-kitchen-cabinetry-20261123, production-integrated-design-20261123, stage4-integrated-living-dining-20261123, stage5-production-bedrooms-study-20261123, stage6-production-wet-areas-20261123, stage7-production-stairs-balconies-lighting-20261123, stage8-exterior-landscape-drive-parking-20261124, stage9-final-qa-performance-client-acceptance-20261124, phase10-rendering-engine-20261124, phase11-intelligent-loading-20261124, phase12-adaptive-graphics-20261124, phase13-asset-compression-20261124]
   workflow_dispatch:
 
 permissions:
@@ -97,6 +97,8 @@ jobs:
         env:
           GITHUB_PAGES: 'true'
           VITE_PUBLIC_PREVIEW: 'true'
+      - name: Verify Phase 13 lossless compression and original fallback
+        run: npm run test:phase13
       - name: Verify source-supported balcony floor seams
         run: npm run test:thresholds
       - name: Verify IFC-preserving room circulation furniture
