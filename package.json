@@ -37,7 +37,8 @@
     "test:stage4": "node tests/verify-stage4-living-dining.mjs",
     "test:stage5": "node tests/verify-stage5-bedrooms-study.mjs",
     "test:stage6": "node tests/verify-stage6-wet-areas.mjs",
-    "test:stage7-production": "node tests/verify-stage7-production.mjs"
+    "test:stage7-production": "node tests/verify-stage7-production.mjs",
+    "test:stage8": "node tests/verify-stage8-exterior-landscape.mjs"
   },
   "dependencies": {
     "three": "^0.181.0"

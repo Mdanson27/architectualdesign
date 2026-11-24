@@ -45,6 +45,17 @@ export function createSiteWalkSupport(site,origin){
   const p=obj.getWorldPosition(new THREE.Vector3());
   blockers.push({name:'TREE_TRUNK',circle:[p.x,p.z,.27]});
  });
+ // Stage 8 landscape bollards and low garden clusters are tangible
+ // obstacles. Their source-location footprints are registered BEFORE the
+ // site walker snapshots its collision records; no invented walls, fake
+ // drive slabs or giant shrub collision boxes.
+ root.traverse(obj=>{
+  if(obj.userData?.stage8OutdoorObstacle!==true)return;
+  const radius=obj.userData.collisionRadiusMetres;
+  if(!Number.isFinite(radius)||radius<.05||radius>.6)return;
+  const p=obj.getWorldPosition(new THREE.Vector3());
+  blockers.push({name:obj.name,circle:[p.x,p.z,radius]});
+ });
  function blockAt(x,z,y=siteY){
   for(const record of blockers){
    if(record.circle){

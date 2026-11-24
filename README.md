@@ -42,3 +42,7 @@ Studio Anne bathroom reference pages 37–40 are translated into automatically l
 ### Stage 7 — Staircases, source balconies and advanced lighting (production integrated)
 
 The existing two-flight source stairs, middle landing, verified three balcony slabs/doors and actual S2 glazing are preserved. Reversible Stage 7 design refinements now appear automatically on initial house load: timber-look tread nosings, visible 2900K step-light details, source-limited balcony weather-treated deck tiles including the family wraparound return, balcony seating/planting and discreet 2900K under-handrail LED accents. Balcony furniture joins walk collisions; no new structural flights, guards or walls are fabricated. See `docs/stage-07-stair-balcony-lighting.md` and `npm run test:stage7-production`.
+
+### Stage 8 — Exterior landscaping, compound, parking and night lighting
+
+Stage 8 is now automatically installed in the **existing** production site, without a preview/activation button. Approved palm-side 4 m sliding gate, straight 4.6 m driveway, broad court with three parking bays, majority-green lawn and three original palms remain untouched. The site receives subtle mowing texture, proposed perimeter tropical plant clusters, small parking-end detail, decorative gravel edge, warm 2900 K bollards and gate/palm uplights. The physical exterior walker now registers new shrub and bollard obstacles. **No invented civil drainage, new gates, walls, parking slabs or shade structures.** Review `docs/stage-08-exterior-landscaping.md` and run `npm run test:stage8`.

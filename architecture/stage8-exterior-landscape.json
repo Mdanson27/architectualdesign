@@ -1,0 +1,60 @@
+{
+  "schema": "autominds.spaces.stage8.exterior.v1",
+  "updatedDate": "2026-11-24",
+  "status": "production-integrated-exterior-visual-design-pending-survey-and-client-signoff",
+  "source": [
+    "Home(4).pdf S1 01 Site Plan, S2 elevations",
+    "Detailed - Emmanuel’s design brief (2).pdf pp.42–45",
+    "Client-approved site layout corrections 21 Nov 2026"
+  ],
+  "production": {
+    "oneCompleteHouse": true,
+    "defaultVisible": true,
+    "visitorMustEnableStage": false,
+    "stage9AuditPending": true
+  },
+  "originalSitePreserved": {
+    "siteWidthMetres": 48.5,
+    "siteDepthMetres": 25,
+    "gateWidthMetres": 4,
+    "gateBoundary": "palm-tree-side long fence z=top",
+    "gatePosition": "as aligned by client-approved 21 Nov model; no moved gate",
+    "drivewayWidthMetres": 4.6,
+    "straightDriveway": true,
+    "straightCourtRightEdge": true,
+    "parkingBays": 3,
+    "minBayWidthMetres": 2.5,
+    "fullCourtConnected": true,
+    "threeOriginalPalmsRetained": true,
+    "parkingAndDrivewayPavingUnderHalfOfOutdoorArea": true,
+    "majorityOfOutdoorAreaLawn": true,
+    "siteRegistrationSurveyCertified": false
+  },
+  "features": {
+    "shrubClusters": "Low proposed tropical planting on periphery lawn, not the access road, paving or building footprints",
+    "lawn": "Subtle mowing/tonal bands that preserve exposed ground turf",
+    "parking": "Three flush bay end markings; existing 3 bays, entire court and connected straight driveway unchanged",
+    "edges": "Nonstructural permeable-look decorative gravel borders (NOT designed drainage)",
+    "nightLighting": "2900 K conceptual accent lighting along lawn edge; two existing gate pillars and three original palms illuminated",
+    "walking": "Physical bollard and garden collision footprints registered before creation of exterior walker",
+    "defaultVisibility": "No Preview button; part of live site with existing floor/site modes",
+    "clientRoadConnectionsUnchanged": true
+  },
+  "movedApprovedGate": false,
+  "addedBoundaryWalls": 0,
+  "addedNewParkingSlabs": 0,
+  "addedDriveways": 0,
+  "addedShadeCanopy": false,
+  "originalIFCModified": false,
+  "addedUndergroundDrainage": false,
+  "pending": [
+    "Surveyed plot boundary and IFC house-to-boundary registration",
+    "Civil engineering grading slopes, stormwater flow, drains and legal discharge",
+    "Ground permeability testing, full paving/slip rating and weathering selection",
+    "Site-verified vehicle turning, three 2.5m × 5m minimum clear stalls and accessible pedestrian routes",
+    "Landscape species and non-invasive root confirmation appropriate to Uganda, maintenance and irrigation",
+    "Underground electrical routes, waterproof IP-rated driver specifications and lighting circuit approval",
+    "Door-to-path walking clearances and final client acceptance",
+    "Actual site photography, final garden plant schedule and exterior night render review"
+  ]
+}
