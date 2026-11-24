@@ -21,7 +21,7 @@ function eligible(o){
   !o.children.length&&o.visible&&g?.isBufferGeometry&&
   m?.isMeshStandardMaterial&&!m.transparent&&m.opacity===1&&
   m.alphaTest===0&&!m.wireframe&&!m.displacementMap&&
-  !m.clippingPlanes?.length&&!o.morphTargetInfluences&&
+  !m.clippingPlanes?.length&&!m.vertexColors&&!o.morphTargetInfluences&&
   !Object.keys(g.morphAttributes??{}).length&&
   g.drawRange.start===0&&
   g.drawRange.count>=(g.index?.count??g.attributes.position?.count??Infinity)&&
@@ -47,6 +47,13 @@ function geometryEqual(a,b){
  if(a.index)arrays.push([a.index.array,b.index.array]);
  return arrays.every(([x,y])=>x.length===y.length&&x.every((v,i)=>v===y[i]));
 }
+function instanceSafe(matrix){
+ const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3();
+ a.setFromMatrixColumn(matrix,0).normalize();b.setFromMatrixColumn(matrix,1).normalize();
+ c.setFromMatrixColumn(matrix,2).normalize();
+ return matrix.determinant()>0&&Math.abs(a.dot(b))<1e-5&&
+  Math.abs(a.dot(c))<1e-5&&Math.abs(b.dot(c))<1e-5;
+}
 function shapeKey(g){
  // Built-in primitive parameters are a cheap grouping hint ONLY: verify
  // exact buffers before sharing. Imported IFC buffers use reference identity.
@@ -70,6 +77,7 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
   if(objects.length<2)return;
   const first=objects[0],inverse=root.matrixWorld.clone().invert();
   const transforms=objects.map(o=>inverse.clone().multiply(o.matrixWorld));
+  if(instanced&&!transforms.every(instanceSafe))return;
   const estimate=instanced?objects.length*64:objects.reduce((n,o)=>n+bytes(o.geometry),0);
   if(stats.extraBytes+estimate>budget.maxExtraBytes){stats.skippedBudget+=objects.length;return;}
   let batch;
@@ -96,7 +104,7 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
   const members=objects.map(o=>({
    o,parent:o.parent,geometry:o.geometry,material:o.material,
    world:o.matrixWorld.clone(),flags:signature(o),
-   attributeVersions:Object.values(o.geometry.attributes).map(a=>[a,a.version]),
+   attributeVersions:Object.entries(o.geometry.attributes).map(([k,a])=>[k,a,a.version]),
    index:o.geometry.index,indexVersion:o.geometry.index?.version
   }));
   batches.push({root,batch,members,instanced});
@@ -151,9 +159,11 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
    o.matrixWorld.equals(m.world)&&signature(o)===m.flags&&
    visible(o,root)&&o.material.visible&&g.index===m.index&&
    g.index?.version===m.indexVersion&&
-   Object.values(g.attributes).length===m.attributeVersions.length&&
-   m.attributeVersions.every(([a,v])=>a.version===v&&Object.values(g.attributes).includes(a))&&
-   eligible(o);
+   m.attributeVersions.every(([k,a,v])=>a.version===v&&g.attributes[k]===a)&&
+   !o.children.length&&!o.morphTargetInfluences&&
+   g.drawRange.start===0&&g.drawRange.count>=(g.index?.count??g.attributes.position.count)&&
+   o.onBeforeRender===THREE.Object3D.prototype.onBeforeRender&&
+   o.onAfterRender===THREE.Object3D.prototype.onAfterRender;
  }
  function render(renderer,camera,{optimized=true}={}){
   if(disposed||!optimized){renderer.render(scene,camera);return;}
@@ -164,7 +174,11 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
   stats.lastActiveBatches=0;stats.lastReplacedDraws=0;stats.lastSavedSubmissions=0;
   try{
    for(const b of batches){
-    if(!b.root.visible||!b.members.every(m=>valid(m,b.root)))continue;
+    const m=b.batch.material;
+    if(!b.root.visible||m.transparent||m.opacity!==1||m.alphaTest!==0||
+     m.wireframe||m.displacementMap||m.clippingPlanes?.length||
+     m.onBeforeCompile!==THREE.Material.prototype.onBeforeCompile||
+     !b.members.every(member=>valid(member,b.root)))continue;
     b.batch.visible=true;active.push(b);
     for(const m of b.members)m.o.visible=false;
     stats.lastActiveBatches++;stats.lastReplacedDraws+=b.members.length;
@@ -213,7 +227,7 @@ export function createPhase10SpatialIndex(records,cellSize=2){
     for(const r of cells.get(key(i,j))??[])found.add(r);
   queries++;examined+=found.size;fullScanEquivalent+=records.length;
   return [...found].sort((a,b)=>ord.get(a)-ord.get(b)).filter(r=>{
-   if(!visibleRecord(r))return false;
+   if(!r.box||!visibleRecord(r))return false;
    const b=r.box;
    return x>=b.min.x-dist&&x<=b.max.x+dist&&z>=b.min.z-dist&&
     z<=b.max.z+dist&&y>=b.min.y-2&&y<=b.max.y+3;
