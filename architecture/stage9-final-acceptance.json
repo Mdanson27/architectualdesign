@@ -1,0 +1,107 @@
+{
+  "schema": "autominds.spaces.stage9.final-acceptance.v1",
+  "date": "2026-11-24",
+  "status": "engineering-QA-in-progress-client-signoff-pending",
+  "project": {
+    "repository": "Mdanson27/architectualdesign",
+    "branch": "main",
+    "entrypoint": "actual-house.html",
+    "sourceBaseCommit": "9653b0fdc54a66e2d0516a2e5b2f47eb18725ca6"
+  },
+  "publicReleasePolicy": {
+    "automaticDesignStages": 8,
+    "fullHouseSingleScene": true,
+    "manualActivationOfImplementedDesignRequired": false,
+    "architecturalSourceGeometryPreserved": true,
+    "releaseBlockedByFailedTests": true
+  },
+  "engineeringScope": {
+    "sourceLayersExpected": 76,
+    "sourceElementsIndexed": 2575,
+    "missingIfcBatches": 3,
+    "activeDoors": 26,
+    "connectedFloorRoutes": 5,
+    "restoredBalconies": 3,
+    "sourceStairFlights": 2,
+    "exteriorGateMetres": 4,
+    "straightDrivewayMetres": 4.6,
+    "parkingBays": 3,
+    "majorityLawn": true
+  },
+  "verification": {
+    "unitAndSourceTests": "CI required",
+    "headlessDesktopWalkthrough": "CI required",
+    "allDoorAndRouteTests": "CI required",
+    "defaultVisibleStages": "CI required",
+    "daylightAndNightLighting": "CI required",
+    "screenshotEvidence": "CI artifact, desktop and mobile images",
+    "graphicsMetrics": "QA report, device dependent, no invented FPS",
+    "glbSizeBudget": "75 MiB cumulative, 10 MiB individual",
+    "mobileDpr": "1.0 capped for viewport under 760 CSS pixels",
+    "desktopDpr": "1.3 capped",
+    "reviewDecision": "CI checks can mark ready for client review, never client approved"
+  },
+  "visualReview": [
+    {
+      "id": "desktop-whole-house-day",
+      "reviewedBy": null,
+      "approved": false
+    },
+    {
+      "id": "desktop-whole-house-night",
+      "reviewedBy": null,
+      "approved": false
+    },
+    {
+      "id": "desktop-ground-floor",
+      "reviewedBy": null,
+      "approved": false
+    },
+    {
+      "id": "desktop-first-floor",
+      "reviewedBy": null,
+      "approved": false
+    },
+    {
+      "id": "mobile-house-day",
+      "reviewedBy": null,
+      "approved": false
+    },
+    {
+      "id": "mobile-navigation-open",
+      "reviewedBy": null,
+      "approved": false
+    }
+  ],
+  "clientAcceptance": {
+    "status": "pending",
+    "signedBy": null,
+    "signedDate": null,
+    "signature": null,
+    "remarks": null
+  },
+  "architectApproval": {
+    "status": "pending",
+    "signedBy": null,
+    "signedDate": null,
+    "signature": null
+  },
+  "engineeringReadiness": {
+    "status": "pending-CI",
+    "releaseCommit": null,
+    "verifiedDate": null
+  },
+  "constructionCertified": false,
+  "outstandingGates": [
+    "Stage 1 measured room polygons, verified IFC room GUID crosswalk, and 10-room architectural acceptance",
+    "Resolve three failed IFC proxy conversions and the maid's room area mismatch",
+    "Resolve source S1 walk-in closet versus legacy master-bathroom labels and certify bathroom fixtures",
+    "Approve final Studio Anne palette, actual cabinetry, furniture models, exact finishes and construction measurements",
+    "Structural sign-off of staircase/balcony glass guards, anchoring and site railings",
+    "Waterproofing, bathroom plumbing, sanitary drainage, ventilation, balcony and site stormwater survey",
+    "Electrical/IP ratings, LED transformers, external wiring and supply points",
+    "Confirm final surveyed property dimensions, gate/parking turning radii, landscaping species and driveway falls",
+    "Inspect desktop and mobile visual screenshot set against reference images with the client",
+    "Explicit written client approval and architect sign-off of final design; no proxy signature"
+  ]
+}
