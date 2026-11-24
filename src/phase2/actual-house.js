@@ -64,6 +64,8 @@ const refs = [
 const renderer = new THREE.WebGLRenderer({
  antialias:true,
  powerPreference:'high-performance',
+ // Allow deterministic original WebGL canvas captures in local QA only.
+ preserveDrawingBuffer:qaPage,
  alpha:false
 });
 renderer.setPixelRatio(productionPixelRatio(window.devicePixelRatio||1,window.innerWidth));
@@ -2134,6 +2136,13 @@ if(isLocalQA){
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
     openingRegistry:state.doorApertureAudit?.summary??null,
     blockedCuts:state.doorApertureAudit?.occlusionDetails??[]}),
+  captureStage9CanvasFrame:()=>{
+   if(!state.initialReady)return null;
+   // Rendering and serialization in the SAME JS task avoids blank WebGL
+   // screenshots on Chrome's SwiftShader software renderer.
+   renderer.render(scene,camera);
+   return renderer.domElement.toDataURL('image/png');
+  },
   stage9PerformanceStatus:()=>{
    const resources=performance.getEntriesByType('resource');
    const glb=resources.filter(e=>/\.glb(?:\?|$)/i.test(e.name));
