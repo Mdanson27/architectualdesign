@@ -728,6 +728,16 @@ try{
    throw Error('Phase 11 real WebGL eviction/re-upload parity failed: '+JSON.stringify(roundTrip));
   console.log('PHASE11_WEBGL_ROUND_TRIP',JSON.stringify(roundTrip));
   report.phase11GpuRoundTrip=roundTrip;
+  const adaptive=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase12AdaptiveAudit())"));
+  if(!adaptive?.active.automatic||!adaptive.sourcePreserved||!adaptive.webglResponsive||adaptive.sourceLayers!==76||
+     adaptive.high.profile!=='high'||adaptive.low.profile!=='lightweight'||adaptive.recovered.profile!=='high'||
+     !(adaptive.low.dpr<adaptive.high.dpr)||!(adaptive.low.width<adaptive.high.width)||
+     adaptive.recovered.width!==adaptive.high.width||adaptive.recovered.height!==adaptive.high.height||
+     adaptive.low.calls!==adaptive.high.calls||adaptive.low.triangles!==adaptive.high.triangles||
+     adaptive.recovered.calls!==adaptive.high.calls||adaptive.recovered.triangles!==adaptive.high.triangles)
+   throw Error('Phase 12 adaptive real-canvas parity failed: '+JSON.stringify(adaptive));
+  console.log('PHASE12_ADAPTIVE_REAL_CANVAS',JSON.stringify(adaptive));
+  report.phase12=adaptive;
  const desktopPerf=JSON.parse(await rawMetrics());
  if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
     !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||

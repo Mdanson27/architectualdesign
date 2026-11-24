@@ -79,7 +79,8 @@ assert(glbBytes<=policy.glbBudgetBytes,
 assert(largest<=policy.largestGlbBudgetBytes,
  'Oversized individual GLB: '+largest);
 const build=get('src/phase2/actual-house.js');
-assert(build.includes('productionPixelRatio(window.devicePixelRatio||1,window.innerWidth)'));
+assert(build.includes('phase12Graphics.pixelRatio(window.devicePixelRatio||1,window.innerWidth,window.innerHeight)'));
+assert(build.includes('productionPixelRatio(devicePixelRatio||1,width)'));
 assert(build.includes('if(document.hidden)return;'));
 assert(build.includes('if(!publicPreview||qaPage)'));
 assert(build.includes('stage9PerformanceStatus:()=>'));
