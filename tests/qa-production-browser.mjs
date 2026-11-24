@@ -261,6 +261,49 @@ try{
    originalGuardsRetained:true,sourceIFCUnmodified:true,
    userMustEnableStage:false
  }));
+ const stage8Initial=JSON.parse(await evaluate(
+  "JSON.stringify(window.__AutoMindsQA.stage8ExteriorLandscapeStatus())"));
+ if(!stage8Initial?.productionIntegrated||stage8Initial.previewActivationRequired||
+    !stage8Initial.sourceExteriorSitePreserved||
+    !stage8Initial.sourceIFCGeometryPreserved||
+    !stage8Initial.originalGateOnPalmSideFence||
+    !stage8Initial.straightDrivewayToCourtPreserved||
+    !stage8Initial.seamlessDrivewayEdgePreserved||
+    stage8Initial.originalGateWidthMetres!==4||
+    stage8Initial.originalMarkedParkingBays!==3||
+    stage8Initial.preservedPalms!==3||
+    stage8Initial.lawnPercentage<=50||
+    stage8Initial.builtNewBoundaryWalls!==0||
+    stage8Initial.movedOriginalGate||
+    stage8Initial.addedParkingShadeCanopy||
+    stage8Initial.addedSurfaceDrainagePipework||
+    stage8Initial.shrubClusters<5||
+    stage8Initial.pathwayBollards<3||
+    stage8Initial.palmUplights!==3||
+    stage8Initial.gatePillarLights!==2||
+    stage8Initial.parkingMarkers!==3||
+    stage8Initial.lightsCurrentlyOn<8||
+    !integratedStart.stage8ExteriorIntegrated||
+    integratedStart.currentStage8LandscapePlants<5||
+    integratedStart.currentStage8Lights<8)
+  throw Error('Stage 8 must preserve the corrected site and load outdoor landscape and lights by default: '+
+   JSON.stringify({stage8Initial,integratedStart}));
+ console.log('STAGE8_EXTERIOR_PRODUCTION_AUTO_VISIBLE',JSON.stringify({
+  shrubClusters:stage8Initial.shrubClusters,
+  shrubs:stage8Initial.shrubStems,
+  landscapeBollards:stage8Initial.pathwayBollards,
+  palmUplights:stage8Initial.palmUplights,
+  originalGatePillarLamps:stage8Initial.gatePillarLights,
+  flushBayMarkers:stage8Initial.parkingMarkers,
+  decorativeGravelStrips:stage8Initial.decorativeGravelStrips,
+  lawnPercentage:stage8Initial.lawnPercentage,
+  pavedPercentage:stage8Initial.pavedPercentage,
+  walkingObstacles:stage8Initial.addedWalkBlockers,
+  approvedGateStillOnPalmSide:true,
+  originalDrivewayStillStraight:true,
+  zeroStageActivationClicks:true,
+  sourceIFCUnchanged:true
+ }));
  const stage2Controls=JSON.parse(await evaluate(
   "JSON.stringify((()=>({roomCount:document.querySelector('#stage2FullRoom').options.length,"+
   "hasFloor:!!document.querySelector('#stage2FullFloor'),"+
