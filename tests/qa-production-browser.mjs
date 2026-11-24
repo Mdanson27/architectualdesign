@@ -3,6 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
 import {spawn} from 'node:child_process';
+import {STAGE9_QA_POLICY,summarizeStage9Engineering} from '../src/phase2/stage9-quality-policy.js';
 
 const root=path.resolve('dist');
 const port=5188,debugPort=22000+(process.pid%15000);
@@ -48,6 +49,15 @@ async function evaluate(expr){
  if(msg.result?.exceptionDetails)throw Error('Browser evaluation: '+msg.result.exceptionDetails.text);
  return msg.result?.result?.value;
 }
+async function captureCanvasPng(){
+ const data=await evaluate('window.__AutoMindsQA.captureStage9CanvasFrame()');
+ if(typeof data!=='string'||!data.startsWith('data:image/png;base64,'))
+  throw Error('Browser did not return PNG WebGL render');
+ const buf=Buffer.from(data.slice('data:image/png;base64,'.length),'base64');
+ if(buf.length<5000||buf.toString('ascii',1,4)!=='PNG')
+  throw Error('Browser WebGL canvas capture invalid: '+buf.length);
+ return buf;
+}
 const outputFile='architecture-browser-qa.json';
 let report={url,status:'started',exceptions};
 try{
@@ -72,6 +82,7 @@ try{
   }catch{}
  };
  await cdp('Runtime.enable');
+ await cdp('Page.enable');
  let ready;
  for(let i=0;i<220;i++){
   ready=await evaluate("({loaded:window.__AutoMindsQA?.sceneStatus()?.loaded,expected:window.__AutoMindsQA?.summary()?.expected,loadedLayers:window.__AutoMindsQA?.summary()?.loaded})");
@@ -327,19 +338,15 @@ try{
   ceilingPanels:fullProposal.ceilingPanels,skirting:fullProposal.skirtingPieces,
   thresholdPieces:fullProposal.thresholds,maidUnchanged:true
  }));
- // Record a real rendered QA image of the opt-in surface proposal (when Chrome permits).
- try{
+ // Optional legacy image: the Stage 9 matrix supersedes this slow capture.
+ if(process.env.QA_LEGACY_SCREENSHOTS==='1')try{
   const focus=JSON.parse(await evaluate(
    "JSON.stringify(window.__AutoMindsQA.inspectStage1Room('G-DINING'))"));
   if(!focus?.ok)throw Error('Cannot frame Stage 2 dining scene');
   await sleep(300);
-  const screenshot=await cdp('Page.captureScreenshot',
-   {format:'png',fromSurface:true},20000);
-  if(screenshot?.result?.data){
+  const png=await captureCanvasPng();
    fs.mkdirSync('analysis',{recursive:true});
-   fs.writeFileSync('analysis/stage2-source-supported-dining-finishes.png',
-    Buffer.from(screenshot.result.data,'base64'));
-  }
+   fs.writeFileSync('analysis/stage2-source-supported-dining-finishes.png',png);
  }catch(error){console.warn('STAGE2_VISUAL_SCREENSHOT_UNAVAILABLE',String(error))}
  const afterRoom=JSON.parse(await evaluate(
   "JSON.stringify(window.__AutoMindsQA.stage2ApplyOneRoom('G-DINING',"+
@@ -421,15 +428,9 @@ try{
  if(!stage1Focus?.ok||!stage1Focus.provisional||stage1Focus.verifiedRoomPolygon)
    throw Error('Stage 1 source-plan room inspection did not remain provisional');
  fs.mkdirSync('analysis',{recursive:true});
- // Headless WebGL screenshots may time out on software GPUs. Preserve any
- // successful visual evidence without letting screenshot availability bypass
- // the actual model geometry and walking-route regression checks.
- try{
-  const shot=await cdp('Page.captureScreenshot',
-   {format:'png',fromSurface:true},20000);
-  if(shot?.result?.data)fs.writeFileSync('analysis/stage1-dining-draft.png',
-   Buffer.from(shot.result.data,'base64'));
-  else console.warn('STAGE1_SCREENSHOT_UNAVAILABLE','Screenshot response had no bytes');
+ // Optional legacy dining draft; final Stage 9 captures replace this.
+ if(process.env.QA_LEGACY_SCREENSHOTS==='1')try{
+  fs.writeFileSync('analysis/stage1-dining-draft.png',await captureCanvasPng());
  }catch(error){console.warn('STAGE1_SCREENSHOT_UNAVAILABLE',String(error))}
  const stage1Cleared=await evaluate("window.__AutoMindsQA.removeStage1DraftOutline()");
  if(!stage1Cleared)throw Error('Stage 1 provisional line could not be removed');
@@ -695,6 +696,115 @@ try{
  if(obstructed.length)throw Error('Open doorway crossing failures: '+obstructed.map(x=>x.id).join(','));
  if(blockedWhenClosed.length)throw Error('Closed door crossings should not be permitted: '+blockedWhenClosed.join(','));
  if(circulation&&circulation.passed!==circulation.total)throw Error('Continuous architectural routes incomplete: '+circulation.passed+'/'+circulation.total);
+ // Stage 9 engineering evidence: six real Chrome PNGs for human review.
+ // A screenshot passing capture checks does NOT certify aesthetics or sources.
+ const visualDir=path.resolve('analysis/stage9-visuals');
+ fs.mkdirSync(visualDir,{recursive:true});
+ let screenshots=[];
+ let mobilePerf=null,mobileNav=null;
+ const rawMetrics=()=>evaluate("JSON.stringify(window.__AutoMindsQA.stage9PerformanceStatus())");
+ const desktopPerf=JSON.parse(await rawMetrics());
+ if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
+    !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||
+    desktopPerf.drawCalls>15000||desktopPerf.triangles>15000000||
+    desktopPerf.rendererDpr>STAGE9_QA_POLICY.maximumDesktopDpr+.01)
+  throw Error('Stage 9 desktop WebGL invalid: '+JSON.stringify(desktopPerf));
+ if(process.env.QA_ALL_DOORS==='1'){
+  // The preceding fast walkthrough already captured all six rendered views
+  // in this very workflow job. Reuse its image files to avoid redrawing the
+  // software-rendered GLB house six more times during exhaustive route QA.
+  const prior=JSON.parse(fs.readFileSync(outputFile,'utf8'));
+  if(prior.status!=='complete'||prior.stage9?.screenshots?.length!==
+     STAGE9_QA_POLICY.screenshotScenes.length)
+   throw Error('Stage 9 exhaustive QA requires successful visual evidence from the first browser pass');
+  screenshots=prior.stage9.screenshots;
+  for(const shot of screenshots){
+   if(!fs.existsSync(shot.path)||fs.statSync(shot.path).size<5000)
+    throw Error('Stage 9 visual artifact missing for full QA: '+shot.path);
+  }
+  mobilePerf=prior.stage9.mobilePerformance;
+  mobileNav=prior.stage9.mobileNavigation;
+  if(!mobilePerf||!mobileNav?.open)throw Error('Stage 9 mobile evidence not retained');
+ }else{
+ await evaluate("document.documentElement.classList.add('production-design')");
+ await evaluate("document.querySelector('#floorButtons button[data-floor=\"all\"]').click()");
+ await sleep(550);
+ async function captureVisual(name,widthExpected){
+  if(!STAGE9_QA_POLICY.screenshotScenes.includes(name))
+   throw Error('Unexpected Stage 9 scene: '+name);
+  const png=await captureCanvasPng();
+  if(png.length<5000||png.toString('ascii',1,4)!=='PNG')
+   throw Error('Invalid Stage 9 screenshot '+name+' bytes='+png.length);
+  const width=png.readUInt32BE(16),height=png.readUInt32BE(20);
+  if(width!==widthExpected)
+   throw Error('Stage 9 incorrect screenshot viewport '+name+': '+width);
+  const rel='analysis/stage9-visuals/'+name+'.png';
+  fs.writeFileSync(rel,png);
+  screenshots.push({id:name,path:rel,width,height,bytes:png.length});
+ }
+ await captureVisual('desktop-whole-house-day',1280);
+ await evaluate("document.querySelector('#lightBtn').click()");
+ await sleep(480);
+ await captureVisual('desktop-whole-house-night',1280);
+ await evaluate("document.querySelector('#lightBtn').click()");
+ await evaluate("document.querySelector('#floorButtons button[data-floor=\"ground\"]').click()");
+ await sleep(420);
+ await captureVisual('desktop-ground-floor',1280);
+ await evaluate("document.querySelector('#floorButtons button[data-floor=\"first\"]').click()");
+ await sleep(420);
+ await captureVisual('desktop-first-floor',1280);
+ await evaluate("document.querySelector('#floorButtons button[data-floor=\"all\"]').click()");
+ await cdp('Emulation.setDeviceMetricsOverride',{
+  // Keep desktop viewport mechanics while shrinking CSS to a 390px
+  // compact-screen width. Chrome mobile:true under software WebGL can
+  // preserve a 1280px layout viewport and expand height to 2700px.
+  width:390,height:844,deviceScaleFactor:2,mobile:false,
+  screenWidth:390,screenHeight:844
+ });
+ await sleep(900);
+ mobilePerf=JSON.parse(await rawMetrics());
+ if(mobilePerf.cssWidth!==390||mobilePerf.rendererDpr>1.01||
+    mobilePerf.canvasWidth>390||!mobilePerf.webglResponsive)
+  throw Error('Stage 9 mobile rendering budget invalid: '+JSON.stringify(mobilePerf));
+ await captureVisual('mobile-house-day',390);
+ mobileNav=JSON.parse(await evaluate("JSON.stringify((()=>{const b=document.querySelector('#mobileExploreBtn');b.click();return {expanded:b.getAttribute('aria-expanded'),open:document.querySelector('#exploreSidebar').classList.contains('mobileExpanded'),scrollWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth};})())"));
+ if(mobileNav.expanded!=='true'||!mobileNav.open)
+  throw Error('Stage 9 mobile navigation does not open: '+JSON.stringify(mobileNav));
+ await sleep(340);
+ await captureVisual('mobile-navigation-open',390);
+ await evaluate("document.querySelector('#mobileExploreBtn').click()");
+ await cdp('Emulation.clearDeviceMetricsOverride');
+ await sleep(250);
+ }
+ const engineering=summarizeStage9Engineering({
+  loadedLayers:ready.loadedLayers,activeDoors:summary.activeDoorCount,
+  routesPassed:circulation?.passed??null,balconies:balcony.restored,
+  sourcePreserved:stage8Initial.sourceIFCGeometryPreserved&&
+   stage8Initial.sourceExteriorSitePreserved,
+  stagesAutoVisible:integratedStart.active&&
+   integratedStart.stage4LivingDiningIntegrated&&
+   integratedStart.stage5BedroomsStudyIntegrated&&
+   integratedStart.stage6WetAreasIntegrated&&
+   integratedStart.stage7Integrated&&integratedStart.stage8ExteriorIntegrated,
+  screenshotCount:screenshots.length,
+  mobileCapture:mobilePerf.cssWidth===390,browserExceptions:exceptions.length
+ });
+ if(process.env.QA_ALL_DOORS==='1'&&!engineering.readyForClientReview)
+  throw Error('Stage 9 final engineering QA not complete: '+JSON.stringify(engineering));
+ report.stage9={engineering,desktopPerformance:desktopPerf,mobilePerformance:mobilePerf,
+  screenshots,mobileNavigation:mobileNav,clientApproved:false,
+  architectApproved:false,visualHumanReviewPending:true};
+ console.log('STAGE9_VISUAL_PERFORMANCE_AUDIT',JSON.stringify({
+  screenshots:screenshots.length,
+  desktop:{drawCalls:desktopPerf.drawCalls,triangles:desktopPerf.triangles,
+   geometries:desktopPerf.geometries,textures:desktopPerf.textures,
+   glbRequests:desktopPerf.glbRequests,dpr:desktopPerf.rendererDpr},
+  mobile:{width:mobilePerf.cssWidth,dpr:mobilePerf.rendererDpr,
+   canvasWidth:mobilePerf.canvasWidth,menuOpens:true},
+  fullDoorAndRouteTest:process.env.QA_ALL_DOORS==='1',
+  engineering:engineering.engineeringStatus,
+  clientAcceptance:'pending',architectApproval:'pending'
+ }));
  console.log('BROWSER_QA_PASSED');
 }catch(e){
  report={...report,status:'failed',failure:String(e)};
