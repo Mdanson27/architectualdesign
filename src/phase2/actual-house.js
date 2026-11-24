@@ -30,6 +30,7 @@ import {createStage7StairsBalconiesLighting} from './stage7-stairs-balconies-lig
 import {createStage8ExteriorLandscape} from './stage8-exterior-landscape.js';
 import {activateIntegratedHouseDesign} from './production-design.js';
 import {productionPixelRatio} from './stage9-quality-policy.js';
+import {createPhase10Renderer,createPhase10SpatialIndex} from './phase10-render-optimizer.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
 
@@ -119,6 +120,8 @@ const state={
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
 };
 let toastTimer=null,lastMapUpdate=0,lastHudUpdate=0;
+let phase10Renderer=null;
+const phase10Indexes=new Map();
 function toast(message){
  $('toast').textContent=message;$('toast').classList.add('show');
  clearTimeout(toastTimer);
@@ -889,6 +892,16 @@ async function syncNewLayers(){
   }
  }
  setupEnhancements();
+ // Rebuild only on a new source-layer import, not on the animation loop.
+ phase10Renderer?.dispose();
+ phase10Indexes.clear();
+ phase10Renderer=createPhase10Renderer({scene,sourceRecords:state.meshes,
+  roots:[sourceRoot,state.siteContext?.root,state.stage4LivingDining?.root,
+   state.stage5BedroomsStudy?.root,state.stage6WetAreas?.root,
+   state.stage7StairsBalconiesLighting?.root,state.dining?.root,
+   state.decor?.group,state.movedSofa?.root,state.stairSafety?.root,
+   state.balconies?.root]});
+ console.info('[Phase 10 render optimization]',phase10Renderer.status());
  if(!state.initialReady)startIntro();
  else if(state.mode==='orbit'&&!state.stairHighlight&&!state.showGatePreview){
   if(publicPreview)frameBuilding();else focusMainBuilding();
@@ -1001,6 +1014,16 @@ const axisDown=new THREE.Vector3(0,-1,0);
 const normalMatrix=new THREE.Matrix3();
 const candidatePos=new THREE.Vector3();
 function nearby(list,x,y,z,dist=1.8){
+ // During initial source correction/setup, geometry bounds may still
+ // change. Once installed, the broad phase uses immutable source boxes.
+ if(state.initialReady&&(list===state.solids||list===state.floors)){
+  let entry=phase10Indexes.get(list);
+  if(!entry||entry.count!==list.length){
+   entry={count:list.length,index:createPhase10SpatialIndex(list)};
+   phase10Indexes.set(list,entry);
+  }
+  return entry.index.query(x,y,z,dist,isRecordVisible);
+ }
  return list.filter(record=>{
   if(!isRecordVisible(record))return false;
   const b=record.box;
@@ -1950,6 +1973,7 @@ function animate(){
  const dt=Math.min(clock.getDelta(),.06);
  // Avoid GPU drawing for hidden tabs; the clock still consumes elapsed time.
  if(document.hidden)return;
+ if(!state.initialReady)return; // No unnecessary GPU uploads under the loading overlay.
  if(state.doorSystem)state.doorSystem.update(dt);
  state.planCirculation?.kitchenDoor?.update(dt);
  state.stage3Kitchen?.update(dt);
@@ -1964,7 +1988,8 @@ function animate(){
    lastHudUpdate=0;
   }
  }
- renderer.render(scene,camera);
+ if(phase10Renderer)phase10Renderer.render(renderer,camera);
+ else renderer.render(scene,camera);
 }
 // Browser-only acceptance diagnostics. Available only on a locally hosted ?qa preview.
 // This is intentionally not installed on public review URLs or normal client sessions.
@@ -2140,8 +2165,27 @@ if(isLocalQA){
    if(!state.initialReady)return null;
    // Rendering and serialization in the SAME JS task avoids blank WebGL
    // screenshots on Chrome's SwiftShader software renderer.
-   renderer.render(scene,camera);
+   if(phase10Renderer)phase10Renderer.render(renderer,camera);
+   else renderer.render(scene,camera);
    return renderer.domElement.toDataURL('image/png');
+  },
+  phase10PerformanceAudit:()=>{
+   if(!phase10Renderer)return null;
+   const metrics=()=>({drawCalls:renderer.info.render.calls,
+    triangles:renderer.info.render.triangles,
+    geometries:renderer.info.memory.geometries,
+    textures:renderer.info.memory.textures});
+   const visibility=state.meshes.map(r=>r.mesh.visible);
+   phase10Renderer.render(renderer,camera,{optimized:false});
+   const baseline=metrics();
+   phase10Renderer.render(renderer,camera);
+   const optimized=metrics();
+   const unchanged=state.meshes.every((r,i)=>r.mesh.visible===visibility[i]);
+   const broadPhase=[...phase10Indexes.values()].map(e=>e.index.status());
+   return {baseline,optimized,batching:phase10Renderer.status(),broadPhase,
+    visibilityRestored:unchanged,
+    reductionPercent:baseline.drawCalls>0?
+      100*(baseline.drawCalls-optimized.drawCalls)/baseline.drawCalls:0};
   },
   stage9PerformanceStatus:()=>{
    const resources=performance.getEntriesByType('resource');
