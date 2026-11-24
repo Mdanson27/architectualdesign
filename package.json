@@ -41,7 +41,8 @@
     "test:stage8": "node tests/verify-stage8-exterior-landscape.mjs",
     "test:stage9": "node tests/verify-stage9-release.mjs",
     "test:phase10": "node tests/verify-phase10-optimizer.mjs",
-    "test:phase11": "node tests/verify-phase11-residency.mjs"
+    "test:phase11": "node tests/verify-phase11-residency.mjs",
+    "test:phase12": "node tests/verify-phase12-adaptive-graphics.mjs"
   },
   "dependencies": {
     "three": "^0.181.0"

@@ -30,6 +30,7 @@ import {createStage7StairsBalconiesLighting} from './stage7-stairs-balconies-lig
 import {createStage8ExteriorLandscape} from './stage8-exterior-landscape.js';
 import {activateIntegratedHouseDesign} from './production-design.js';
 import {productionPixelRatio} from './stage9-quality-policy.js';
+import {createAdaptiveGraphics,graphicsPixelRatio} from './phase12-adaptive-graphics.js';
 import {createPhase10Renderer,createPhase10SpatialIndex} from './phase10-render-optimizer.js';
 import {createPhase11Residency,loadLayersInOrder,loadingConcurrency} from './phase11-residency.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
@@ -63,6 +64,8 @@ const refs = [
  ['R12','First-Floor Bedroom 3 Sleeping'],['R13','Bedroom 3 Dressing Retreat'],
  ['R14','Study Room Area']
 ];
+const phase12Graphics=createAdaptiveGraphics({deviceMemory:navigator.deviceMemory});
+let phase12ReferenceCapture=false;
 const renderer = new THREE.WebGLRenderer({
  antialias:true,
  powerPreference:'high-performance',
@@ -70,7 +73,7 @@ const renderer = new THREE.WebGLRenderer({
  preserveDrawingBuffer:qaPage,
  alpha:false
 });
-renderer.setPixelRatio(productionPixelRatio(window.devicePixelRatio||1,window.innerWidth));
+renderer.setPixelRatio(phase12Graphics.pixelRatio(window.devicePixelRatio||1,window.innerWidth,window.innerHeight));
 renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
@@ -1983,7 +1986,8 @@ renderer.domElement.addEventListener('pointerup',e=>{if(e.pointerId===lookPointe
 renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===lookPointer)lookPointer=null;});
 let viewportWidth=innerWidth,viewportHeight=innerHeight,viewportDpr=renderer.getPixelRatio();
 function syncViewport(){
- const width=Math.max(1,innerWidth),height=Math.max(1,innerHeight),dpr=productionPixelRatio(devicePixelRatio||1,width);
+ const width=Math.max(1,innerWidth),height=Math.max(1,innerHeight);
+ const dpr=qaPage&&phase12ReferenceCapture?productionPixelRatio(devicePixelRatio||1,width):phase12Graphics.pixelRatio(devicePixelRatio||1,width,height);
  if(width===viewportWidth&&height===viewportHeight&&dpr===viewportDpr)return;
  camera.aspect=width/height;camera.updateProjectionMatrix();
  if(dpr!==viewportDpr)renderer.setPixelRatio(dpr);
@@ -1994,7 +1998,8 @@ function animate(){
  const dt=Math.min(clock.getDelta(),.06);
  // Avoid GPU drawing for hidden tabs; the clock still consumes elapsed time.
  if(document.hidden)return;
- if(!state.initialReady)return; // No unnecessary GPU uploads under the loading overlay.
+ if(!state.initialReady){phase12Graphics.suspend();return;} // No unnecessary GPU uploads under the loading overlay.
+ if(!(qaPage&&phase12ReferenceCapture))phase12Graphics.tick(performance.now());
  syncViewport(); // Reconcile even if the browser coalesces/delays resize events.
  if(state.doorSystem)state.doorSystem.update(dt);
  state.planCirculation?.kitchenDoor?.update(dt);
@@ -2233,11 +2238,41 @@ if(isLocalQA){
    return {before,inactive,returned,visibilityRestored:state.meshes.every((r,i)=>r.mesh.visible===visibility[i]),
     webglResponsive:!renderer.getContext().isContextLost()};
   },
+  phase12AdaptiveAudit:()=>{
+   if(!state.initialReady)return null;
+   const visibility=state.meshes.map(r=>r.mesh.visible);
+   const sourceBefore=state.layers.size;
+   const active=phase12Graphics.status();
+   // Feed controlled frame durations into the actual production controller,
+   // then apply its resulting resolution to the actual WebGL canvas.
+   // This local-only QA is not a real-device benchmark.
+   const metrics=()=>({profile:phase12Graphics.status().profile,level:phase12Graphics.status().level,
+    dpr:renderer.getPixelRatio(),width:renderer.domElement.width,height:renderer.domElement.height,
+    cssWidth:innerWidth,cssHeight:innerHeight,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
+   const renderSample=()=>{syncViewport();if(phase10Renderer)phase10Renderer.render(renderer,camera);else renderer.render(scene,camera);return metrics();};
+   phase12ReferenceCapture=false;
+   phase12Graphics.suspend();
+   for(let i=0;i<1200;i++)phase12Graphics.sample(16);
+   const high=renderSample();
+   for(let i=0;i<320;i++)phase12Graphics.sample(55);
+   const low=renderSample();
+   for(let i=0;i<1500;i++)phase12Graphics.sample(16);
+   const recovered=renderSample();
+   const result={active,high,low,recovered,sourceLayers:state.layers.size,
+    sourcePreserved:sourceBefore===state.layers.size&&state.meshes.every((r,i)=>r.mesh.visible===visibility[i]),
+    webglResponsive:!renderer.getContext().isContextLost()};
+   // Preserve Stage 9's exact reference captures and mobile canvas checks.
+   // This is reachable only on localhost with ?qa, never by public visitors.
+   phase12ReferenceCapture=true;phase12Graphics.suspend();syncViewport();
+   return result;
+  },
   stage9PerformanceStatus:()=>{
    const resources=performance.getEntriesByType('resource');
    const glb=resources.filter(e=>/\.glb(?:\?|$)/i.test(e.name));
    const nav=performance.getEntriesByType('navigation')[0];
    return {
+    adaptiveGraphics:phase12Graphics.status(),
+    referenceCapture:qaPage&&phase12ReferenceCapture,
     rendererDpr:renderer.getPixelRatio(),
     canvasWidth:renderer.domElement.width,canvasHeight:renderer.domElement.height,
     cssWidth:innerWidth,cssHeight:innerHeight,
@@ -2500,6 +2535,7 @@ if(isLocalQA){
   }
  };
 }
+document.addEventListener('visibilitychange',()=>phase12Graphics.suspend());
 renderer.setAnimationLoop(animate);
 window.addEventListener('resize',syncViewport);
 window.visualViewport?.addEventListener('resize',syncViewport);
