@@ -251,7 +251,9 @@ export function createFurnitureAsset(id,{detail='high',materials}={}){
    box('recessed-brass-pull',.14,.018,.027,.007,m.bronze,x,.72,-.322);}
   box('rounded-countertop',.90,.05,.61,.024,m.stone,0,.885,0);break;
  case 'floating-vanity':
-  box('concealed-vanity-storage',1.10,.41,.46,.025,m.timber,0,.21,0);
+  box('concealed-vanity-storage',1.10,.30,.46,.025,m.timber,0,.155,0);
+  for(const side of [-1,1])box('vanity-side-storage',.28,.12,.46,.015,m.timber,side*.41,.365,0);
+  box('vanity-rear-service-panel',.54,.12,.035,.005,m.timber,0,.365,.209);
   // Four counter strips leave a genuine opening into the recessed basin.
   for(const x of [-.4075,.4075])box('stone-counter-side',.285,.05,.48,.017,m.stone,x,.445,0);
   for(const z of [-.205,.205])box('stone-counter-edge',.54,.05,.07,.018,m.stone,0,.445,z);
