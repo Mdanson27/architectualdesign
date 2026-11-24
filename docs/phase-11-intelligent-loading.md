@@ -7,3 +7,5 @@ The 76 IFC source layers are required for collision, measurements, source audits
 - No room visibility suppression, new user controls or architectural changes. Existing visibility and collision are authoritative.
 - Unit and browser QA verify ordered loading, failure isolation, eviction/re-entry policy and architectural regressions.
 - Full per-room high-detail network streaming requires independently addressable assets and reliable room mapping; carry this into Phases 13–14. Physical low-spec memory and frame-time benchmarking remains in Phase 20.
+
+A local-only QA round trip accelerates the inactivity clock, moves a cloned camera outside the house, verifies real WebGL geometry disposal, then renders the original view again and checks geometry count, draw calls, triangles and source visibility parity. This is a controlled renderer test, not a measurement of physical device RAM or ordinary walking latency.

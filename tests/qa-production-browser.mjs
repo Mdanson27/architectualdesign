@@ -717,6 +717,17 @@ try{
   if(!phase11?.automatic||phase11.sourceLayers!==phase11.expectedLayers||phase11.loading?.failed!==0||phase11.loading?.peak>2||!phase11.residency?.sourceGeometryRetained||!phase11.residency?.tracked)throw Error('Phase 11 production integration failed: '+JSON.stringify(phase11));
   console.log('PHASE11_PRODUCTION_RESIDENCY',JSON.stringify(phase11));
   report.phase11=phase11;
+  const roundTrip=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase11GpuRoundTrip())"));
+  if(!roundTrip?.visibilityRestored||!roundTrip.webglResponsive||
+     roundTrip.inactive.residency.evictions<=roundTrip.before.residency.evictions||
+     roundTrip.inactive.geometries>=roundTrip.before.geometries||
+     roundTrip.returned.residency.reentries<=roundTrip.inactive.residency.reentries||
+     roundTrip.returned.calls!==roundTrip.before.calls||
+     roundTrip.returned.triangles!==roundTrip.before.triangles||
+     roundTrip.returned.geometries!==roundTrip.before.geometries)
+   throw Error('Phase 11 real WebGL eviction/re-upload parity failed: '+JSON.stringify(roundTrip));
+  console.log('PHASE11_WEBGL_ROUND_TRIP',JSON.stringify(roundTrip));
+  report.phase11GpuRoundTrip=roundTrip;
  const desktopPerf=JSON.parse(await rawMetrics());
  if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
     !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||

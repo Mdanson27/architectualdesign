@@ -122,7 +122,7 @@ const state={
 };
 let toastTimer=null,lastMapUpdate=0,lastHudUpdate=0;
 let phase10Renderer=null;
-let phase11Loading=null,layerSync=null;
+let phase11Loading=null,layerSync=null,phase11QAClockOffset=0;
 const phase10Indexes=new Map();
 function toast(message){
  $('toast').textContent=message;$('toast').classList.add('show');
@@ -907,7 +907,7 @@ async function syncSourceLayers(initialManifest){
  // Rebuild only on a new source-layer import, not on the animation loop.
  phase10Renderer?.dispose();
  phase10Indexes.clear();
- phase10Renderer=createPhase10Renderer({scene,sourceRecords:state.meshes,residency:createPhase11Residency(),
+ phase10Renderer=createPhase10Renderer({scene,sourceRecords:state.meshes,residency:createPhase11Residency({now:()=>performance.now()+(qaPage?phase11QAClockOffset:0)}),
   roots:[sourceRoot,state.siteContext?.root,state.stage4LivingDining?.root,
    state.stage5BedroomsStudy?.root,state.stage6WetAreas?.root,
    state.stage7StairsBalconiesLighting?.root,state.dining?.root,
@@ -2210,6 +2210,29 @@ if(isLocalQA){
       100*(baseline.drawCalls-optimized.drawCalls)/baseline.drawCalls:0};
   },
   phase11Status:()=>({loading:phase11Loading,residency:phase10Renderer?.status().residency??null,sourceLayers:state.layers.size,expectedLayers:state.totalLayers,automatic:true}),
+  phase11GpuRoundTrip:()=>{
+   if(!phase10Renderer)return null;
+   const sample=()=>({geometries:renderer.info.memory.geometries,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,residency:phase10Renderer.status().residency});
+   const visibility=state.meshes.map(r=>r.mesh.visible);
+   // Local QA only: accelerate the inactivity clock, but use real WebGL
+   // disposal, rendering and re-upload. Never move the visitor's camera.
+   const away=camera.clone();
+   away.position.set(1000,1000,1000);away.lookAt(1100,1100,1100);
+   away.updateMatrixWorld(true);
+   phase10Renderer.render(renderer,camera);
+   const before=sample();
+   phase11QAClockOffset+=21000;
+   let inactive,returned;
+   try{
+    phase10Renderer.render(renderer,away);
+    inactive=sample();
+   }finally{
+    phase10Renderer.render(renderer,camera);
+    returned=sample();
+   }
+   return {before,inactive,returned,visibilityRestored:state.meshes.every((r,i)=>r.mesh.visible===visibility[i]),
+    webglResponsive:!renderer.getContext().isContextLost()};
+  },
   stage9PerformanceStatus:()=>{
    const resources=performance.getEntriesByType('resource');
    const glb=resources.filter(e=>/\.glb(?:\?|$)/i.test(e.name));
