@@ -739,7 +739,10 @@ try{
  await captureVisual('desktop-first-floor',1280);
  await evaluate("document.querySelector('#floorButtons button[data-floor=\"all\"]').click()");
  await cdp('Emulation.setDeviceMetricsOverride',{
-  width:390,height:844,deviceScaleFactor:2,mobile:true,
+  // Keep desktop viewport mechanics while shrinking CSS to a 390px
+  // compact-screen width. Chrome mobile:true under software WebGL can
+  // preserve a 1280px layout viewport and expand height to 2700px.
+  width:390,height:844,deviceScaleFactor:2,mobile:false,
   screenWidth:390,screenHeight:844
  });
  await sleep(900);
