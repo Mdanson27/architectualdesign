@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {STAGE1_PLAN_SKETCHES,insidePolygon} from './stage1-plan-crosswalk.js';
 import {DINING_TABLE_WORLD} from './dining-furnishings.js';
+import {createFurnitureAsset,fitFurnitureEnvelope} from './phase14-furniture-library.js';
 
 /**
  * STAGE 4 — Studio Anne pp. 10, 13–21.
@@ -157,18 +158,16 @@ export function createStage4LivingDining({
   const id='G-SITTING';const group=new THREE.Group();
   group.name='STAGE4_SEPARATE_ACCENT_CHAIR_'+name;
   group.position.set(...local(x,y,z));group.rotation.y=angle;groups[id].add(group);
-  function sub(tag,g,m,px,py,pz){
-   const mesh=visual(new THREE.Mesh(g,m),tag);
-   mesh.position.set(px,py,pz);group.add(mesh);
+  // Replace the existing procedural chair parts in-place. Keep the prior
+  // footprint/height, position, rotation and collision envelope.
+  const asset=createFurnitureAsset('sculptural-accent-chair',{materials:mats});
+  fitFurnitureEnvelope(asset,new THREE.Vector3(-.40,0,-.36),new THREE.Vector3(.40,1.175,.38));
+  for(const mesh of [...asset.children]){
+   const tag=mesh.userData.component;
+   visual(mesh,tag);mesh.userData.phase14Asset='sculptural-accent-chair';
+   group.add(mesh);
   }
-  // Deep rounded upholstered shell & lumbar cushion, wood base and brass feet.
-  sub('curved-chair-seat',new RoundedBoxGeometry(.74,.18,.72,3,.15),mats.sage,0,.43,0);
-  sub('curved-chair-back',new RoundedBoxGeometry(.78,.69,.18,3,.08),mats.sage,0,.83,.29);
-  for(const t of [-1,1]){
-   sub('curved-chair-arm',new RoundedBoxGeometry(.14,.37,.66,3,.055),mats.sage,t*.33,.59,.045);
-   for(const d of [-1,1])sub('chair-wood-foot',new THREE.CylinderGeometry(.032,.042,.22,10),mats.timber,t*.27,.11,d*.25);
-  }
-  sub('chair-lumbar',new RoundedBoxGeometry(.47,.24,.075,3,.025),mats.cream,0,.76,.20);
+  group.userData.phase14Asset='sculptural-accent-chair';
   recordCollider(group,id,name);
  }
  function tinySideTable(id,x,z,y,tag,diam=.36){
@@ -415,7 +414,7 @@ export function createStage4LivingDining({
   return {
    stage:4,productionIntegrated:true,previewActivationRequired:false,
    rooms:['G-SITTING','G-DINING','F-FAMILY','ENTRY'],
-   pieces:{...pieces},visibleRooms:Object.entries(groups)
+   pieces:{...pieces},phase14LibraryChairs:groups['G-SITTING'].children.filter(o=>o.userData.phase14Asset==='sculptural-accent-chair').length,visibleRooms:Object.entries(groups)
     .filter(([,g])=>g.visible).map(([id])=>id),
    originalIFCGeometryPreserved:defaultSourceCondition(),
    sourceIFCCollidersPreserved:true,mainEntranceDoorId:27,

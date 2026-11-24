@@ -1,0 +1,28 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {createHash} from 'node:crypto';
+import * as THREE from 'three';
+import {FURNITURE_CATALOG,createFurnitureAsset,furnitureStats} from '../src/phase2/phase14-furniture-library.js';
+const manifest=JSON.parse(await fs.readFile('dist/furniture/manifest.json','utf8'));
+assert.equal(manifest.assets.length,Object.keys(FURNITURE_CATALOG).length);
+const eps=1e-5;let high=0,low=0;
+for(const a of manifest.assets){
+ assert(FURNITURE_CATALOG[a.id]);assert.equal(a.clientApproved,false);
+ for(const detail of ['high','low']){
+  const v=a.variants[detail],model=createFurnitureAsset(a.id,{detail}),stats=furnitureStats(model);
+  assert(stats.triangles>0&&stats.triangles<100000);
+  assert(stats.dimensions.every((n,i)=>Math.abs(n-a.dimensions[i])<eps));assert(Math.abs(stats.min[1])<eps);
+  model.traverse(o=>{if(o.isMesh){assert(o.material.isMeshStandardMaterial);assert(o.geometry.attributes.position.array.every(Number.isFinite));assert(o.geometry.attributes.normal.array.every(Number.isFinite));}});
+  assert.equal(stats.triangles,v.triangles);
+  const data=await fs.readFile(path.join('dist',v.path.slice(1)));
+  assert.equal(data.readUInt32LE(0),0x46546c67);assert.equal(data.readUInt32LE(8),data.length);
+  assert.equal(createHash('sha256').update(data).digest('hex'),v.sha256);
+  const json=JSON.parse(data.subarray(20,20+data.readUInt32LE(12)).toString());
+  assert(json.meshes.length>0&&json.materials.length>0);
+  if(detail==='high')high+=stats.triangles;else low+=stats.triangles;
+ }
+ assert(a.variants.low.triangles<a.variants.high.triangles);
+}
+assert(low<high);
+console.log('PHASE14_LIBRARY_QA',JSON.stringify({assets:manifest.assets.length,variants:manifest.assets.length*2,highTriangles:high,lowTriangles:low,allBoundsValid:true,allHashesValid:true}));
