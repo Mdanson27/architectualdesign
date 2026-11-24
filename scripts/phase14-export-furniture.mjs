@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
+import {attachFurnitureMaps} from './phase14-furniture-maps.mjs';
 import {GLTFExporter} from 'three/addons/exporters/GLTFExporter.js';
 import {FURNITURE_CATALOG,createFurnitureAsset,furnitureStats} from '../src/phase2/phase14-furniture-library.js';
 // GLTFExporter uses FileReader for the binary result. Node 22 supplies Blob.
@@ -15,7 +16,7 @@ for(const [id,spec] of Object.entries(FURNITURE_CATALOG)){
  for(const detail of ['high','low']){
   const asset=createFurnitureAsset(id,{detail});
   const stats=furnitureStats(asset);
-  const glb=Buffer.from(await new GLTFExporter().parseAsync(asset,{binary:true,onlyVisible:true}));
+  const glb=attachFurnitureMaps(Buffer.from(await new GLTFExporter().parseAsync(asset,{binary:true,onlyVisible:true})));
   if(glb.readUInt32LE(0)!==0x46546c67||glb.readUInt32LE(8)!==glb.length)throw Error('Invalid furniture GLB '+id);
   const sha256=createHash('sha256').update(glb).digest('hex'),file=id+'.'+detail+'.'+sha256.slice(0,16)+'.glb';
   await fs.writeFile(path.join(dir,file),glb);

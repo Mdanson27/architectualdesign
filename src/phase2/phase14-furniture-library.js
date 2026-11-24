@@ -18,14 +18,36 @@ export const FURNITURE_CATALOG=Object.freeze({
  'recessed-kitchen-cabinet':{pages:[26,30,31,32],dimensions:[.9,.91,.61],category:'kitchen'},
  'floating-vanity':{pages:[38,39],dimensions:[1.10,.53,.48],category:'bathroom'},
  'layered-pendant':{pages:[9,21,29],dimensions:[.31,.84,.31],category:'lighting'},
- 'balcony-chair':{pages:[36],dimensions:[.62,.89,.64],category:'outdoor'}
+ 'balcony-chair':{pages:[36],dimensions:[.62,.89,.64],category:'outdoor'},
+ "entry-console":{"pages":[13],"dimensions":[1.1,0.8,0.35],"category":"entry"},
+ "oval-entry-mirror":{"pages":[13],"dimensions":[0.65,1.05,0.055],"category":"entry"},
+ "entertainment-unit":{"pages":[15,18,33],"dimensions":[2.6,0.62,0.42],"category":"living"},
+ "bedroom-bench":{"pages":[22],"dimensions":[1.2,0.58,0.45],"category":"bedroom"},
+ "bedside-drawers":{"pages":[22,23],"dimensions":[0.52,0.48,0.43],"category":"bedroom"},
+ "study-shelving":{"pages":[25],"dimensions":[2,2.45,0.37],"category":"study"},
+ "pantry-shelving":{"pages":[41],"dimensions":[1.2,2.45,0.5],"category":"kitchen"},
+ "balcony-wire-table":{"pages":[36],"dimensions":[0.65,0.72,0.65],"category":"outdoor"},
+ "concealed-appliance-tower":{"pages":[26,30],"dimensions":[0.65,2.3,0.65],"category":"kitchen"},
+ "double-undermount-sink":{"pages":[27],"dimensions":[0.87,0.2,0.48],"category":"kitchen"},
+ "wall-mount-faucet":{"pages":[27,38,39],"dimensions":[0.3,0.24,0.27],"category":"fixtures"},
+ "pull-out-bin":{"pages":[28],"dimensions":[0.4,0.56,0.48],"category":"kitchen"},
+ "floor-lamp":{"pages":[9,17],"dimensions":[0.44,1.6,0.49],"category":"lighting"},
+ "table-lamp":{"pages":[9,16,17],"dimensions":[0.3,0.55,0.3],"category":"lighting"},
+ "wall-sconce":{"pages":[9,17],"dimensions":[0.22,0.42,0.21],"category":"lighting"},
+ "full-height-curtain-panel":{"pages":[18],"dimensions":[1.25,2.65,0.14],"category":"soft-furnishing"},
+ "contour-area-rug":{"pages":[16,18],"dimensions":[2.8,0.025,2],"category":"soft-furnishing"},
+ "decorative-vase":{"pages":[13,16],"dimensions":[0.24,0.55,0.24],"category":"accessory"},
+ "shower-set":{"pages":[38,39],"dimensions":[0.32,0.95,0.32],"category":"fixtures"},
+ "handheld-bidet":{"pages":[38,39],"dimensions":[0.24,0.7,0.13],"category":"fixtures"}
 });
 export function createFurnitureMaterials(){
  const m=(color,roughness=.8,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
- return {cream:m(0xeee5d9,.9),taupe:m(0xa99888,.9),sage:m(0x788772,.93),
+ const materials={cream:m(0xeee5d9,.9),taupe:m(0xa99888,.9),sage:m(0x788772,.93),
  ivory:m(0xdad2c4,.91),timber:m(0x745742,.57,.03),walnut:m(0x4d352b,.57),
  bronze:m(0xbaa079,.35,.68),stone:m(0xcfc6bc,.54),ceramic:m(0xf0e5d7,.28),
- textile:m(0x8c7563,.95),steel:m(0x9da5a7,.31,.75),lamp:m(0xffe4b9,.65)};
+ textile:m(0x8c7563,.95),steel:m(0x9da5a7,.31,.75),lamp:m(0xffe4b9,.65),charcoal:m(0x303030,.63),mirror:m(0xcbd3d7,.12,.92)};
+ for(const [key,mat] of Object.entries(materials))mat.name='PHASE14_'+key;
+ return materials;
 }
 const bounds=o=>new THREE.Box3().setFromObject(o,true);
 export function furnitureStats(root){
@@ -227,6 +249,95 @@ export function createFurnitureAsset(id,{detail='high',materials}={}){
   box('porcelain-counter',1.10,.05,.48,.024,m.ceramic,0,.445,0);
   box('drawer-front',1.03,.27,.027,.012,m.ivory,0,.24,-.245);
   box('brushed-brass-handle',.20,.016,.025,.006,m.bronze,0,.29,-.264);break;
+
+ case 'entry-console':{
+  box('slim-walnut-console-top',1.1,.10,.35,.025,m.walnut,0,.75,0);
+  for(const side of [-1,1]){const o=box('crossed-sculptural-console-leg',.12,.78,.23,.025,m.walnut,0,.36,0);o.rotation.z=side*.51;}
+  break;}
+ case 'oval-entry-mirror':{
+  const rim=new THREE.Shape();rim.absellipse(0,0,.325,.525,0,Math.PI*2,false);
+  const hole=new THREE.Path();hole.absellipse(0,0,.297,.496,0,Math.PI*2,true);rim.holes.push(hole);
+  add('dark-oval-mirror-frame',new THREE.ExtrudeGeometry(rim,{depth:.035,bevelEnabled:true,bevelSize:.005,bevelThickness:.005,bevelSegments:round,curveSegments:radial}),m.walnut,0,.525,0);
+  const face=new THREE.Shape();face.absellipse(0,0,.297,.496,0,Math.PI*2,false);
+  add('mirror-inset',new THREE.ShapeGeometry(face,radial),m.mirror,0,.525,.02);break;}
+ case 'entertainment-unit':
+  box('floating-walnut-storage',2.6,.38,.42,.018,m.walnut,0,.20,0);
+  for(let i=0;i<4;i++)box('concealed-flush-front',.63,.32,.032,.006,m.timber,(i-1.5)*.65,.20,-.216);
+  box('long-floating-display-ledge',2.6,.05,.38,.016,m.timber,0,.59,.02);break;
+ case 'bedroom-bench':
+  for(const x of [-.50,.50]){for(const z of [-.16,.16])cyl('slim-bronze-foot',.014,.017,.13,m.bronze,x,.065,z);
+   box('rounded-end-bolster',.18,.29,.44,.089,m.ivory,x,.43,0);}
+  box('upholstered-bench-base',1.15,.25,.45,.06,m.cream,0,.255,0);
+  box('padded-bench-seat',.91,.11,.43,.045,m.ivory,0,.435,0);break;
+ case 'bedside-drawers':
+  box('floating-drawer-case',.52,.48,.43,.018,m.timber,0,.24,0);
+  for(const y of [.13,.35]){box('concealed-drawer-face',.50,.20,.025,.007,m.ivory,0,y,-.217);box('fine-brass-pull',.12,.012,.022,.005,m.bronze,0,y+.045,-.235);}
+  break;
+ case 'study-shelving':
+ case 'pantry-shelving':{
+  const w=id==='study-shelving'?2:1.2,d=id==='study-shelving'?.37:.50,mat=id==='study-shelving'?m.walnut:m.ivory;
+  box('full-height-backing',w,2.45,.025,.004,mat,0,1.225,d/2-.013);
+  for(const x of [-w/2+.02,0,w/2-.02])box('vertical-shelf-divider',.04,2.45,d,.008,mat,x,1.225,0);
+  for(const y of [.04,.66,1.08,1.52,1.96,2.41])box('adjustable-shelf',w-.06,.035,d-.03,.005,mat,0,y,0);
+  for(const x of [-w/4,w/4]){box('lower-closed-storage',w/2-.06,.54,d-.04,.012,m.timber,x,.31,0);box('lower-storage-front',w/2-.07,.50,.03,.006,mat,x,.32,-d/2);box('drawer-handle',.13,.016,.025,.004,m.bronze,x,.47,-d/2-.017);}
+  break;}
+ case 'balcony-wire-table':
+  cyl('round-dark-outdoor-top',.325,.325,.045,m.charcoal,0,.6975,0);
+  for(const y of [.04,.65]){const r=y<.1?.25:.12;add('cage-support-ring',new THREE.TorusGeometry(r,.011,high?8:4,radial),m.charcoal,0,y,0,Math.PI/2);}
+  for(let i=0;i<(high?32:12);i++){const a=i*2*Math.PI/(high?32:12);curveTube('slender-cage-wire',[[.25*Math.cos(a),.04,.25*Math.sin(a)],[.17*Math.cos(a),.34,.17*Math.sin(a)],[.12*Math.cos(a),.65,.12*Math.sin(a)]],.0045,m.charcoal);}break;
+ case 'concealed-appliance-tower':
+  box('full-height-integrated-carcass',.65,2.3,.65,.012,m.timber,0,1.15,0);
+  box('concealed-fridge-upper-door',.60,1.25,.035,.007,m.ivory,0,1.64,-.333);
+  box('integrated-oven-panel',.56,.56,.05,.01,m.charcoal,0,.79,-.337);
+  box('oven-glass-window',.47,.34,.015,.007,m.charcoal,0,.78,-.367);
+  box('oven-steel-handle',.42,.024,.04,.01,m.steel,0,1.00,-.375);
+  box('lower-concealed-drawer',.60,.45,.03,.008,m.ivory,0,.25,-.333);break;
+ case 'double-undermount-sink':{
+  // Open bowls made from five joined surfaces, never solid filled blocks.
+  for(const x of [-.22,.22]){
+   box('basin-bottom',.40,.025,.43,.01,m.steel,x,.02,0);
+   for(const side of [-1,1]){box('basin-side-wall',.021,.18,.43,.009,m.steel,x+side*.19,.105,0);box('basin-end-wall',.40,.18,.021,.009,m.steel,x,.105,side*.205);}
+   cyl('drain-flange',.045,.045,.008,m.charcoal,x,.035,0);
+  }break;}
+ case 'wall-mount-faucet':
+  for(const x of [-.105,.105]){const o=cyl('brass-wall-control',.034,.034,.035,m.bronze,x,.14,.12);o.rotation.x=Math.PI/2;}
+  curveTube('arched-wall-spout',[[0,.17,.12],[0,.23,.03],[0,.20,-.10],[0,.08,-.12]],.016,m.bronze);break;
+ case 'pull-out-bin':
+  box('stainless-bin-tray',.40,.04,.48,.015,m.steel,0,.025,0);
+  for(const x of [-.09,.09]){box('removable-bin-bottom',.16,.03,.43,.01,m.charcoal,x,.06,0);for(const s of [-1,1]){box('bin-side',.015,.46,.43,.005,m.charcoal,x+s*.073,.30,0);box('bin-end',.16,.46,.015,.005,m.charcoal,x,.30,s*.206);}}
+  break;
+ case 'floor-lamp':
+  cyl('brass-disc-base',.19,.19,.035,m.bronze,0,.0175,0);
+  curveTube('arched-brass-stem',[[0,.035,0],[0,1.15,0],[0,1.55,.12],[0,1.49,.32],[0,1.36,.34]],.013,m.bronze);
+  add('downward-bell-shade',new THREE.LatheGeometry([new THREE.Vector2(.16,0),new THREE.Vector2(.14,.11),new THREE.Vector2(.055,.20),new THREE.Vector2(.017,.22)],radial),m.bronze,0,1.14,.34);break;
+ case 'table-lamp':
+  cyl('brass-lamp-base',.11,.12,.025,m.bronze,0,.0125,0);
+  add('sculpted-ceramic-lamp-body',new THREE.LatheGeometry([new THREE.Vector2(.075,0),new THREE.Vector2(.105,.08),new THREE.Vector2(.07,.22),new THREE.Vector2(.025,.31)],radial),m.walnut,0,.025,0);
+  cyl('linen-shade',.125,.15,.22,m.cream,0,.44,0);break;
+ case 'wall-sconce':
+  {const o=cyl('bronze-wall-rosette',.065,.065,.024,m.bronze,0,.22,.09);o.rotation.x=Math.PI/2;}
+  curveTube('curved-sconce-arm',[[0,.09,.08],[0,.34,.07],[0,.39,-.03],[0,.29,-.09]],.012,m.bronze);
+  add('opal-diffuser',new THREE.SphereGeometry(.09,radial,high?16:6),m.cream,0,.20,-.09);break;
+ case 'full-height-curtain-panel':{
+  // Actual pleated cloth surface, not a rectangular slab.
+  const n=high?120:32,rows=high?32:8,pos=[],uv=[],idx=[];
+  for(let y=0;y<=rows;y++)for(let x=0;x<=n;x++){const u=x/n,v=y/rows;pos.push((u-.5)*1.25,2.65*v,.055*Math.sin(u*Math.PI*20)*(1-.18*v));uv.push(u,v);}
+  for(let y=0;y<rows;y++)for(let x=0;x<n;x++){const a=y*(n+1)+x,b=a+n+1;idx.push(a,a+1,b,b,a+1,b+1);}
+  const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);geo.computeVertexNormals();
+  const mat=m.ivory.clone();mat.side=THREE.DoubleSide;add('continuous-pleated-fabric',geo,mat,0,0,0);break;}
+ case 'contour-area-rug':
+  box('low-profile-ivory-rug',2.8,.019,2,.009,m.ivory,0,.0095,0);
+  for(let i=0;i<(high?20:7);i++){const t=i/(high?19:6),points=[];for(let j=0;j<=12;j++){const x=-1.32+2.64*j/12;points.push([x,.020,-.87+1.74*t+.05*Math.sin(x*3+t*6)]);}curveTube('woven-contour-detail',points,.0018,m.cream);}break;
+ case 'decorative-vase':
+  add('hollow-sculptural-vase',new THREE.LatheGeometry([new THREE.Vector2(0,0),new THREE.Vector2(.09,0),new THREE.Vector2(.12,.20),new THREE.Vector2(.08,.40),new THREE.Vector2(.042,.55),new THREE.Vector2(.034,.55),new THREE.Vector2(.034,.50),new THREE.Vector2(.07,.18),new THREE.Vector2(0,.03)],radial),m.ceramic,0,0,0);break;
+ case 'shower-set':
+  curveTube('brushed-brass-riser',[[0,.05,.11],[0,.88,.11],[0,.92,-.12]],.014,m.bronze);
+  cyl('rain-shower-head',.145,.145,.028,m.steel,0,.90,-.12);
+  for(const x of [-.075,.075]){const o=cyl('wall-control',.035,.035,.035,m.bronze,x,.16,.11);o.rotation.x=Math.PI/2;}break;
+ case 'handheld-bidet':
+  curveTube('flexible-bidet-hose',[[.08,.60,.035],[.11,.22,.04],[0,.03,.035],[-.09,.22,.03],[-.08,.53,.03]],.008,m.bronze);
+  {const o=cyl('handheld-brass-spray',.019,.022,.17,m.bronze,-.08,.59,.02);o.rotation.z=-.2;}
+  {const o=cyl('wall-mounted-control',.035,.035,.025,m.bronze,.08,.60,.055);o.rotation.x=Math.PI/2;}break;
  case 'layered-pendant':{
   cyl('ceiling-rose',.075,.075,.027,m.bronze,0,.826,0);
   cyl('suspension-stem',.004,.004,.53,m.bronze,0,.55,0);

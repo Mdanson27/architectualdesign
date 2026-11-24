@@ -20,6 +20,7 @@ for(const a of manifest.assets){
   assert.equal(createHash('sha256').update(data).digest('hex'),v.sha256);
   const json=JSON.parse(data.subarray(20,20+data.readUInt32LE(12)).toString());
   assert(json.meshes.length>0&&json.materials.length>0);
+  for(const mat of json.materials.filter(m=>/^PHASE14_(cream|taupe|sage|ivory|textile|walnut|timber|stone)$/.test(m.name??''))){const texture=json.textures[mat.pbrMetallicRoughness.baseColorTexture.index];assert.equal(json.images[texture.source].mimeType,'image/png');}
   if(detail==='high')high+=stats.triangles;else low+=stats.triangles;
  }
  assert(a.variants.low.triangles<a.variants.high.triangles);

@@ -108,6 +108,9 @@ jobs:
         run: npm run test:phase13
       - name: Verify Phase 14 reusable furniture GLBs and LOD bounds
         run: npm run test:phase14
+      - name: Independent browser furniture render review
+        timeout-minutes: 6
+        run: node tests/qa-phase14-furniture-browser.mjs
       - name: Verify source-supported balcony floor seams
         run: npm run test:thresholds
       - name: Verify IFC-preserving room circulation furniture
@@ -134,6 +137,7 @@ jobs:
             architecture-browser-qa.json
             analysis/stage9-visuals/*.png
             analysis/phase14-visuals/*.png
+            analysis/phase14-visuals/review.json
             analysis/stage1-room-candidate-crosswalk.json
             analysis/stage1-dining-draft.png
           if-no-files-found: ignore
