@@ -49,6 +49,15 @@ async function evaluate(expr){
  if(msg.result?.exceptionDetails)throw Error('Browser evaluation: '+msg.result.exceptionDetails.text);
  return msg.result?.result?.value;
 }
+async function captureCanvasPng(){
+ const data=await evaluate('window.__AutoMindsQA.captureStage9CanvasFrame()');
+ if(typeof data!=='string'||!data.startsWith('data:image/png;base64,'))
+  throw Error('Browser did not return PNG WebGL render');
+ const buf=Buffer.from(data.slice('data:image/png;base64,'.length),'base64');
+ if(buf.length<5000||buf.toString('ascii',1,4)!=='PNG')
+  throw Error('Browser WebGL canvas capture invalid: '+buf.length);
+ return buf;
+}
 const outputFile='architecture-browser-qa.json';
 let report={url,status:'started',exceptions};
 try{
@@ -335,13 +344,9 @@ try{
    "JSON.stringify(window.__AutoMindsQA.inspectStage1Room('G-DINING'))"));
   if(!focus?.ok)throw Error('Cannot frame Stage 2 dining scene');
   await sleep(300);
-  const screenshot=await cdp('Page.captureScreenshot',
-   {format:'png',fromSurface:true},20000);
-  if(screenshot?.result?.data){
+  const png=await captureCanvasPng();
    fs.mkdirSync('analysis',{recursive:true});
-   fs.writeFileSync('analysis/stage2-source-supported-dining-finishes.png',
-    Buffer.from(screenshot.result.data,'base64'));
-  }
+   fs.writeFileSync('analysis/stage2-source-supported-dining-finishes.png',png);
  }catch(error){console.warn('STAGE2_VISUAL_SCREENSHOT_UNAVAILABLE',String(error))}
  const afterRoom=JSON.parse(await evaluate(
   "JSON.stringify(window.__AutoMindsQA.stage2ApplyOneRoom('G-DINING',"+
@@ -427,11 +432,7 @@ try{
  // successful visual evidence without letting screenshot availability bypass
  // the actual model geometry and walking-route regression checks.
  try{
-  const shot=await cdp('Page.captureScreenshot',
-   {format:'png',fromSurface:true},20000);
-  if(shot?.result?.data)fs.writeFileSync('analysis/stage1-dining-draft.png',
-   Buffer.from(shot.result.data,'base64'));
-  else console.warn('STAGE1_SCREENSHOT_UNAVAILABLE','Screenshot response had no bytes');
+  fs.writeFileSync('analysis/stage1-dining-draft.png',await captureCanvasPng());
  }catch(error){console.warn('STAGE1_SCREENSHOT_UNAVAILABLE',String(error))}
  const stage1Cleared=await evaluate("window.__AutoMindsQA.removeStage1DraftOutline()");
  if(!stage1Cleared)throw Error('Stage 1 provisional line could not be removed');
@@ -715,14 +716,11 @@ try{
  async function captureVisual(name,widthExpected){
   if(!STAGE9_QA_POLICY.screenshotScenes.includes(name))
    throw Error('Unexpected Stage 9 scene: '+name);
-  const v=await cdp('Page.captureScreenshot',{
-   format:'png',captureBeyondViewport:false,optimizeForSpeed:true},45000);
-  if(!v?.result?.data)throw Error('Empty Stage 9 screenshot '+name);
-  const png=Buffer.from(v.result.data,'base64');
+  const png=await captureCanvasPng();
   if(png.length<5000||png.toString('ascii',1,4)!=='PNG')
    throw Error('Invalid Stage 9 screenshot '+name+' bytes='+png.length);
   const width=png.readUInt32BE(16),height=png.readUInt32BE(20);
-  if(!(width===widthExpected||(widthExpected===390&&width===780)))
+  if(width!==widthExpected)
    throw Error('Stage 9 incorrect screenshot viewport '+name+': '+width);
   const rel='analysis/stage9-visuals/'+name+'.png';
   fs.writeFileSync(rel,png);
