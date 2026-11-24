@@ -24,3 +24,7 @@ Catalogue expanded from 15 to 35 authored models (70 high/low variants): entranc
 ## Actual visual review of first 35-model release candidate
 
 The completed CI render artifact (run 45382977399, artifact 14914589368) was visually inspected against the brief. Identified a conspicuous opening beneath the accent-chair seat, detached-looking dining-chair back support, entry ottoman proportions unlike the tall cylindrical reference, and a vanity with no visible sink opening. Corrected the first three shapes and added a genuine recessed basin assembly (visual only, not a plumbing installation). The updated candidate requires a fresh full render and navigation run. Remaining models are stylized concept assets, not photoreal product replicas. Only one source-supported accent chair placement was reported in the actual house; no second chair location is claimed as validated. Human visual acceptance and remaining room-specific placement are outstanding.
+
+## Final shell visual correction
+
+Run 45384652355 passed engineering and produced 70 actual renders. Review of the latest four corrected high models showed exposed back-face openings and pinched upholstery ends. Corrected the reversed end-cap winding of both swept shell generators and rounded the upholstered cross-section for a fuller continuous edge. Added an outward-facing cap regression for both detail variants. A new complete CI run and render review is required. This is a narrow model geometry correction, not a change to room placement.

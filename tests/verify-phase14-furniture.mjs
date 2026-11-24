@@ -37,3 +37,29 @@ console.log('PHASE14_REFERENCE_FEATURES',JSON.stringify({checked:Object.keys(ref
 for(const [id,tags] of Object.entries({'curved-dining-chair':['continuous-walnut-back-support','walnut-shell-to-seat-joint'],'sculptural-accent-chair':['fully-upholstered-floor-hugging-seat-base'],'storage-ottoman':['cylindrical-upholstered-storage-body','removable-ivory-seat-lid'],'floating-vanity':['undermount-basin-bottom','undermount-basin-side','undermount-basin-end','basin-drain']})){
  for(const detail of ['high','low']){const names=createFurnitureAsset(id,{detail}).children.map(o=>o.name);for(const tag of tags)assert(names.includes(tag),id+' missing '+tag);}
 }
+
+// A closed mesh's oriented volume must be positive. In addition, the cap
+// triangles must face away from their adjacent ring (not into the shell).
+for(const id of ['curved-dining-chair','sculptural-accent-chair','storage-ottoman','rest-chaise']){
+ for(const detail of ['high','low']){
+  const root=createFurnitureAsset(id,{detail});
+  const shell=root.children.find(o=>/continuous-curved-walnut|floor-hugging-vertically|asymmetric-backrest/.test(o.name));
+  assert(shell,id+' missing shell');
+  const g=shell.geometry,p=g.attributes.position,ix=g.index.array;
+  // Last two vertices are cap centers, and their triangle fans are last.
+  const a=new THREE.Vector3(),b=new THREE.Vector3(),c=new THREE.Vector3(),n=new THREE.Vector3(),d=new THREE.Vector3();
+  const centers=[p.count-2,p.count-1];
+  for(const center of centers){
+   const outward=new THREE.Vector3().fromBufferAttribute(p,center).sub(new THREE.Vector3().fromBufferAttribute(p,centers.find(v=>v!==center)));
+   let capFaces=0;
+   for(let i=0;i<ix.length;i+=3)if(ix[i]===center){
+    a.fromBufferAttribute(p,ix[i]);b.fromBufferAttribute(p,ix[i+1]);c.fromBufferAttribute(p,ix[i+2]);
+    n.crossVectors(b.sub(a),c.sub(a));
+    // Both ends of the U point toward the open front (negative z).
+    assert(n.z<0,id+' reversed shell cap');capFaces++;
+   }
+   assert(capFaces>=6,id+' missing end cap');
+  }
+ }
+}
+console.log('PHASE14_SHELL_CAP_WINDING',JSON.stringify({models:4,variants:8,outwardCaps:true}));

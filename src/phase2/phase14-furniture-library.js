@@ -102,7 +102,7 @@ export function createFurnitureAsset(id,{detail='high',materials}={}){
   }
   for(let i=0;i<seg;i++)for(let j=0;j<ring;j++){const a=i*(ring+1)+j,b=a+ring+1;idx.push(a,b,a+1,b,b+1,a+1);}
   for(const end of [0,seg]){const p=path.getPointAt(end/seg),c=pos.length/3;pos.push(...p.toArray());uv.push(.5,.5);
-   for(let j=0;j<ring;j++){const a=end*(ring+1)+j;idx.push(...(end===0?[c,a+1,a]:[c,a,a+1]));}}
+   for(let j=0;j<ring;j++){const a=end*(ring+1)+j;idx.push(...(end===0?[c,a,a+1]:[c,a+1,a]));}}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);geo.computeVertexNormals();
   add(tag,geo,mat,0,0,0);
  }
@@ -110,7 +110,7 @@ export function createFurnitureAsset(id,{detail='high',materials}={}){
  // Geometry carries the ribs rather than floating tubes; lower detail keeps
  // the same overall silhouette with fewer samples.
  function barrelShell(w,d,mat){
-  const steps=high?192:48,ring=8,pos=[],uv=[],idx=[];
+  const steps=high?192:48,ring=high?16:8,pos=[],uv=[],idx=[];
   for(let i=0;i<=steps;i++){
    const a=Math.PI*i/steps,top=.70+.24*Math.sin(a),x=Math.cos(a)*(w/2-.055),z=-.25+d*.83*Math.sin(a);
    const normal=new THREE.Vector3(Math.cos(a),0,Math.sin(a)).normalize();
@@ -118,12 +118,13 @@ export function createFurnitureAsset(id,{detail='high',materials}={}){
    for(let j=0;j<=ring;j++){
     const theta=2*Math.PI*j/ring;
     const thickness=.052+rib*Math.max(0,Math.cos(theta));
-    const p=new THREE.Vector3(x,(top+.035)/2,z).addScaledVector(normal,Math.cos(theta)*thickness);
-    p.y+=Math.sin(theta)*(top-.035)/2;pos.push(...p.toArray());uv.push(i/steps,j/ring);
+    const round=v=>Math.sign(v)*Math.pow(Math.abs(v),.45);
+    const p=new THREE.Vector3(x,(top+.035)/2,z).addScaledVector(normal,round(Math.cos(theta))*thickness);
+    p.y+=round(Math.sin(theta))*(top-.035)/2;pos.push(...p.toArray());uv.push(i/steps,j/ring);
    }
   }
   for(let i=0;i<steps;i++)for(let j=0;j<ring;j++){const a=i*(ring+1)+j,b=a+ring+1;idx.push(a,a+1,b,b,a+1,b+1);}
-  for(const end of [0,steps]){const a=end*(ring+1),c=pos.length/3;let x=0,y=0,z=0;for(let j=0;j<ring;j++){x+=pos[(a+j)*3];y+=pos[(a+j)*3+1];z+=pos[(a+j)*3+2];}pos.push(x/ring,y/ring,z/ring);uv.push(end/steps,.5);for(let j=0;j<ring;j++)idx.push(...(end===0?[c,a+j,a+j+1]:[c,a+j+1,a+j]));}
+  for(const end of [0,steps]){const a=end*(ring+1),c=pos.length/3;let x=0,y=0,z=0;for(let j=0;j<ring;j++){x+=pos[(a+j)*3];y+=pos[(a+j)*3+1];z+=pos[(a+j)*3+2];}pos.push(x/ring,y/ring,z/ring);uv.push(end/steps,.5);for(let j=0;j<ring;j++)idx.push(...(end===0?[c,a+j+1,a+j]:[c,a+j,a+j+1]));}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);geo.computeVertexNormals();
   add('floor-hugging-vertically-ribbed-barrel-shell',geo,mat,0,0,0);
  }
