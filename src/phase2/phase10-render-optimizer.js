@@ -170,7 +170,7 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
   // Synchronize matrices before validating batches. Objects are hidden ONLY
   // during the synchronous render call; raycast and scene queries see originals.
   scene.updateMatrixWorld();
-  const active=[];
+  const active=[],autoUpdate=scene.matrixWorldAutoUpdate;
   stats.lastActiveBatches=0;stats.lastReplacedDraws=0;stats.lastSavedSubmissions=0;
   try{
    for(const b of batches){
@@ -184,8 +184,10 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
     stats.lastActiveBatches++;stats.lastReplacedDraws+=b.members.length;
     stats.lastSavedSubmissions+=b.members.length-1;
    }
+   scene.matrixWorldAutoUpdate=false; // matrices already synchronized above
    renderer.render(scene,camera);
   }finally{
+   scene.matrixWorldAutoUpdate=autoUpdate;
    for(const b of active){
     b.batch.visible=false;for(const m of b.members)m.o.visible=true;
    }
