@@ -32,6 +32,9 @@ import {activateIntegratedHouseDesign} from './production-design.js';
 import {productionPixelRatio} from './stage9-quality-policy.js';
 import {createAdaptiveGraphics,graphicsPixelRatio} from './phase12-adaptive-graphics.js';
 import {createCompressedAssetLoader} from './phase13-compressed-assets.js';
+import {drawStudioTexture,STUDIO_TEXTURE_NAMES} from './phase13-studio-textures.js';
+import {loadStudioKTX2} from './phase13-ktx2.js';
+import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {createPhase10Renderer,createPhase10SpatialIndex} from './phase10-render-optimizer.js';
 import {createPhase11Residency,loadLayersInOrder,loadingConcurrency} from './phase11-residency.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
@@ -107,7 +110,7 @@ grid.material.opacity=.16;grid.material.transparent=true;scene.add(grid);
 const raycaster=new THREE.Raycaster();
 const downcaster=new THREE.Raycaster();
 const clock=new THREE.Clock();
-const loader=new GLTFLoader();
+const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const phase13Assets=createCompressedAssetLoader({loader,assetURL});
 const keys={};
 const world=new THREE.Vector3();
@@ -146,65 +149,13 @@ function fatal(message){
  $('error').classList.remove('hidden');
 }
 function texture(type){
- const c=document.createElement('canvas');c.width=c.height=512;
- const p=c.getContext('2d');p.clearRect(0,0,512,512);
- if(type==='marble'){
-  p.fillStyle='#e9e3db';p.fillRect(0,0,512,512);
-  for(let i=0;i<29;i++){
-   let x=(i*127)%600-60, y=(i*81)%640-75;
-   p.strokeStyle=(i%4?'rgba(133,115,97,.18)':'rgba(201,163,120,.40)');
-   p.lineWidth=i%6?1.2:2.7;
-   p.beginPath();p.moveTo(x-65,y-95);p.bezierCurveTo(x+55,y+30,x-50,y+150,x+65,y+230);p.stroke();
-  }
- } else if(type==='wood'){
-  p.fillStyle='#ab876b';p.fillRect(0,0,512,512);
-  for(let x=0;x<512;x+=38){
-   p.fillStyle=['#c29b75','#a87c60','#bb9472','#a47d5e'][(x/38)%4|0];
-   p.fillRect(x+1,0,36,512);
-   p.fillStyle='#694b39';p.fillRect(x+37,0,1.2,512);
-   for(let t=0;t<4;t++){
-    p.strokeStyle='rgba(80,52,37,.16)';p.lineWidth=.75;p.beginPath();
-    p.moveTo(x+t*8,0);p.bezierCurveTo(x+7+t*8,145,x-2+t*8,320,x+t*8,512);p.stroke();
-   }
-  }
- }else if(type==='ash'||type==='caramel'){
-   // Wood-look floor tiles from Studio Anne page 7: samples, not timber planks.
-   const ash=type==='ash';
-   const shades=ash?['#e3d9c9','#d5caba','#ebe1d1','#cec3b3']:
-    ['#cb9b73','#bd8b61','#d6a87f','#b5825c'];
-   p.fillStyle=shades[0];p.fillRect(0,0,512,512);
-   for(let x=0;x<512;x+=64){
-    p.fillStyle=shades[(x/64)%4];p.fillRect(x+1,0,62,512);
-    p.fillStyle=ash?'rgba(97,80,64,.19)':'rgba(84,50,30,.19)';
-    p.fillRect(x+62,0,2,512);
-    for(let line=0;line<5;line++){
-     const offset=(line*11+x*7)%55;
-     p.strokeStyle=ash?'rgba(119,104,87,.13)':'rgba(79,51,29,.15)';
-     p.lineWidth=.8;p.beginPath();p.moveTo(x+offset,0);
-     p.bezierCurveTo(x+offset+5,145,x+offset-4,320,x+offset+2,512);
-     p.stroke();
-    }
-   }
- }else if(type==='stone'){
-  p.fillStyle='#e6dccb';p.fillRect(0,0,512,512);
-  for(let row=0;row<24;row++)for(let col=0;col<10;col++){
-   let x=col*56-(row%2)*28,y=row*22;
-   p.fillStyle=['#e6dfd4','#cbc4b7','#f1ebde','#d7d0c6'][(col+3*row)%4];
-   p.fillRect(x+1,y+1,54,20);
-  }
- }else{
-  p.fillStyle='#eee7db';p.fillRect(0,0,512,512);
-  for(let i=0;i<4500;i++){
-   const a=(i*87)%512,b=(i*193)%512;
-   p.fillStyle=i%2?'rgba(120,104,81,.020)':'rgba(255,255,255,.035)';
-   p.fillRect(a,b,2,2);
-  }
- }
+ const c=drawStudioTexture(type);
  const t=new THREE.CanvasTexture(c);
  t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=4;
  return t;
 }
 const maps={plaster:texture('plaster'),marble:texture('marble'),wood:texture('wood'),ash:texture('ash'),caramel:texture('caramel'),stone:texture('stone')};
+let phase13Textures={available:false,decoded:0,applied:0,fallbacks:0,textures:[]};
 function material(color,roughness=.7,metalness=0,map=null,extra={}){
  return new THREE.MeshStandardMaterial({color,roughness,metalness,map,side:THREE.DoubleSide,...extra});
 }
@@ -962,6 +913,7 @@ async function begin(){
   const [manifest,map]=await Promise.all([metaResp.json(),elementResp.json()]);
   state.elements=map;
   state.sourceManifest=manifest;
+  phase13Textures=await loadStudioKTX2({renderer,assetURL,manifest:manifest.phase13Textures,maps,materials:mat,qaPage});
   const requestedFloor=new URLSearchParams(location.search).get('floor');
   if(['ground','first','second'].includes(requestedFloor)){
    state.floor=requestedFloor;
@@ -2017,7 +1969,7 @@ function animate(){
    lastHudUpdate=0;
   }
  }
- if(phase10Renderer)phase10Renderer.render(renderer,camera);
+ if(phase10Renderer)phase10Renderer.render(renderer,camera,{allowLod:!(qaPage&&phase12ReferenceCapture)});
  else renderer.render(scene,camera);
 }
 // Browser-only acceptance diagnostics. Available only on a locally hosted ?qa preview.
@@ -2194,7 +2146,7 @@ if(isLocalQA){
    if(!state.initialReady)return null;
    // Rendering and serialization in the SAME JS task avoids blank WebGL
    // screenshots on Chrome's SwiftShader software renderer.
-   if(phase10Renderer)phase10Renderer.render(renderer,camera);
+   if(phase10Renderer)phase10Renderer.render(renderer,camera,{allowLod:false});
    else renderer.render(scene,camera);
    return renderer.domElement.toDataURL('image/png');
   },
@@ -2207,7 +2159,7 @@ if(isLocalQA){
    const visibility=state.meshes.map(r=>r.mesh.visible);
    phase10Renderer.render(renderer,camera,{optimized:false});
    const baseline=metrics();
-   phase10Renderer.render(renderer,camera);
+   phase10Renderer.render(renderer,camera,{allowLod:false});
    const optimized=metrics();
    const unchanged=state.meshes.every((r,i)=>r.mesh.visible===visibility[i]);
    const broadPhase=[...phase10Indexes.values()].map(e=>e.index.status());
@@ -2226,15 +2178,15 @@ if(isLocalQA){
    const away=camera.clone();
    away.position.set(1000,1000,1000);away.lookAt(1100,1100,1100);
    away.updateMatrixWorld(true);
-   phase10Renderer.render(renderer,camera);
+   phase10Renderer.render(renderer,camera,{allowLod:false});
    const before=sample();
    phase11QAClockOffset+=21000;
    let inactive,returned;
    try{
-    phase10Renderer.render(renderer,away);
+    phase10Renderer.render(renderer,away,{allowLod:false});
     inactive=sample();
    }finally{
-    phase10Renderer.render(renderer,camera);
+    phase10Renderer.render(renderer,camera,{allowLod:false});
     returned=sample();
    }
    return {before,inactive,returned,visibilityRestored:state.meshes.every((r,i)=>r.mesh.visible===visibility[i]),
@@ -2251,7 +2203,7 @@ if(isLocalQA){
    const metrics=()=>({profile:phase12Graphics.status().profile,level:phase12Graphics.status().level,
     dpr:renderer.getPixelRatio(),width:renderer.domElement.width,height:renderer.domElement.height,
     cssWidth:innerWidth,cssHeight:innerHeight,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
-   const renderSample=()=>{syncViewport();if(phase10Renderer)phase10Renderer.render(renderer,camera);else renderer.render(scene,camera);return metrics();};
+   const renderSample=()=>{syncViewport();if(phase10Renderer)phase10Renderer.render(renderer,camera,{allowLod:false});else renderer.render(scene,camera);return metrics();};
    phase12ReferenceCapture=false;
    phase12Graphics.suspend();
    for(let i=0;i<1200;i++)phase12Graphics.sample(16);
@@ -2268,10 +2220,22 @@ if(isLocalQA){
    phase12ReferenceCapture=true;phase12Graphics.suspend();syncViewport();
    return result;
   },
-  phase13Status:()=>({loader:phase13Assets.status(),manifest:state.sourceManifest?.phase13??null,sourceLayers:state.layers.size}),
+  phase13LodAudit:()=>{
+   if(!phase10Renderer||!state.siteContext?.root.visible)return null;
+   const original=state.meshes.map(r=>({geometry:r.mesh.geometry,visible:r.mesh.visible}));
+   const foliage=[];state.stage8ExteriorLandscape?.root.traverse(o=>{if(o.name==='STAGE8_TROPICAL_FOLIAGE_GROUP')foliage.push({mesh:o,geometry:o.geometry,visible:o.visible});});
+   const overview=camera.clone();overview.position.set(65,45,65);overview.lookAt(state.center);overview.updateMatrixWorld(true);
+   const sample=()=>({calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,lod:phase10Renderer.status()});
+   phase10Renderer.render(renderer,overview,{allowLod:false});const full=sample();
+   phase10Renderer.render(renderer,overview,{allowLod:true});const simplified=sample();
+   phase10Renderer.render(renderer,camera,{allowLod:false});
+   return {full,simplified,foliage:foliage.length,sourcePreserved:state.meshes.every((r,i)=>r.mesh.geometry===original[i].geometry&&r.mesh.visible===original[i].visible),
+    originalFoliagePreserved:foliage.every(r=>r.mesh.geometry===r.geometry&&r.mesh.visible===r.visible)};
+  },
+  phase13Status:()=>({loader:phase13Assets.status(),manifest:state.sourceManifest?.phase13??null,textures:phase13Textures,sourceLayers:state.layers.size}),
   stage9PerformanceStatus:()=>{
    const resources=performance.getEntriesByType('resource');
-   const glb=resources.filter(e=>/\.glb(?:\.[a-f0-9]{16}\.gz)?(?:\?|$)/i.test(e.name));
+   const glb=resources.filter(e=>/\.glb(?:\.[a-f0-9]{16}(?:\.meshopt)?\.gz)?(?:\?|$)/i.test(e.name));
    const nav=performance.getEntriesByType('navigation')[0];
    return {
     adaptiveGraphics:phase12Graphics.status(),

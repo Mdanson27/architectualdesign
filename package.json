@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build && node scripts/phase13-compress-assets.mjs",
+    "build": "vite build && node scripts/phase13-compress-assets.mjs && node scripts/phase13-bake-textures.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "test:site": "node tests/verify-site-context.mjs",
     "test:windows": "node tests/verify-glazing.mjs",

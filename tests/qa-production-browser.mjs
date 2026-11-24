@@ -8,7 +8,7 @@ import {STAGE9_QA_POLICY,summarizeStage9Engineering} from '../src/phase2/stage9-
 const root=path.resolve('dist');
 const port=5188,debugPort=22000+(process.pid%15000);
 const contentTypes={'.html':'text/html','.js':'application/javascript','.json':'application/json',
- '.css':'text/css','.gz':'application/gzip','.glb':'model/gltf-binary','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'};
+ '.css':'text/css','.ktx2':'image/ktx2','.wasm':'application/wasm','.gz':'application/gzip','.glb':'model/gltf-binary','.svg':'image/svg+xml','.png':'image/png','.jpg':'image/jpeg'};
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const server=http.createServer((req,res)=>{
  try{
@@ -742,10 +742,15 @@ try{
   if(!compressed?.loader.automatic||!compressed.manifest?.lossless||compressed.sourceLayers!==76||
      compressed.loader.compressedLayers!==compressed.manifest.compressedLayers||
      compressed.loader.compressedLayers+compressed.loader.originalLayers!==76||
-     compressed.loader.fallbacks!==0||compressed.loader.savingsPercent<20)
+     compressed.loader.fallbacks!==0||compressed.loader.meshoptFallbacks!==0||compressed.loader.meshoptLayers!==compressed.manifest.meshoptLayers||compressed.loader.meshoptLayers<1||compressed.loader.compressedBytes!==compressed.manifest.preferredBytes||compressed.loader.savingsPercent<20)
    throw Error('Phase 13 real-browser compressed delivery failed: '+JSON.stringify(compressed));
   console.log('PHASE13_BROWSER_COMPRESSED_DELIVERY',JSON.stringify(compressed));
   report.phase13=compressed;
+  if(!compressed.textures?.available||compressed.textures.decoded!==6||compressed.textures.fallbacks!==0||compressed.textures.textures.some(t=>t.mipLevels!==10||t.width!==512||t.height!==512||!t.visual||t.visual.meanAbsoluteError>5||t.visual.p99AbsoluteError>24))throw Error('Phase 13 KTX2 browser decode failed: '+JSON.stringify(compressed.textures));
+  console.log('PHASE13_KTX2_BROWSER',JSON.stringify(compressed.textures));
+  const lod=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase13LodAudit())"));
+  if(!lod?.sourcePreserved||!lod.originalFoliagePreserved||!lod.simplified.lod.lastLodBatches||lod.simplified.triangles>=lod.full.triangles||lod.simplified.calls!==lod.full.calls)throw Error('Phase 13 actual decorative LOD parity failed: '+JSON.stringify(lod));
+  console.log('PHASE13_BROWSER_DECORATIVE_LOD',JSON.stringify(lod));report.phase13Lod=lod;
  const desktopPerf=JSON.parse(await rawMetrics());
  if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
     !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||
