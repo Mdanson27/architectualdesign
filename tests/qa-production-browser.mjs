@@ -746,8 +746,11 @@ try{
    throw Error('Phase 13 real-browser compressed delivery failed: '+JSON.stringify(compressed));
   console.log('PHASE13_BROWSER_COMPRESSED_DELIVERY',JSON.stringify(compressed));
   report.phase13=compressed;
-  if(!compressed.textures?.available||compressed.textures.decoded!==6||compressed.textures.fallbacks!==0||compressed.textures.textures.some(t=>t.mipLevels!==10||t.width!==512||t.height!==512))throw Error('Phase 13 KTX2 browser decode failed: '+JSON.stringify(compressed.textures));
+  if(!compressed.textures?.available||compressed.textures.decoded!==6||compressed.textures.fallbacks!==0||compressed.textures.textures.some(t=>t.mipLevels!==10||t.width!==512||t.height!==512||!t.visual||t.visual.meanAbsoluteError>5||t.visual.p99AbsoluteError>24))throw Error('Phase 13 KTX2 browser decode failed: '+JSON.stringify(compressed.textures));
   console.log('PHASE13_KTX2_BROWSER',JSON.stringify(compressed.textures));
+  const lod=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase13LodAudit())"));
+  if(!lod?.sourcePreserved||!lod.originalFoliagePreserved||!lod.simplified.lod.lastLodBatches||lod.simplified.triangles>=lod.full.triangles||lod.simplified.calls!==lod.full.calls)throw Error('Phase 13 actual decorative LOD parity failed: '+JSON.stringify(lod));
+  console.log('PHASE13_BROWSER_DECORATIVE_LOD',JSON.stringify(lod));report.phase13Lod=lod;
  const desktopPerf=JSON.parse(await rawMetrics());
  if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
     !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||

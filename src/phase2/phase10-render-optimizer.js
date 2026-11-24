@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
+import {isDecorativeFoliage,foliageLodChoice,createFoliageLodProxy} from './phase13-render-lod.js';
 
 /**
  * Phase 10: a presentation-only draw batching pass.
@@ -69,10 +70,10 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
  const source=new Map(sourceRecords.map(r=>[r.mesh,r]));
  const batches=[],stats={sourceMeshes:0,generatedMeshes:0,mergedBatches:0,
   instancedBatches:0,extraBytes:0,eligibleMeshes:0,skippedBudget:0,
-  lastActiveBatches:0,lastReplacedDraws:0,lastSavedSubmissions:0};
+  lastActiveBatches:0,lastReplacedDraws:0,lastSavedSubmissions:0,lodBatches:0,lodInstances:0,lastLodBatches:0,lastLodPotentialTrianglesSaved:0};
  let disposed=false;
  scene.updateMatrixWorld(true);
- const box=new THREE.Box3(),center=new THREE.Vector3();
+ const box=new THREE.Box3(),center=new THREE.Vector3(),lodBox=new THREE.Box3(),cameraPosition=new THREE.Vector3();
  function addBatch(root,objects,instanced=false){
   if(objects.length<2)return;
   const first=objects[0],inverse=root.matrixWorld.clone().invert();
@@ -107,8 +108,10 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
    attributeVersions:Object.entries(o.geometry.attributes).map(([k,a])=>[k,a,a.version]),
    index:o.geometry.index,indexVersion:o.geometry.index?.version
   }));
-  batches.push({root,batch,members,instanced,ownedBytes:instanced?0:bytes(batch.geometry)});
   stats.extraBytes+=instanced?estimate:bytes(batch.geometry);
+  const lod=createFoliageLodProxy(objects,transforms,source,budget.maxExtraBytes-stats.extraBytes);
+  if(lod){root.add(lod.proxy);stats.extraBytes+=lod.cost;stats.lodBatches++;stats.lodInstances+=lod.instances;}
+  batches.push({root,batch,members,instanced,ownedBytes:instanced?0:bytes(batch.geometry),lod});
   stats[instanced?'instancedBatches':'mergedBatches']++;
   for(const o of objects)stats[source.has(o)?'sourceMeshes':'generatedMeshes']++;
  }
@@ -124,7 +127,7 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
    box.copy(o.geometry.boundingBox).applyMatrix4(o.matrixWorld).getCenter(center);
    const rec=source.get(o);
    const key=[o.material.uuid,layout(o.geometry),signature(o),
-    rec?rec.layer.level+':'+rec.category:'generated',
+    rec?rec.layer.level+':'+rec.category:isDecorativeFoliage(o)?'generated-foliage':'generated',
     Math.floor(center.x/budget.cellMetres),Math.floor(center.y/3.3),
     Math.floor(center.z/budget.cellMetres)].join('/');
    if(!groups.has(key))groups.set(key,[]);
@@ -165,13 +168,14 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
    o.onBeforeRender===THREE.Object3D.prototype.onBeforeRender&&
    o.onAfterRender===THREE.Object3D.prototype.onAfterRender;
  }
- function render(renderer,camera,{optimized=true}={}){
+ function render(renderer,camera,{optimized=true,allowLod=true}={}){
   if(disposed||!optimized){renderer.render(scene,camera);return;}
   // Synchronize matrices before validating batches. Objects are hidden ONLY
   // during the synchronous render call; raycast and scene queries see originals.
   scene.updateMatrixWorld();
   const active=[],autoUpdate=scene.matrixWorldAutoUpdate;
-  stats.lastActiveBatches=0;stats.lastReplacedDraws=0;stats.lastSavedSubmissions=0;
+  stats.lastActiveBatches=0;stats.lastReplacedDraws=0;stats.lastSavedSubmissions=0;stats.lastLodBatches=0;stats.lastLodPotentialTrianglesSaved=0;
+  if(stats.lodBatches&&camera?.isCamera)camera.getWorldPosition(cameraPosition);
   try{
    residency?.begin(camera,renderer);
    for(const b of batches){
@@ -180,9 +184,16 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
      m.wireframe||m.displacementMap||m.clippingPlanes?.length||
      m.onBeforeCompile!==THREE.Material.prototype.onBeforeCompile||
      !b.members.every(member=>valid(member,b.root)));
-    residency?.observe(b.batch,{owned:!b.instanced,active:validBatch,bytes:b.ownedBytes});
+    let proxy=b.batch;
+    if(b.lod){
+     const bounds=b.instanced?b.batch.boundingBox:b.batch.geometry.boundingBox;
+     lodBox.copy(bounds).applyMatrix4(b.batch.matrixWorld);
+     b.lod.active=validBatch&&foliageLodChoice(lodBox.distanceToPoint(cameraPosition),b.lod.active,allowLod&&camera?.isCamera);
+     if(b.lod.active){proxy=b.lod.proxy;stats.lastLodBatches++;stats.lastLodPotentialTrianglesSaved+=b.lod.trianglesSaved;}
+    }
+    residency?.observe(b.batch,{owned:!b.instanced,active:validBatch&&proxy===b.batch,bytes:b.ownedBytes});
     if(!validBatch)continue;
-    b.batch.visible=true;active.push(b);
+    proxy.visible=true;active.push({b,proxy});
     for(const m of b.members)m.o.visible=false;
     stats.lastActiveBatches++;stats.lastReplacedDraws+=b.members.length;
     stats.lastSavedSubmissions+=b.members.length-1;
@@ -191,8 +202,8 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
    renderer.render(scene,camera);
   }finally{
    scene.matrixWorldAutoUpdate=autoUpdate;
-   for(const b of active){
-    b.batch.visible=false;for(const m of b.members)m.o.visible=true;
+   for(const {b,proxy} of active){
+    proxy.visible=false;for(const m of b.members)m.o.visible=true;
    }
   }
  }
@@ -202,6 +213,7 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
   if(disposed)return;disposed=true;residency?.clear();
   for(const b of batches){
    b.root.remove(b.batch);
+   if(b.lod){b.root.remove(b.lod.proxy);b.lod.proxy.dispose();b.lod.geometry.dispose();}
    if(b.instanced)b.batch.dispose();else b.batch.geometry.dispose();
   }
  }

@@ -1969,7 +1969,7 @@ function animate(){
    lastHudUpdate=0;
   }
  }
- if(phase10Renderer)phase10Renderer.render(renderer,camera);
+ if(phase10Renderer)phase10Renderer.render(renderer,camera,{allowLod:!(qaPage&&phase12ReferenceCapture)});
  else renderer.render(scene,camera);
 }
 // Browser-only acceptance diagnostics. Available only on a locally hosted ?qa preview.
@@ -2146,7 +2146,7 @@ if(isLocalQA){
    if(!state.initialReady)return null;
    // Rendering and serialization in the SAME JS task avoids blank WebGL
    // screenshots on Chrome's SwiftShader software renderer.
-   if(phase10Renderer)phase10Renderer.render(renderer,camera);
+   if(phase10Renderer)phase10Renderer.render(renderer,camera,{allowLod:false});
    else renderer.render(scene,camera);
    return renderer.domElement.toDataURL('image/png');
   },
@@ -2159,7 +2159,7 @@ if(isLocalQA){
    const visibility=state.meshes.map(r=>r.mesh.visible);
    phase10Renderer.render(renderer,camera,{optimized:false});
    const baseline=metrics();
-   phase10Renderer.render(renderer,camera);
+   phase10Renderer.render(renderer,camera,{allowLod:false});
    const optimized=metrics();
    const unchanged=state.meshes.every((r,i)=>r.mesh.visible===visibility[i]);
    const broadPhase=[...phase10Indexes.values()].map(e=>e.index.status());
@@ -2178,15 +2178,15 @@ if(isLocalQA){
    const away=camera.clone();
    away.position.set(1000,1000,1000);away.lookAt(1100,1100,1100);
    away.updateMatrixWorld(true);
-   phase10Renderer.render(renderer,camera);
+   phase10Renderer.render(renderer,camera,{allowLod:false});
    const before=sample();
    phase11QAClockOffset+=21000;
    let inactive,returned;
    try{
-    phase10Renderer.render(renderer,away);
+    phase10Renderer.render(renderer,away,{allowLod:false});
     inactive=sample();
    }finally{
-    phase10Renderer.render(renderer,camera);
+    phase10Renderer.render(renderer,camera,{allowLod:false});
     returned=sample();
    }
    return {before,inactive,returned,visibilityRestored:state.meshes.every((r,i)=>r.mesh.visible===visibility[i]),
@@ -2203,7 +2203,7 @@ if(isLocalQA){
    const metrics=()=>({profile:phase12Graphics.status().profile,level:phase12Graphics.status().level,
     dpr:renderer.getPixelRatio(),width:renderer.domElement.width,height:renderer.domElement.height,
     cssWidth:innerWidth,cssHeight:innerHeight,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles});
-   const renderSample=()=>{syncViewport();if(phase10Renderer)phase10Renderer.render(renderer,camera);else renderer.render(scene,camera);return metrics();};
+   const renderSample=()=>{syncViewport();if(phase10Renderer)phase10Renderer.render(renderer,camera,{allowLod:false});else renderer.render(scene,camera);return metrics();};
    phase12ReferenceCapture=false;
    phase12Graphics.suspend();
    for(let i=0;i<1200;i++)phase12Graphics.sample(16);
@@ -2219,6 +2219,18 @@ if(isLocalQA){
    // This is reachable only on localhost with ?qa, never by public visitors.
    phase12ReferenceCapture=true;phase12Graphics.suspend();syncViewport();
    return result;
+  },
+  phase13LodAudit:()=>{
+   if(!phase10Renderer||!state.siteContext?.root.visible)return null;
+   const original=state.meshes.map(r=>({geometry:r.mesh.geometry,visible:r.mesh.visible}));
+   const foliage=[];state.stage8ExteriorLandscape?.root.traverse(o=>{if(o.name==='STAGE8_TROPICAL_FOLIAGE_GROUP')foliage.push({mesh:o,geometry:o.geometry,visible:o.visible});});
+   const overview=camera.clone();overview.position.set(65,45,65);overview.lookAt(state.center);overview.updateMatrixWorld(true);
+   const sample=()=>({calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,lod:phase10Renderer.status()});
+   phase10Renderer.render(renderer,overview,{allowLod:false});const full=sample();
+   phase10Renderer.render(renderer,overview,{allowLod:true});const simplified=sample();
+   phase10Renderer.render(renderer,camera,{allowLod:false});
+   return {full,simplified,foliage:foliage.length,sourcePreserved:state.meshes.every((r,i)=>r.mesh.geometry===original[i].geometry&&r.mesh.visible===original[i].visible),
+    originalFoliagePreserved:foliage.every(r=>r.mesh.geometry===r.geometry&&r.mesh.visible===r.visible)};
   },
   phase13Status:()=>({loader:phase13Assets.status(),manifest:state.sourceManifest?.phase13??null,textures:phase13Textures,sourceLayers:state.layers.size}),
   stage9PerformanceStatus:()=>{
