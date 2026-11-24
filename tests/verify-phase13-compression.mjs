@@ -3,25 +3,32 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {gunzipSync,gzipSync} from 'node:zlib';
 import {createHash} from 'node:crypto';
+import {decodeMeshoptPacket} from '../src/phase2/phase13-meshopt-packet.js';
 import {createCompressedAssetLoader} from '../src/phase2/phase13-compressed-assets.js';
 const source=JSON.parse(await fs.readFile('public/ifc/house/manifest.json','utf8'));
 const output=JSON.parse(await fs.readFile('dist/ifc/house/manifest.json','utf8'));
 assert.equal(source.layers.length,76);assert.equal(output.layers.length,76);
 assert(output.phase13.lossless&&output.phase13.savingsPercent>=20);
-let count=0,orig=0,packed=0,first;
+let count=0,orig=0,packed=0,first,meshoptFirst,meshoptCount=0,preferred=0;
 for(let i=0;i<source.layers.length;i++){
- const layer=source.layers[i],out=output.layers[i],{phase13Compression:meta,...untouched}=out;
+ const layer=source.layers[i],out=output.layers[i],{phase13Compression:meta,phase13Meshopt:alt,...untouched}=out;
  assert.deepEqual(untouched,layer);
  const original=await fs.readFile(path.join('public',layer.glb.slice(1)));
  const fallback=await fs.readFile(path.join('dist',layer.glb.slice(1)));
  assert(original.equals(fallback));orig+=original.length;
+ if(alt){const compressed=await fs.readFile(path.join('dist',alt.path.slice(1)));
+  assert.equal(compressed.length,alt.compressedBytes);assert(alt.compressedBytes<(meta?.compressedBytes??original.length));
+  const decoded=await decodeMeshoptPacket(gunzipSync(compressed),original.length);assert(Buffer.from(decoded).equals(original));
+  assert.equal(alt.sha256,createHash('sha256').update(original).digest('hex'));meshoptCount++;preferred+=compressed.length;
+  meshoptFirst??={layer:out,compressed,original};
+ }else preferred+=meta?.compressedBytes??original.length;
  if(!meta){packed+=original.length;continue;}
  const compressed=await fs.readFile(path.join('dist',meta.path.slice(1)));
  assert(gunzipSync(compressed).equals(original));
  assert.equal(meta.sha256,createHash('sha256').update(original).digest('hex'));
  assert.equal(meta.originalBytes,original.length);assert.equal(meta.compressedBytes,compressed.length);
  assert(meta.path.endsWith('.'+meta.sha256.slice(0,16)+'.gz'));packed+=compressed.length;count++;
- first??={layer:out,compressed,original};
+ first??={layer:{...out,phase13Meshopt:undefined},compressed,original};
 }
 assert.equal(count,output.phase13.compressedLayers);assert.equal(orig,output.phase13.originalBytes);assert.equal(packed,output.phase13.compressedBytes);
 let parseCalls=0,originalCalls=0;
@@ -39,4 +46,11 @@ assert.equal(await invalid.load(first.layer),'original');assert.equal(invalid.st
 const unsupported=createCompressedAssetLoader({loader,assetURL:p=>p,Decompress:null,fetcher:()=>{throw Error('must not fetch');}});
 assert.equal(await unsupported.load(first.layer),'original');assert.equal(unsupported.status().fallbacks,0);
 assert.equal(parseCalls,2);assert.equal(originalCalls,3);
+assert.equal(meshoptCount,output.phase13.meshoptLayers);assert(meshoptCount>0);assert.equal(preferred,output.phase13.preferredBytes);assert(preferred<packed);
+const altLoader={parseAsync:async b=>{assert(Buffer.from(b).equals(meshoptFirst.original));return 'meshopt';},loadAsync:async()=>{throw Error('unexpected original fallback');}};
+const alt=createCompressedAssetLoader({loader:altLoader,assetURL:p=>p,fetcher:async()=>new Response(meshoptFirst.compressed)});
+assert.equal(await alt.load(meshoptFirst.layer),'meshopt');assert.equal(alt.status().meshoptLayers,1);
+const fallbackAlt=createCompressedAssetLoader({loader:altLoader,assetURL:p=>p,fetcher:async p=>p.endsWith('.meshopt.gz')?new Response(new Uint8Array([1,2,3])):new Response(await fs.readFile(path.join('dist',meshoptFirst.layer.phase13Compression.path.slice(1))))});
+assert.equal(await fallbackAlt.load(meshoptFirst.layer),'meshopt');assert.equal(fallbackAlt.status().meshoptFallbacks,1);assert.equal(fallbackAlt.status().meshoptLayers,0);
+console.log('PHASE13_MESHOPT_EXACT_PARITY',JSON.stringify({meshoptCount,preferred,packed,meshoptAdditionalBytesSaved:packed-preferred}));
 console.log('PHASE13_EXACT_ROUNDTRIP_AND_FALLBACK',JSON.stringify({count,orig,packed,savingsPercent:output.phase13.savingsPercent,parseCalls,originalCalls}));
