@@ -39,7 +39,8 @@
     "test:stage6": "node tests/verify-stage6-wet-areas.mjs",
     "test:stage7-production": "node tests/verify-stage7-production.mjs",
     "test:stage8": "node tests/verify-stage8-exterior-landscape.mjs",
-    "test:stage9": "node tests/verify-stage9-release.mjs"
+    "test:stage9": "node tests/verify-stage9-release.mjs",
+    "test:phase10": "node tests/verify-phase10-optimizer.mjs"
   },
   "dependencies": {
     "three": "^0.181.0"
