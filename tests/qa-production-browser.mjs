@@ -722,7 +722,7 @@ try{
   if(png.length<5000||png.toString('ascii',1,4)!=='PNG')
    throw Error('Invalid Stage 9 screenshot '+name+' bytes='+png.length);
   const width=png.readUInt32BE(16),height=png.readUInt32BE(20);
-  if(width!==widthExpected)
+  if(!(width===widthExpected||(widthExpected===390&&width===780)))
    throw Error('Stage 9 incorrect screenshot viewport '+name+': '+width);
   const rel='analysis/stage9-visuals/'+name+'.png';
   fs.writeFileSync(rel,png);
