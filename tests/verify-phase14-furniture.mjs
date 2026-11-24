@@ -26,3 +26,7 @@ for(const a of manifest.assets){
 }
 assert(low<high);
 console.log('PHASE14_LIBRARY_QA',JSON.stringify({assets:manifest.assets.length,variants:manifest.assets.length*2,highTriangles:high,lowTriangles:low,allBoundsValid:true,allHashesValid:true}));
+
+const referenceTags={ 'curved-sofa':['rounded-wrap-arm','separate-deep-seat-cushion'],'rest-chaise':['single-raised-side','folded-draped-throw'],'sculptural-accent-chair':['floor-hugging-vertically-ribbed-barrel-shell','concealed-plinth'],'curved-dining-chair':['continuous-curved-walnut-back-and-arm'],'sculptural-dining-table':['hourglass-fluted-timber-pedestal','oval-dark-timber-top'],'rounded-coffee-table':['low-round-drum-base','tall-round-drum-base'],'fluted-writing-desk':['vertical-fluted-writing-desk-support'],'balcony-chair':['slender-weather-resistant-frame','outdoor-seat-cushion','separate-light-back-cushion'],'upholstered-bed':['twin-upholstered-headboard-panel'],'layered-pendant':['tapered-ceramic-pendant-shade']};
+for(const [id,tags] of Object.entries(referenceTags)){const model=createFurnitureAsset(id);const names=model.children.map(m=>m.name);for(const tag of tags)assert(names.includes(tag),id+' missing '+tag);if(id==='sculptural-accent-chair')assert(!names.includes('tapered-timber-foot'));}
+console.log('PHASE14_REFERENCE_FEATURES',JSON.stringify({checked:Object.keys(referenceTags).length,features:Object.values(referenceTags).flat().length}));

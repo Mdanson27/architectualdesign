@@ -133,6 +133,7 @@ jobs:
           path: |
             architecture-browser-qa.json
             analysis/stage9-visuals/*.png
+            analysis/phase14-visuals/*.png
             analysis/stage1-room-candidate-crosswalk.json
             analysis/stage1-dining-draft.png
           if-no-files-found: ignore

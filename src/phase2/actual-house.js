@@ -2232,6 +2232,15 @@ if(isLocalQA){
    return {full,simplified,foliage:foliage.length,sourcePreserved:state.meshes.every((r,i)=>r.mesh.geometry===original[i].geometry&&r.mesh.visible===original[i].visible),
     originalFoliagePreserved:foliage.every(r=>r.mesh.geometry===r.geometry&&r.mesh.visible===r.visible)};
   },
+  phase14RenderLibrarySheet:async()=>{
+   const manifest=await (await fetch(assetURL('/furniture/manifest.json'))).json();
+   const preview=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});preview.setSize(240,216);preview.setPixelRatio(1);preview.outputColorSpace=THREE.SRGBColorSpace;preview.toneMapping=THREE.ACESFilmicToneMapping;
+   const sheet=document.createElement('canvas');sheet.width=5*240;sheet.height=Math.ceil(manifest.assets.length/5)*252;const ctx=sheet.getContext('2d');ctx.fillStyle='#eee9e2';ctx.fillRect(0,0,sheet.width,sheet.height);let count=0;
+   try{for(const asset of manifest.assets){const gltf=await loader.loadAsync(assetURL(asset.variants.high.path));const model=gltf.scene;const s=new THREE.Scene();s.background=new THREE.Color(0xece7df);s.add(model);const hem=new THREE.HemisphereLight(0xfff8ed,0x7c746c,2.0);s.add(hem);const key=new THREE.DirectionalLight(0xffefdf,2.8);key.position.set(-3,5,-4);s.add(key);const fill=new THREE.DirectionalLight(0xffffff,1.1);fill.position.set(3,2,3);s.add(fill);
+    const box=new THREE.Box3().setFromObject(model,true),size=box.getSize(new THREE.Vector3()),center=box.getCenter(new THREE.Vector3()),r=Math.max(...size.toArray())*.76;const cam=new THREE.OrthographicCamera(-r*240/216,r*240/216,r,-r,.01,100);cam.position.copy(center).add(new THREE.Vector3(1.6,1.1,-2.4).normalize().multiplyScalar(r*5));cam.lookAt(center);cam.updateProjectionMatrix();preview.render(s,cam);const x=count%5*240,y=Math.floor(count/5)*252;ctx.drawImage(preview.domElement,x,y);ctx.fillStyle='#29251f';ctx.font='12px Arial';ctx.fillText(asset.id,x+8,y+230);ctx.fillStyle='#675f55';ctx.fillText('Brief p. '+asset.pages.join(', '),x+8,y+245);count++;model.traverse(o=>{if(o.isMesh){o.geometry.dispose();for(const m of Array.isArray(o.material)?o.material:[o.material])m.dispose();}});}
+    return {count,png:sheet.toDataURL('image/png')};
+   }finally{preview.dispose();}
+  },
   phase13Status:()=>({loader:phase13Assets.status(),manifest:state.sourceManifest?.phase13??null,textures:phase13Textures,sourceLayers:state.layers.size}),
   stage9PerformanceStatus:()=>{
    const resources=performance.getEntriesByType('resource');
