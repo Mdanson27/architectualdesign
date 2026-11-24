@@ -1969,7 +1969,11 @@ function animate(){
    lastHudUpdate=0;
   }
  }
- if(phase10Renderer)phase10Renderer.render(renderer,camera,{allowLod:!(qaPage&&phase12ReferenceCapture)});
+ // Local acceptance captures explicitly render each requested frame. Avoid
+ // saturating the software GPU with continuous duplicate reference frames.
+ // This never affects public rendering or the preceding live adaptation tests.
+ if(qaPage&&phase12ReferenceCapture)return;
+ if(phase10Renderer)phase10Renderer.render(renderer,camera,{allowLod:true});
  else renderer.render(scene,camera);
 }
 // Browser-only acceptance diagnostics. Available only on a locally hosted ?qa preview.
@@ -2144,6 +2148,7 @@ if(isLocalQA){
     blockedCuts:state.doorApertureAudit?.occlusionDetails??[]}),
   captureStage9CanvasFrame:()=>{
    if(!state.initialReady)return null;
+   syncViewport();
    // Rendering and serialization in the SAME JS task avoids blank WebGL
    // screenshots on Chrome's SwiftShader software renderer.
    if(phase10Renderer)phase10Renderer.render(renderer,camera,{allowLod:false});
