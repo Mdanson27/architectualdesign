@@ -12,7 +12,7 @@ export const FURNITURE_CATALOG=Object.freeze({
  'rounded-coffee-table':{pages:[15],dimensions:[1.07,.47,.61],category:'living'},
  'pedestal-side-table':{pages:[18],dimensions:[.36,.58,.36],category:'living'},
  'upholstered-bed':{pages:[22,23],dimensions:[1.80,1.20,2.10],category:'bedroom'},
- 'storage-ottoman':{pages:[13,22],dimensions:[.55,.48,.55],category:'bedroom'},
+ 'storage-ottoman':{pages:[13],dimensions:[.55,.68,.55],category:'entry'},
  'fitted-wardrobe':{pages:[23,24],dimensions:[1.8,2.45,.6],category:'storage'},
  'fluted-writing-desk':{pages:[25],dimensions:[1.45,.76,.65],category:'study'},
  'recessed-kitchen-cabinet':{pages:[26,30,31,32],dimensions:[.9,.91,.61],category:'kitchen'},
@@ -181,7 +181,8 @@ export function createFurnitureAsset(id,{detail='high',materials}={}){
  }
  case 'sculptural-accent-chair':{
   barrelShell(.80,.74,m.sage);
-  box('concealed-plinth',.65,.07,.55,.035,m.walnut,0,.05,.02);
+  box('concealed-plinth',.59,.045,.51,.02,m.walnut,0,.025,.025);
+  box('fully-upholstered-floor-hugging-seat-base',.67,.32,.63,.12,m.sage,0,.19,-.01);
   box('deep-single-seat',.61,.19,.59,.085,m.sage,0,.40,-.015);
   const p=box('olive-loose-back-cushion',.50,.31,.17,.065,m.sage,0,.68,.16);p.rotation.x=-.15;
   break;
@@ -203,6 +204,10 @@ export function createFurnitureAsset(id,{detail='high',materials}={}){
   feet(.205,.205,.205);box('timber-seat-frame',.49,.065,.51,.03,m.timber,0,.43,0);
   box('shaped-seat-upholstery',.45,.11,.45,.05,m.taupe,0,.50,0);
   shell('continuous-curved-walnut-back-and-arm',.43,.18,.76,.31,.075,m.walnut);
+  for(const side of [-1,1]){
+   curveTube('continuous-walnut-back-support',[[side*.205,.39,.17],[side*.216,.55,.12],[side*.215,.73,.035]],.029,m.walnut);
+   box('walnut-shell-to-seat-joint',.065,.17,.07,.02,m.walnut,side*.205,.52,.14);
+  }
   box('upholstered-back-pad',.37,.24,.085,.038,m.taupe,0,.77,.18);break;
  case 'sculptural-dining-table':
   flutedPedestal('hourglass-fluted-timber-pedestal',-.59,0,.72,.26,m.walnut);
@@ -225,10 +230,11 @@ export function createFurnitureAsset(id,{detail='high',materials}={}){
   if(high){for(let i=0;i<5;i++)curveTube('duvet-seam',[[-.78,.625,-.84+i*.10],[0,.645,-.82+i*.10],[.78,.625,-.84+i*.10]],.004,m.ivory);}
   box('folded-bed-throw',1.7,.055,.36,.025,m.textile,0,.65,-.57);break;
  case 'storage-ottoman':
-  cyl('recessed-timber-base',.24,.24,.045,m.walnut,0,.025,0);
-  box('rounded-storage-body',.54,.35,.54,.15,m.taupe,0,.22,0);
-  box('removable-upholstered-lid',.55,.11,.55,.055,m.cream,0,.425,0);
-  shell('wraparound-entry-ottoman-back',.45,.15,.38,.20,.065,m.taupe);break;
+  cyl('concealed-recessed-base',.235,.235,.035,m.walnut,0,.02,0);
+  cyl('cylindrical-upholstered-storage-body',.247,.247,.47,m.taupe,0,.26,0);
+  box('removable-ivory-seat-lid',.46,.105,.46,.052,m.cream,0,.515,-.012);
+  // A tall continuous outer padded wrap, not a second floating lid.
+  barrelShell(.55,.55,m.taupe);break;
  case 'fitted-wardrobe':
   box('full-height-cabinet-shell',1.80,2.45,.57,.015,m.walnut,0,1.225,0);
   for(let i=0;i<3;i++){let x=(i-1)*.59;box('full-height-panel',.57,2.34,.035,.008,m.timber,x,1.25,-.295);
@@ -246,7 +252,15 @@ export function createFurnitureAsset(id,{detail='high',materials}={}){
   box('rounded-countertop',.90,.05,.61,.024,m.stone,0,.885,0);break;
  case 'floating-vanity':
   box('concealed-vanity-storage',1.10,.41,.46,.025,m.timber,0,.21,0);
-  box('porcelain-counter',1.10,.05,.48,.024,m.ceramic,0,.445,0);
+  // Four counter strips leave a genuine opening into the recessed basin.
+  for(const x of [-.4075,.4075])box('stone-counter-side',.285,.05,.48,.017,m.stone,x,.445,0);
+  for(const z of [-.205,.205])box('stone-counter-edge',.54,.05,.07,.018,m.stone,0,.445,z);
+  box('undermount-basin-bottom',.49,.018,.30,.008,m.ceramic,0,.335,0);
+  for(const side of [-1,1]){
+   box('undermount-basin-side',.022,.105,.32,.009,m.ceramic,side*.253,.386,0);
+   box('undermount-basin-end',.51,.105,.021,.009,m.ceramic,0,.386,side*.16);
+  }
+  cyl('basin-drain',.025,.025,.006,m.steel,0,.348,0);
   box('drawer-front',1.03,.27,.027,.012,m.ivory,0,.24,-.245);
   box('brushed-brass-handle',.20,.016,.025,.006,m.bronze,0,.29,-.264);break;
 
