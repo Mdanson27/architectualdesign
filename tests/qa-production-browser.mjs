@@ -703,6 +703,16 @@ try{
  let screenshots=[];
  let mobilePerf=null,mobileNav=null;
  const rawMetrics=()=>evaluate("JSON.stringify(window.__AutoMindsQA.stage9PerformanceStatus())");
+ const phase10=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase10PerformanceAudit())"));
+ if(!phase10?.visibilityRestored||!phase10.batching.originalMeshesRetained||
+    phase10.batching.extraBytes>phase10.batching.maxExtraBytes||
+    phase10.baseline.drawCalls<=phase10.optimized.drawCalls||
+    phase10.reductionPercent<20)
+  throw Error('Phase 10 needs measurable same-camera draw reduction: '+JSON.stringify(phase10));
+ // Batches preserve all triangles, but a merged bounding volume may admit
+ // a few formerly culled triangles. Record rather than claim exact draw parity.
+ console.log('PHASE10_SAME_CAMERA_PERFORMANCE',JSON.stringify(phase10));
+ report.phase10=phase10;
  const desktopPerf=JSON.parse(await rawMetrics());
  if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
     !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||
