@@ -31,6 +31,7 @@ import {createStage8ExteriorLandscape} from './stage8-exterior-landscape.js';
 import {activateIntegratedHouseDesign} from './production-design.js';
 import {productionPixelRatio} from './stage9-quality-policy.js';
 import {createPhase10Renderer,createPhase10SpatialIndex} from './phase10-render-optimizer.js';
+import {createPhase11Residency,loadLayersInOrder,loadingConcurrency} from './phase11-residency.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
 
@@ -121,6 +122,7 @@ const state={
 };
 let toastTimer=null,lastMapUpdate=0,lastHudUpdate=0;
 let phase10Renderer=null;
+let phase11Loading=null,layerSync=null;
 const phase10Indexes=new Map();
 function toast(message){
  $('toast').textContent=message;$('toast').classList.add('show');
@@ -433,8 +435,8 @@ function annotateMesh(mesh,layer){
     (layer.category==='proxies'&&/^DOO/i.test(metadata?.name||'')))state.doors.push(record);
  }
 }
-async function addSourceLayer(layer){
- const gltf=await loader.loadAsync(assetURL(layer.glb));
+async function addSourceLayer(layer,gltf){
+ gltf??=await loader.loadAsync(assetURL(layer.glb));
  const group=gltf.scene;
  group.name=layer.name;
  sourceRoot.add(group);
@@ -860,10 +862,18 @@ function applyFloorSelection(choice){
  if(choice==='second')toast('Roof level (+6.60m). This is not a third occupied floor.');
  else toast(choice==='all'?'Showing the source model across all storeys':levelNames[choice]+' selected');
 }
-async function syncNewLayers(){
- const res=await fetch(assetURL('/ifc/house/manifest.json')+'?cache='+Date.now(),{cache:'no-store'});
- if(!res.ok)throw new Error('Cannot fetch source geometry manifest ('+res.status+').');
- const manifest=await res.json();
+function syncNewLayers(initialManifest){
+ if(layerSync)return layerSync;
+ layerSync=syncSourceLayers(initialManifest).finally(()=>{layerSync=null;});
+ return layerSync;
+}
+async function syncSourceLayers(initialManifest){
+ let manifest=initialManifest;
+ if(!manifest){
+  const res=await fetch(assetURL('/ifc/house/manifest.json')+'?cache='+Date.now(),{cache:'no-store'});
+  if(!res.ok)throw new Error('Cannot fetch source geometry manifest ('+res.status+').');
+  manifest=await res.json();
+ }
  state.sourceManifest=manifest;
  const entries=manifest.layers.filter(x=>x.glb && x.bounds)
   .sort((a,b)=>priority[a.category]-priority[b.category] || (sourceLevels[a.level]??10)-(sourceLevels[b.level]??10) || a.part-b.part);
@@ -876,9 +886,11 @@ async function syncNewLayers(){
   if(!state.initialReady)startIntro();
   return;
  }
- for(const layer of newEntries){
-  try{
-   const elements=await addSourceLayer(layer);
+ phase11Loading=await loadLayersInOrder(newEntries,{
+  concurrency:loadingConcurrency(navigator.deviceMemory),
+  load:layer=>loader.loadAsync(assetURL(layer.glb)),
+  attach:async(layer,gltf)=>{
+   const elements=await addSourceLayer(layer,gltf);
    // Hold introduction until all structural and furnishing files have loaded.
    // The earlier 3-layer trigger framed the camera before surrounding walls arrived.
    let numerator=state.layers.size,denominator=state.totalLayers;
@@ -886,16 +898,16 @@ async function syncNewLayers(){
       numerator+'/'+denominator+' source layers loaded · '+layer.category+' · '+elements+' objects');
    refreshVisibility();
    if(state.loadedLayers%5===0)await new Promise(resolve=>setTimeout(resolve,0));
-  }catch(err){
+  },onError:(layer,err)=>{
    console.warn('[AutoMinds Source] Layer failed',layer.name,err);
    toast('Some source components could not be displayed: '+layer.name);
   }
- }
+ });
  setupEnhancements();
  // Rebuild only on a new source-layer import, not on the animation loop.
  phase10Renderer?.dispose();
  phase10Indexes.clear();
- phase10Renderer=createPhase10Renderer({scene,sourceRecords:state.meshes,
+ phase10Renderer=createPhase10Renderer({scene,sourceRecords:state.meshes,residency:createPhase11Residency(),
   roots:[sourceRoot,state.siteContext?.root,state.stage4LivingDining?.root,
    state.stage5BedroomsStudy?.root,state.stage6WetAreas?.root,
    state.stage7StairsBalconiesLighting?.root,state.dining?.root,
@@ -955,7 +967,7 @@ async function begin(){
   determineOrigin(manifest);
   $('elementTotal').textContent=Object.keys(map).length.toLocaleString();
   progress(7,'Read real IFC element index');
-  await syncNewLayers();
+  await syncNewLayers(manifest);
   // GitHub Pages deployments are immutable. Do not poll the source
   // manifest every 35 seconds in normal production visitor sessions.
   if(!publicPreview||qaPage)
@@ -2187,6 +2199,7 @@ if(isLocalQA){
     reductionPercent:baseline.drawCalls>0?
       100*(baseline.drawCalls-optimized.drawCalls)/baseline.drawCalls:0};
   },
+  phase11Status:()=>({loading:phase11Loading,residency:phase10Renderer?.status().residency??null,sourceLayers:state.layers.size,expectedLayers:state.totalLayers,automatic:true}),
   stage9PerformanceStatus:()=>{
    const resources=performance.getEntriesByType('resource');
    const glb=resources.filter(e=>/\.glb(?:\?|$)/i.test(e.name));

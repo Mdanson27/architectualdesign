@@ -64,7 +64,7 @@ function shapeKey(g){
 }
 const signature=o=>[o.castShadow,o.receiveShadow,o.renderOrder,o.layers.mask,
  o.frustumCulled].join(':');
-export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PHASE10_BUDGET}={}){
+export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PHASE10_BUDGET,residency=null}={}){
  if(!scene)throw Error('Phase 10 needs the production scene');
  const source=new Map(sourceRecords.map(r=>[r.mesh,r]));
  const batches=[],stats={sourceMeshes:0,generatedMeshes:0,mergedBatches:0,
@@ -107,7 +107,7 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
    attributeVersions:Object.entries(o.geometry.attributes).map(([k,a])=>[k,a,a.version]),
    index:o.geometry.index,indexVersion:o.geometry.index?.version
   }));
-  batches.push({root,batch,members,instanced});
+  batches.push({root,batch,members,instanced,ownedBytes:instanced?0:bytes(batch.geometry)});
   stats.extraBytes+=instanced?estimate:bytes(batch.geometry);
   stats[instanced?'instancedBatches':'mergedBatches']++;
   for(const o of objects)stats[source.has(o)?'sourceMeshes':'generatedMeshes']++;
@@ -173,12 +173,15 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
   const active=[],autoUpdate=scene.matrixWorldAutoUpdate;
   stats.lastActiveBatches=0;stats.lastReplacedDraws=0;stats.lastSavedSubmissions=0;
   try{
+   residency?.begin(camera,renderer);
    for(const b of batches){
     const m=b.batch.material;
-    if(!b.root.visible||m.transparent||m.opacity!==1||m.alphaTest!==0||
+    const validBatch=!( !b.root.visible||m.transparent||m.opacity!==1||m.alphaTest!==0||
      m.wireframe||m.displacementMap||m.clippingPlanes?.length||
      m.onBeforeCompile!==THREE.Material.prototype.onBeforeCompile||
-     !b.members.every(member=>valid(member,b.root)))continue;
+     !b.members.every(member=>valid(member,b.root)));
+    residency?.observe(b.batch,{owned:!b.instanced,active:validBatch,bytes:b.ownedBytes});
+    if(!validBatch)continue;
     b.batch.visible=true;active.push(b);
     for(const m of b.members)m.o.visible=false;
     stats.lastActiveBatches++;stats.lastReplacedDraws+=b.members.length;
@@ -194,9 +197,9 @@ export function createPhase10Renderer({scene,roots=[],sourceRecords=[],budget=PH
   }
  }
  function status(){return {...stats,automatic:true,originalMeshesRetained:true,
-  maxExtraBytes:budget.maxExtraBytes,batches:batches.length};}
+  maxExtraBytes:budget.maxExtraBytes,batches:batches.length,residency:residency?.status()??null};}
  function dispose(){
-  if(disposed)return;disposed=true;
+  if(disposed)return;disposed=true;residency?.clear();
   for(const b of batches){
    b.root.remove(b.batch);
    if(b.instanced)b.batch.dispose();else b.batch.geometry.dispose();

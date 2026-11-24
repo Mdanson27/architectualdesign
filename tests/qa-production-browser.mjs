@@ -713,6 +713,10 @@ try{
  // a few formerly culled triangles. Record rather than claim exact draw parity.
  console.log('PHASE10_SAME_CAMERA_PERFORMANCE',JSON.stringify(phase10));
  report.phase10=phase10;
+  const phase11=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase11Status())"));
+  if(!phase11?.automatic||phase11.sourceLayers!==phase11.expectedLayers||phase11.loading?.failed!==0||phase11.loading?.peak>2||!phase11.residency?.sourceGeometryRetained||!phase11.residency?.tracked)throw Error('Phase 11 production integration failed: '+JSON.stringify(phase11));
+  console.log('PHASE11_PRODUCTION_RESIDENCY',JSON.stringify(phase11));
+  report.phase11=phase11;
  const desktopPerf=JSON.parse(await rawMetrics());
  if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
     !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||
