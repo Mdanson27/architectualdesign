@@ -775,10 +775,15 @@ try{
   width:390,height:844,deviceScaleFactor:2,mobile:false,
   screenWidth:390,screenHeight:844
  });
- await sleep(900);
- mobilePerf=JSON.parse(await rawMetrics());
+ // Software-rendered Chrome may defer resize events until the next frame.
+ // Wait for the actual renderer dimensions; do not weaken the mobile budget.
+ const resizeDeadline=Date.now()+12000;
+ do{
+  await sleep(300);
+  mobilePerf=JSON.parse(await rawMetrics());
+ }while((mobilePerf.cssWidth!==390||mobilePerf.rendererDpr>1.01||mobilePerf.canvasWidth!==390)&&Date.now()<resizeDeadline);
  if(mobilePerf.cssWidth!==390||mobilePerf.rendererDpr>1.01||
-    mobilePerf.canvasWidth>390||!mobilePerf.webglResponsive)
+    mobilePerf.canvasWidth!==390||!mobilePerf.webglResponsive)
   throw Error('Stage 9 mobile rendering budget invalid: '+JSON.stringify(mobilePerf));
  await captureVisual('mobile-house-day',390);
  mobileNav=JSON.parse(await evaluate("JSON.stringify((()=>{const b=document.querySelector('#mobileExploreBtn');b.click();return {expanded:b.getAttribute('aria-expanded'),open:document.querySelector('#exploreSidebar').classList.contains('mobileExpanded'),scrollWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth};})())"));

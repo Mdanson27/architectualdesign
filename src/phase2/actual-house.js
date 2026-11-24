@@ -1981,11 +1981,21 @@ renderer.domElement.addEventListener('pointermove',e=>{
 });
 renderer.domElement.addEventListener('pointerup',e=>{if(e.pointerId===lookPointer)lookPointer=null;});
 renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===lookPointer)lookPointer=null;});
+let viewportWidth=innerWidth,viewportHeight=innerHeight,viewportDpr=renderer.getPixelRatio();
+function syncViewport(){
+ const width=Math.max(1,innerWidth),height=Math.max(1,innerHeight),dpr=productionPixelRatio(devicePixelRatio||1,width);
+ if(width===viewportWidth&&height===viewportHeight&&dpr===viewportDpr)return;
+ camera.aspect=width/height;camera.updateProjectionMatrix();
+ if(dpr!==viewportDpr)renderer.setPixelRatio(dpr);
+ renderer.setSize(width,height);
+ viewportWidth=width;viewportHeight=height;viewportDpr=dpr;
+}
 function animate(){
  const dt=Math.min(clock.getDelta(),.06);
  // Avoid GPU drawing for hidden tabs; the clock still consumes elapsed time.
  if(document.hidden)return;
  if(!state.initialReady)return; // No unnecessary GPU uploads under the loading overlay.
+ syncViewport(); // Reconcile even if the browser coalesces/delays resize events.
  if(state.doorSystem)state.doorSystem.update(dt);
  state.planCirculation?.kitchenDoor?.update(dt);
  state.stage3Kitchen?.update(dt);
@@ -2468,9 +2478,6 @@ if(isLocalQA){
  };
 }
 renderer.setAnimationLoop(animate);
-window.addEventListener('resize',()=>{
- camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
- renderer.setPixelRatio(productionPixelRatio(devicePixelRatio,innerWidth));
- renderer.setSize(innerWidth,innerHeight);
-});
+window.addEventListener('resize',syncViewport);
+window.visualViewport?.addEventListener('resize',syncViewport);
 console.info('[AutoMinds SPACES] Source-based full-house walkthrough initialized: architecture from IFC, appearance approximated from original renders.');
