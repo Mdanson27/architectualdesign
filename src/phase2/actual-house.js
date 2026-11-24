@@ -27,6 +27,7 @@ import {createStage4LivingDining} from './stage4-living-dining.js';
 import {createStage5BedroomsStudy} from './stage5-bedroom-study.js';
 import {createStage6WetAreas} from './stage6-wet-areas.js';
 import {createStage7StairsBalconiesLighting} from './stage7-stairs-balconies-lighting.js';
+import {createStage8ExteriorLandscape} from './stage8-exterior-landscape.js';
 import {activateIntegratedHouseDesign} from './production-design.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
@@ -109,7 +110,7 @@ const state={
  enhancedFurniture:true,decor:null,movedSofa:null,windows:null,stairSafety:null,showStairSafety:true,gatePreview:null,siteContext:null,siteWalk:null,walkZone:'house',sourceContextAudit:null,facadeAudit:null,doorSystem:null,doorApertureAudit:null,dining:null,repairDoorApertures:true,showGatePreview:false,roomListVisible:false,measureMode:false,measureStart:null,measureLine:null,
  night:false,houseLightsOn:true,designScheme:'source',designSchemeSummary:null,
  floorPreview:'source',floorPreviewSummary:null,stage2Room:'G-DINING',stage2Floor:'source',stage2Finishes:null,
- stage2SurfaceSystem:null,stage2FullRoom:'G-SITTING',stage3Kitchen:null,stage4LivingDining:null,stage5BedroomsStudy:null,stage6WetAreas:null,stage7StairsBalconiesLighting:null,productionDesign:null,
+ stage2SurfaceSystem:null,stage2FullRoom:'G-SITTING',stage3Kitchen:null,stage4LivingDining:null,stage5BedroomsStudy:null,stage6WetAreas:null,stage7StairsBalconiesLighting:null,stage8ExteriorLandscape:null,productionDesign:null,
  lightLayers:{ambient:true,task:true,accent:true},balconies:null,showBalconies:true,lightingSystem:null,planCirculation:null,maidAccess:null,mainDoorEnclosure:null,initialReady:false,referenceIndex:0,referenceOpen:false,mapOpen:false,drawingsOpen:false,drawingIndex:0,
  footY:0,lookPointer:null,lastLook:null,keys,joyX:0,joyY:0,walkEnabled:false,
  nextLayerIndex:0,totalLayers:0,loadedLayers:0,visibleMeshes:0
@@ -333,6 +334,10 @@ function refreshVisibility(){
   showDetails:state.showDetails,showBalconies:state.showBalconies,
   showStairSafety:state.showStairSafety,
   night:state.night,enabled:state.houseLightsOn,lightLayers:state.lightLayers
+ });
+ state.stage8ExteriorLandscape?.update({
+  night:state.night,enabled:state.houseLightsOn,lightLayers:state.lightLayers,
+  showSurroundings:state.showSurroundings,walking:state.mode==='walk'
  });
  if(state.maidAccess?.root)state.maidAccess.root.visible=
   state.mode==='walk'||!state.sectionEnabled||state.floor==='all'||state.floor==='ground';
@@ -585,6 +590,11 @@ function setupEnhancements(){
  $('doorSystemCount').textContent=details+' interactive doorways · '+state.doorSystem.sourceCount+' IFC parts · '+state.doorApertureAudit.obstructedCount+' door obstructions · '+state.doorApertureAudit.windowObstructedCount+' window occlusions checked';
  console.info('[AutoMinds Spaces Doors] source records',state.doorSystem.sourceCount,'interactive doorways',details);
  state.siteContext=createCuratedSiteContext(scene,state.origin);
+ state.stage8ExteriorLandscape=createStage8ExteriorLandscape({
+  scene,site:state.siteContext,origin:state.origin,records:state.meshes
+ });
+ // Landscape objects are registered before the site walker captures
+ // physical blockers, so outdoor walking respects bollards and shrubs.
  state.siteWalk=createSiteWalkSupport(state.siteContext,state.origin);
  state.gatePreview=state.siteContext.gate;
  console.info('[AutoMinds outdoor first-person walk]',state.siteWalk.summary);
@@ -637,14 +647,15 @@ function setupEnhancements(){
  // The new balcony seats and tables are real first-person obstacles;
  // 6mm tread / deck finishes and LED concepts do not become new walls.
  state.solids.push(...state.stage7StairsBalconiesLighting.colliders);
- // PRODUCTION RULE: Stages 2–7 are installed into the real house
+ // PRODUCTION RULE: Stages 2–8 are installed into the real house
  // before the first viewport frame. Visitors do not activate phase previews.
  state.productionDesign=activateIntegratedHouseDesign({
   surfaces:state.stage2SurfaceSystem,kitchen:state.stage3Kitchen,
   livingDining:state.stage4LivingDining,
   bedroomsStudy:state.stage5BedroomsStudy,
   wetAreas:state.stage6WetAreas,
-  stairsBalconiesLighting:state.stage7StairsBalconiesLighting
+  stairsBalconiesLighting:state.stage7StairsBalconiesLighting,
+  exteriorLandscape:state.stage8ExteriorLandscape
  });
  updateFullStage2Controls();
  renderStage3Status();
@@ -1533,6 +1544,7 @@ function toggleStudioAnneLayer(layer,enabled){
  state.stage5BedroomsStudy?.update({lightLayers:state.lightLayers});
  state.stage6WetAreas?.update({lightLayers:state.lightLayers});
  state.stage7StairsBalconiesLighting?.update({lightLayers:state.lightLayers});
+ state.stage8ExteriorLandscape?.update({lightLayers:state.lightLayers});
  const status=$('designStudioStatus');
  if(status)status.textContent='Studio Anne lighting: '+Object.entries(state.lightLayers)
   .map(([key,on])=>key+' '+(on?'on':'off')).join(' · ')+' · preview only';
@@ -1550,6 +1562,7 @@ function toggleLighting(){
  state.stage5BedroomsStudy?.update({night:state.night});
  state.stage6WetAreas?.update({night:state.night});
  state.stage7StairsBalconiesLighting?.update({night:state.night});
+ state.stage8ExteriorLandscape?.update({night:state.night});
  $('lightBtn').querySelector('.long').textContent=state.night?'Night':'Daylight';
  $('lightBtn').setAttribute('aria-pressed',String(state.night));
  toast(state.night?'Night environment · house lights '+(state.houseLightsOn?'on':'off'):'Daylight restored');
@@ -1561,6 +1574,7 @@ function toggleHouseLights(){
  state.stage5BedroomsStudy?.update({enabled:state.houseLightsOn});
  state.stage6WetAreas?.update({enabled:state.houseLightsOn});
  state.stage7StairsBalconiesLighting?.update({enabled:state.houseLightsOn});
+ state.stage8ExteriorLandscape?.update({enabled:state.houseLightsOn});
  state.stage3Kitchen?.updateVisibility(state.floor,state.mode==='walk',state.showFurniture,state.lightLayers.task,state.houseLightsOn);
  $('houseLightsBtn').setAttribute('aria-pressed',String(state.houseLightsOn));
  $('houseLightsBtn').querySelector('.long').textContent=state.houseLightsOn?'Lights on':'Lights off';
@@ -2245,6 +2259,7 @@ if(isLocalQA){
   stage5BedroomsStudyStatus:()=>state.stage5BedroomsStudy?.status()??null,
   stage6WetAreasStatus:()=>state.stage6WetAreas?.status()??null,
   stage7StairsBalconiesLightingStatus:()=>state.stage7StairsBalconiesLighting?.status()??null,
+  stage8ExteriorLandscapeStatus:()=>state.stage8ExteriorLandscape?.status()??null,
   auditWetFixtureCandidates:()=>{
    // Diagnostic ONLY: dimensions, names and location from loaded source IFC.
    // Furniture is NOT presumed to be a sanitary fixture without a validated
@@ -2275,6 +2290,8 @@ if(isLocalQA){
    currentStage6WetZones:state.stage6WetAreas?.status().activeSourceWetZones??0,
    currentStage7StairTreads:state.stage7StairsBalconiesLighting?.status().sourceTreadsEnhanced??0,
    currentStage7BalconyDecks:state.stage7StairsBalconiesLighting?.status().sourceBalconiesFinished??0,
+   currentStage8LandscapePlants:state.stage8ExteriorLandscape?.status().shrubClusters??0,
+   currentStage8Lights:state.stage8ExteriorLandscape?.status().lightSources??0,
    visitorStageButtonsVisible:!document.documentElement.classList.contains('production-design')
   }),
   stage3KitchenPreview:()=>enableStage3Kitchen(true),
