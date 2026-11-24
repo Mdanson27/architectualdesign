@@ -713,6 +713,21 @@ try{
  // a few formerly culled triangles. Record rather than claim exact draw parity.
  console.log('PHASE10_SAME_CAMERA_PERFORMANCE',JSON.stringify(phase10));
  report.phase10=phase10;
+  const phase11=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase11Status())"));
+  if(!phase11?.automatic||phase11.sourceLayers!==phase11.expectedLayers||phase11.loading?.failed!==0||phase11.loading?.peak>2||!phase11.residency?.sourceGeometryRetained||!phase11.residency?.tracked)throw Error('Phase 11 production integration failed: '+JSON.stringify(phase11));
+  console.log('PHASE11_PRODUCTION_RESIDENCY',JSON.stringify(phase11));
+  report.phase11=phase11;
+  const roundTrip=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase11GpuRoundTrip())"));
+  if(!roundTrip?.visibilityRestored||!roundTrip.webglResponsive||
+     roundTrip.inactive.residency.evictions<=roundTrip.before.residency.evictions||
+     roundTrip.inactive.geometries>=roundTrip.before.geometries||
+     roundTrip.returned.residency.reentries<=roundTrip.inactive.residency.reentries||
+     roundTrip.returned.calls!==roundTrip.before.calls||
+     roundTrip.returned.triangles!==roundTrip.before.triangles||
+     roundTrip.returned.geometries!==roundTrip.before.geometries)
+   throw Error('Phase 11 real WebGL eviction/re-upload parity failed: '+JSON.stringify(roundTrip));
+  console.log('PHASE11_WEBGL_ROUND_TRIP',JSON.stringify(roundTrip));
+  report.phase11GpuRoundTrip=roundTrip;
  const desktopPerf=JSON.parse(await rawMetrics());
  if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
     !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||
@@ -771,10 +786,15 @@ try{
   width:390,height:844,deviceScaleFactor:2,mobile:false,
   screenWidth:390,screenHeight:844
  });
- await sleep(900);
- mobilePerf=JSON.parse(await rawMetrics());
+ // Software-rendered Chrome may defer resize events until the next frame.
+ // Wait for the actual renderer dimensions; do not weaken the mobile budget.
+ const resizeDeadline=Date.now()+12000;
+ do{
+  await sleep(300);
+  mobilePerf=JSON.parse(await rawMetrics());
+ }while((mobilePerf.cssWidth!==390||mobilePerf.rendererDpr>1.01||mobilePerf.canvasWidth!==390)&&Date.now()<resizeDeadline);
  if(mobilePerf.cssWidth!==390||mobilePerf.rendererDpr>1.01||
-    mobilePerf.canvasWidth>390||!mobilePerf.webglResponsive)
+    mobilePerf.canvasWidth!==390||!mobilePerf.webglResponsive)
   throw Error('Stage 9 mobile rendering budget invalid: '+JSON.stringify(mobilePerf));
  await captureVisual('mobile-house-day',390);
  mobileNav=JSON.parse(await evaluate("JSON.stringify((()=>{const b=document.querySelector('#mobileExploreBtn');b.click();return {expanded:b.getAttribute('aria-expanded'),open:document.querySelector('#exploreSidebar').classList.contains('mobileExpanded'),scrollWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth};})())"));

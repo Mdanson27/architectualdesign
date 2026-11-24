@@ -31,6 +31,7 @@ import {createStage8ExteriorLandscape} from './stage8-exterior-landscape.js';
 import {activateIntegratedHouseDesign} from './production-design.js';
 import {productionPixelRatio} from './stage9-quality-policy.js';
 import {createPhase10Renderer,createPhase10SpatialIndex} from './phase10-render-optimizer.js';
+import {createPhase11Residency,loadLayersInOrder,loadingConcurrency} from './phase11-residency.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
 
@@ -121,6 +122,7 @@ const state={
 };
 let toastTimer=null,lastMapUpdate=0,lastHudUpdate=0;
 let phase10Renderer=null;
+let phase11Loading=null,layerSync=null,phase11QAClockOffset=0;
 const phase10Indexes=new Map();
 function toast(message){
  $('toast').textContent=message;$('toast').classList.add('show');
@@ -433,8 +435,8 @@ function annotateMesh(mesh,layer){
     (layer.category==='proxies'&&/^DOO/i.test(metadata?.name||'')))state.doors.push(record);
  }
 }
-async function addSourceLayer(layer){
- const gltf=await loader.loadAsync(assetURL(layer.glb));
+async function addSourceLayer(layer,gltf){
+ gltf??=await loader.loadAsync(assetURL(layer.glb));
  const group=gltf.scene;
  group.name=layer.name;
  sourceRoot.add(group);
@@ -860,10 +862,18 @@ function applyFloorSelection(choice){
  if(choice==='second')toast('Roof level (+6.60m). This is not a third occupied floor.');
  else toast(choice==='all'?'Showing the source model across all storeys':levelNames[choice]+' selected');
 }
-async function syncNewLayers(){
- const res=await fetch(assetURL('/ifc/house/manifest.json')+'?cache='+Date.now(),{cache:'no-store'});
- if(!res.ok)throw new Error('Cannot fetch source geometry manifest ('+res.status+').');
- const manifest=await res.json();
+function syncNewLayers(initialManifest){
+ if(layerSync)return layerSync;
+ layerSync=syncSourceLayers(initialManifest).finally(()=>{layerSync=null;});
+ return layerSync;
+}
+async function syncSourceLayers(initialManifest){
+ let manifest=initialManifest;
+ if(!manifest){
+  const res=await fetch(assetURL('/ifc/house/manifest.json')+'?cache='+Date.now(),{cache:'no-store'});
+  if(!res.ok)throw new Error('Cannot fetch source geometry manifest ('+res.status+').');
+  manifest=await res.json();
+ }
  state.sourceManifest=manifest;
  const entries=manifest.layers.filter(x=>x.glb && x.bounds)
   .sort((a,b)=>priority[a.category]-priority[b.category] || (sourceLevels[a.level]??10)-(sourceLevels[b.level]??10) || a.part-b.part);
@@ -876,9 +886,11 @@ async function syncNewLayers(){
   if(!state.initialReady)startIntro();
   return;
  }
- for(const layer of newEntries){
-  try{
-   const elements=await addSourceLayer(layer);
+ phase11Loading=await loadLayersInOrder(newEntries,{
+  concurrency:loadingConcurrency(navigator.deviceMemory),
+  load:layer=>loader.loadAsync(assetURL(layer.glb)),
+  attach:async(layer,gltf)=>{
+   const elements=await addSourceLayer(layer,gltf);
    // Hold introduction until all structural and furnishing files have loaded.
    // The earlier 3-layer trigger framed the camera before surrounding walls arrived.
    let numerator=state.layers.size,denominator=state.totalLayers;
@@ -886,16 +898,16 @@ async function syncNewLayers(){
       numerator+'/'+denominator+' source layers loaded · '+layer.category+' · '+elements+' objects');
    refreshVisibility();
    if(state.loadedLayers%5===0)await new Promise(resolve=>setTimeout(resolve,0));
-  }catch(err){
+  },onError:(layer,err)=>{
    console.warn('[AutoMinds Source] Layer failed',layer.name,err);
    toast('Some source components could not be displayed: '+layer.name);
   }
- }
+ });
  setupEnhancements();
  // Rebuild only on a new source-layer import, not on the animation loop.
  phase10Renderer?.dispose();
  phase10Indexes.clear();
- phase10Renderer=createPhase10Renderer({scene,sourceRecords:state.meshes,
+ phase10Renderer=createPhase10Renderer({scene,sourceRecords:state.meshes,residency:createPhase11Residency({now:()=>performance.now()+(qaPage?phase11QAClockOffset:0)}),
   roots:[sourceRoot,state.siteContext?.root,state.stage4LivingDining?.root,
    state.stage5BedroomsStudy?.root,state.stage6WetAreas?.root,
    state.stage7StairsBalconiesLighting?.root,state.dining?.root,
@@ -955,7 +967,7 @@ async function begin(){
   determineOrigin(manifest);
   $('elementTotal').textContent=Object.keys(map).length.toLocaleString();
   progress(7,'Read real IFC element index');
-  await syncNewLayers();
+  await syncNewLayers(manifest);
   // GitHub Pages deployments are immutable. Do not poll the source
   // manifest every 35 seconds in normal production visitor sessions.
   if(!publicPreview||qaPage)
@@ -1969,11 +1981,21 @@ renderer.domElement.addEventListener('pointermove',e=>{
 });
 renderer.domElement.addEventListener('pointerup',e=>{if(e.pointerId===lookPointer)lookPointer=null;});
 renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===lookPointer)lookPointer=null;});
+let viewportWidth=innerWidth,viewportHeight=innerHeight,viewportDpr=renderer.getPixelRatio();
+function syncViewport(){
+ const width=Math.max(1,innerWidth),height=Math.max(1,innerHeight),dpr=productionPixelRatio(devicePixelRatio||1,width);
+ if(width===viewportWidth&&height===viewportHeight&&dpr===viewportDpr)return;
+ camera.aspect=width/height;camera.updateProjectionMatrix();
+ if(dpr!==viewportDpr)renderer.setPixelRatio(dpr);
+ renderer.setSize(width,height);
+ viewportWidth=width;viewportHeight=height;viewportDpr=dpr;
+}
 function animate(){
  const dt=Math.min(clock.getDelta(),.06);
  // Avoid GPU drawing for hidden tabs; the clock still consumes elapsed time.
  if(document.hidden)return;
  if(!state.initialReady)return; // No unnecessary GPU uploads under the loading overlay.
+ syncViewport(); // Reconcile even if the browser coalesces/delays resize events.
  if(state.doorSystem)state.doorSystem.update(dt);
  state.planCirculation?.kitchenDoor?.update(dt);
  state.stage3Kitchen?.update(dt);
@@ -2186,6 +2208,30 @@ if(isLocalQA){
     visibilityRestored:unchanged,
     reductionPercent:baseline.drawCalls>0?
       100*(baseline.drawCalls-optimized.drawCalls)/baseline.drawCalls:0};
+  },
+  phase11Status:()=>({loading:phase11Loading,residency:phase10Renderer?.status().residency??null,sourceLayers:state.layers.size,expectedLayers:state.totalLayers,automatic:true}),
+  phase11GpuRoundTrip:()=>{
+   if(!phase10Renderer)return null;
+   const sample=()=>({geometries:renderer.info.memory.geometries,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,residency:phase10Renderer.status().residency});
+   const visibility=state.meshes.map(r=>r.mesh.visible);
+   // Local QA only: accelerate the inactivity clock, but use real WebGL
+   // disposal, rendering and re-upload. Never move the visitor's camera.
+   const away=camera.clone();
+   away.position.set(1000,1000,1000);away.lookAt(1100,1100,1100);
+   away.updateMatrixWorld(true);
+   phase10Renderer.render(renderer,camera);
+   const before=sample();
+   phase11QAClockOffset+=21000;
+   let inactive,returned;
+   try{
+    phase10Renderer.render(renderer,away);
+    inactive=sample();
+   }finally{
+    phase10Renderer.render(renderer,camera);
+    returned=sample();
+   }
+   return {before,inactive,returned,visibilityRestored:state.meshes.every((r,i)=>r.mesh.visible===visibility[i]),
+    webglResponsive:!renderer.getContext().isContextLost()};
   },
   stage9PerformanceStatus:()=>{
    const resources=performance.getEntriesByType('resource');
@@ -2455,9 +2501,6 @@ if(isLocalQA){
  };
 }
 renderer.setAnimationLoop(animate);
-window.addEventListener('resize',()=>{
- camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
- renderer.setPixelRatio(productionPixelRatio(devicePixelRatio,innerWidth));
- renderer.setSize(innerWidth,innerHeight);
-});
+window.addEventListener('resize',syncViewport);
+window.visualViewport?.addEventListener('resize',syncViewport);
 console.info('[AutoMinds SPACES] Source-based full-house walkthrough initialized: architecture from IFC, appearance approximated from original renders.');
