@@ -9,7 +9,8 @@ export default defineConfig({
     rollupOptions: {
       input: {
         home: resolve(import.meta.dirname, 'index.html'),
-        actualHouse: resolve(import.meta.dirname, 'actual-house.html')
+        actualHouse: resolve(import.meta.dirname, 'actual-house.html'),
+        furnitureReview: resolve(import.meta.dirname, 'phase14-review.html')
       }
     }
   }

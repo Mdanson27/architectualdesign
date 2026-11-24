@@ -2235,7 +2235,7 @@ if(isLocalQA){
   phase13Status:()=>({loader:phase13Assets.status(),manifest:state.sourceManifest?.phase13??null,textures:phase13Textures,sourceLayers:state.layers.size}),
   stage9PerformanceStatus:()=>{
    const resources=performance.getEntriesByType('resource');
-   const glb=resources.filter(e=>/\.glb(?:\.[a-f0-9]{16}(?:\.meshopt)?\.gz)?(?:\?|$)/i.test(e.name));
+   const glb=resources.filter(e=>e.name.includes('/ifc/house/')&&/\.glb(?:\.[a-f0-9]{16}(?:\.meshopt)?\.gz)?(?:\?|$)/i.test(e.name));
    const nav=performance.getEntriesByType('navigation')[0];
    return {
     adaptiveGraphics:phase12Graphics.status(),

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {STAGE1_PLAN_SKETCHES,insidePolygon} from './stage1-plan-crosswalk.js';
 import {DINING_TABLE_WORLD} from './dining-furnishings.js';
+import {createFurnitureAsset,fitFurnitureEnvelope} from './phase14-furniture-library.js';
 
 /**
  * STAGE 4 — Studio Anne pp. 10, 13–21.
@@ -79,7 +80,7 @@ export function createStage4LivingDining({
  for(const [id,g] of Object.entries(groups)){
   g.name='STAGE4_'+id.replace(/-/g,'_');g.userData.stage4Room=id;root.add(g);
  }
- const mats=palette(),colliders=[];
+ const mats=palette(),colliders=[],phase14Placements=[];
  const pieces={groundRug:0,sittingCoffeeTable:0,existingSourceCoffeeTables:0,sittingChairs:0,sittingSideTables:0,
   sofaCushions:0,firstFloorRug:0,familyAccent:0,diningRug:0,diningChairsImproved:0,
   diningTabletop:0,diningPlaceSettings:0,foyerMirror:0,foyerShelf:0,accentLights:0};
@@ -132,9 +133,9 @@ export function createStage4LivingDining({
    new THREE.Vector3(x+w/2-(origin.x||0),floorY+1.4,z+d/2-(origin.z||0)));
   return !furnitureIntersects(room,b);
  }
- function recordCollider(group,room,tag){
+ function recordCollider(group,room,tag,conservativeBox=null){
   group.updateWorldMatrix(true,true);
-  const box=new THREE.Box3().setFromObject(group);
+  const box=conservativeBox??new THREE.Box3().setFromObject(group);
   const mesh=group.children.find(o=>o.isMesh);
   if(!mesh||box.isEmpty())return;
   const rec={mesh:group.children[0],box,category:'furniture',
@@ -157,19 +158,34 @@ export function createStage4LivingDining({
   const id='G-SITTING';const group=new THREE.Group();
   group.name='STAGE4_SEPARATE_ACCENT_CHAIR_'+name;
   group.position.set(...local(x,y,z));group.rotation.y=angle;groups[id].add(group);
-  function sub(tag,g,m,px,py,pz){
-   const mesh=visual(new THREE.Mesh(g,m),tag);
-   mesh.position.set(px,py,pz);group.add(mesh);
+  // Replace the existing procedural chair parts in-place. Keep the prior
+  // footprint/height, position, rotation and collision envelope.
+  const asset=createFurnitureAsset('sculptural-accent-chair',{materials:mats});
+  fitFurnitureEnvelope(asset,new THREE.Vector3(-.40,0,-.36),new THREE.Vector3(.40,.94,.38));
+  for(const mesh of [...asset.children]){
+   const tag=mesh.userData.component;
+   visual(mesh,tag);mesh.userData.phase14Asset='sculptural-accent-chair';
+   group.add(mesh);
   }
-  // Deep rounded upholstered shell & lumbar cushion, wood base and brass feet.
-  sub('curved-chair-seat',new RoundedBoxGeometry(.74,.18,.72,3,.15),mats.sage,0,.43,0);
-  sub('curved-chair-back',new RoundedBoxGeometry(.78,.69,.18,3,.08),mats.sage,0,.83,.29);
-  for(const t of [-1,1]){
-   sub('curved-chair-arm',new RoundedBoxGeometry(.14,.37,.66,3,.055),mats.sage,t*.33,.59,.045);
-   for(const d of [-1,1])sub('chair-wood-foot',new THREE.CylinderGeometry(.032,.042,.22,10),mats.timber,t*.27,.11,d*.25);
+  group.userData.phase14Asset='sculptural-accent-chair';
+  group.updateWorldMatrix(true,true);
+  const envelope=new THREE.Box3(new THREE.Vector3(-.40,0,-.36),new THREE.Vector3(.40,1.175,.38)).applyMatrix4(group.matrixWorld);
+  const rendered=new THREE.Box3().setFromObject(group,true),eps=.0001;
+  const floorCorners=[];
+  for(const xx of [rendered.min.x,rendered.max.x])for(const zz of [rendered.min.z,rendered.max.z]){
+   const worldX=xx+(origin.x||0),worldZ=zz+(origin.z||0),support=floorSampler(xx,zz,0);
+   floorCorners.push({worldX,worldZ,floorY:support?.y??null,insideProvisionalRoom:inside(id,worldX,worldZ)});
   }
-  sub('chair-lumbar',new RoundedBoxGeometry(.47,.24,.075,3,.025),mats.cream,0,.76,.20);
-  recordCollider(group,id,name);
+  const within=envelope.clone().expandByScalar(eps).containsBox(rendered);
+  const supported=floorCorners.every(p=>p.insideProvisionalRoom&&Number.isFinite(p.floorY)&&Math.abs(p.floorY-y)<=.08);
+  // Never accept a replacement outside the former collision bounds or on
+  // unsupported floor. Refuse instead of inventing a new coordinate.
+  if(!within||!supported){groups[id].remove(group);group.traverse(o=>{if(o.isMesh)o.geometry.dispose();});return false;}
+  recordCollider(group,id,name,envelope);
+  phase14Placements.push({assetId:'sculptural-accent-chair',name,room:id,worldPosition:[x,y,z],rotationY:angle,
+   renderedBounds:{min:rendered.min.toArray(),max:rendered.max.toArray()},retainedCollider:{min:envelope.min.toArray(),max:envelope.max.toArray()},
+   floorCorners,withinPriorEnvelope:within,floorSupported:supported,provisionalRoom:true,clientApproved:false});
+  return true;
  }
  function tinySideTable(id,x,z,y,tag,diam=.36){
   const group=new THREE.Group();group.name='STAGE4_SIDE_TABLE_'+tag;
@@ -296,7 +312,7 @@ export function createStage4LivingDining({
    const y=getFloor('G-SITTING',x,z);
    if(y===null||placedChairs.some(p=>Math.hypot(x-p[0],z-p[1])<1.20)||
       !allowPlacement('G-SITTING',x,z,.82,.82,y))continue;
-   makeAccentChair(x,z,y,-Math.PI/2,chair.name);
+   if(!makeAccentChair(x,z,y,-Math.PI/2,chair.name))continue;
    placedChairs.push([x,z]);pieces.sittingChairs++;break;
   }
  }
@@ -415,7 +431,7 @@ export function createStage4LivingDining({
   return {
    stage:4,productionIntegrated:true,previewActivationRequired:false,
    rooms:['G-SITTING','G-DINING','F-FAMILY','ENTRY'],
-   pieces:{...pieces},visibleRooms:Object.entries(groups)
+   pieces:{...pieces},phase14Placements:phase14Placements.map(p=>({...p})),phase14LibraryChairs:groups['G-SITTING'].children.filter(o=>o.userData.phase14Asset==='sculptural-accent-chair').length,visibleRooms:Object.entries(groups)
     .filter(([,g])=>g.visible).map(([id])=>id),
    originalIFCGeometryPreserved:defaultSourceCondition(),
    sourceIFCCollidersPreserved:true,mainEntranceDoorId:27,
