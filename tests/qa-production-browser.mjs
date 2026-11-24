@@ -3,6 +3,7 @@ import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
 import {spawn} from 'node:child_process';
+import {STAGE9_QA_POLICY,summarizeStage9Engineering} from '../src/phase2/stage9-quality-policy.js';
 
 const root=path.resolve('dist');
 const port=5188,debugPort=22000+(process.pid%15000);
@@ -72,6 +73,7 @@ try{
   }catch{}
  };
  await cdp('Runtime.enable');
+ await cdp('Page.enable');
  let ready;
  for(let i=0;i<220;i++){
   ready=await evaluate("({loaded:window.__AutoMindsQA?.sceneStatus()?.loaded,expected:window.__AutoMindsQA?.summary()?.expected,loadedLayers:window.__AutoMindsQA?.summary()?.loaded})");
@@ -695,6 +697,96 @@ try{
  if(obstructed.length)throw Error('Open doorway crossing failures: '+obstructed.map(x=>x.id).join(','));
  if(blockedWhenClosed.length)throw Error('Closed door crossings should not be permitted: '+blockedWhenClosed.join(','));
  if(circulation&&circulation.passed!==circulation.total)throw Error('Continuous architectural routes incomplete: '+circulation.passed+'/'+circulation.total);
+ // Stage 9 engineering evidence: six real Chrome PNGs for human review.
+ // A screenshot passing capture checks does NOT certify aesthetics or sources.
+ const visualDir=path.resolve('analysis/stage9-visuals');
+ fs.mkdirSync(visualDir,{recursive:true});
+ const screenshots=[];
+ const rawMetrics=()=>evaluate("JSON.stringify(window.__AutoMindsQA.stage9PerformanceStatus())");
+ const desktopPerf=JSON.parse(await rawMetrics());
+ if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
+    !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||
+    desktopPerf.drawCalls>15000||desktopPerf.triangles>15000000||
+    desktopPerf.rendererDpr>STAGE9_QA_POLICY.maximumDesktopDpr+.01)
+  throw Error('Stage 9 desktop WebGL invalid: '+JSON.stringify(desktopPerf));
+ await evaluate("document.documentElement.classList.add('production-design')");
+ await evaluate("document.querySelector('#floorButtons button[data-floor=\"all\"]').click()");
+ await sleep(550);
+ async function captureVisual(name,widthExpected){
+  if(!STAGE9_QA_POLICY.screenshotScenes.includes(name))
+   throw Error('Unexpected Stage 9 scene: '+name);
+  const v=await cdp('Page.captureScreenshot',{
+   format:'png',captureBeyondViewport:false,optimizeForSpeed:true},45000);
+  if(!v?.result?.data)throw Error('Empty Stage 9 screenshot '+name);
+  const png=Buffer.from(v.result.data,'base64');
+  if(png.length<5000||png.toString('ascii',1,4)!=='PNG')
+   throw Error('Invalid Stage 9 screenshot '+name+' bytes='+png.length);
+  const width=png.readUInt32BE(16),height=png.readUInt32BE(20);
+  if(width!==widthExpected)
+   throw Error('Stage 9 incorrect screenshot viewport '+name+': '+width);
+  const rel='analysis/stage9-visuals/'+name+'.png';
+  fs.writeFileSync(rel,png);
+  screenshots.push({id:name,path:rel,width,height,bytes:png.length});
+ }
+ await captureVisual('desktop-whole-house-day',1280);
+ await evaluate("document.querySelector('#lightBtn').click()");
+ await sleep(480);
+ await captureVisual('desktop-whole-house-night',1280);
+ await evaluate("document.querySelector('#lightBtn').click()");
+ await evaluate("document.querySelector('#floorButtons button[data-floor=\"ground\"]').click()");
+ await sleep(420);
+ await captureVisual('desktop-ground-floor',1280);
+ await evaluate("document.querySelector('#floorButtons button[data-floor=\"first\"]').click()");
+ await sleep(420);
+ await captureVisual('desktop-first-floor',1280);
+ await evaluate("document.querySelector('#floorButtons button[data-floor=\"all\"]').click()");
+ await cdp('Emulation.setDeviceMetricsOverride',{
+  width:390,height:844,deviceScaleFactor:2,mobile:true,
+  screenWidth:390,screenHeight:844
+ });
+ await sleep(900);
+ const mobilePerf=JSON.parse(await rawMetrics());
+ if(mobilePerf.cssWidth!==390||mobilePerf.rendererDpr>1.01||
+    mobilePerf.canvasWidth>390||!mobilePerf.webglResponsive)
+  throw Error('Stage 9 mobile rendering budget invalid: '+JSON.stringify(mobilePerf));
+ await captureVisual('mobile-house-day',390);
+ const mobileNav=JSON.parse(await evaluate("JSON.stringify((()=>{const b=document.querySelector('#mobileExploreBtn');b.click();return {expanded:b.getAttribute('aria-expanded'),open:document.querySelector('#exploreSidebar').classList.contains('mobileExpanded'),scrollWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth};})())"));
+ if(mobileNav.expanded!=='true'||!mobileNav.open)
+  throw Error('Stage 9 mobile navigation does not open: '+JSON.stringify(mobileNav));
+ await sleep(340);
+ await captureVisual('mobile-navigation-open',390);
+ await evaluate("document.querySelector('#mobileExploreBtn').click()");
+ await cdp('Emulation.clearDeviceMetricsOverride');
+ await sleep(250);
+ const engineering=summarizeStage9Engineering({
+  loadedLayers:ready.loadedLayers,activeDoors:summary.activeDoorCount,
+  routesPassed:circulation?.passed??null,balconies:balcony.restored,
+  sourcePreserved:stage8Initial.sourceIFCGeometryPreserved&&
+   stage8Initial.sourceExteriorSitePreserved,
+  stagesAutoVisible:integratedStart.active&&
+   integratedStart.stage4LivingDiningIntegrated&&
+   integratedStart.stage5BedroomsStudyIntegrated&&
+   integratedStart.stage6WetAreasIntegrated&&
+   integratedStart.stage7Integrated&&integratedStart.stage8ExteriorIntegrated,
+  screenshotCount:screenshots.length,
+  mobileCapture:mobilePerf.cssWidth===390,browserExceptions:exceptions.length
+ });
+ if(process.env.QA_ALL_DOORS==='1'&&!engineering.readyForClientReview)
+  throw Error('Stage 9 final engineering QA not complete: '+JSON.stringify(engineering));
+ report.stage9={engineering,desktopPerformance:desktopPerf,mobilePerformance:mobilePerf,
+  screenshots,mobileNavigation:mobileNav,clientApproved:false,
+  architectApproved:false,visualHumanReviewPending:true};
+ console.log('STAGE9_VISUAL_PERFORMANCE_AUDIT',JSON.stringify({
+  screenshots:screenshots.length,
+  desktop:{drawCalls:desktopPerf.drawCalls,triangles:desktopPerf.triangles,
+   geometries:desktopPerf.geometries,textures:desktopPerf.textures,
+   glbRequests:desktopPerf.glbRequests,dpr:desktopPerf.rendererDpr},
+  mobile:{width:mobilePerf.cssWidth,dpr:mobilePerf.rendererDpr,
+   canvasWidth:mobilePerf.canvasWidth,menuOpens:true},
+  fullDoorAndRouteTest:process.env.QA_ALL_DOORS==='1',
+  engineering:engineering.engineeringStatus,
+  clientAcceptance:'pending',architectApproval:'pending'
+ }));
  console.log('BROWSER_QA_PASSED');
 }catch(e){
  report={...report,status:'failed',failure:String(e)};
