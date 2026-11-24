@@ -1972,7 +1972,7 @@ renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===lookPo
 function animate(){
  const dt=Math.min(clock.getDelta(),.06);
  // Avoid GPU drawing for hidden tabs; the clock still consumes elapsed time.
- if(document.hidden)return;
+ if(document.hidden||!state.initialReady)return; // No unnecessary GPU uploads under the loading overlay.
  if(state.doorSystem)state.doorSystem.update(dt);
  state.planCirculation?.kitchenDoor?.update(dt);
  state.stage3Kitchen?.update(dt);
