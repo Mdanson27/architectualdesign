@@ -45,7 +45,9 @@ function cdp(method,params={},timeout=90000){
  });
 }
 async function evaluate(expr){
- const msg=await cdp('Runtime.evaluate',{expression:expr,awaitPromise:true,returnByValue:true});
+ let msg;
+ try{msg=await cdp('Runtime.evaluate',{expression:expr,awaitPromise:true,returnByValue:true});}
+ catch(error){throw Error('Browser evaluation failed for '+expr.slice(0,240)+': '+error.message,{cause:error});}
  if(msg.result?.exceptionDetails)throw Error('Browser evaluation: '+msg.result.exceptionDetails.text);
  return msg.result?.result?.value;
 }
@@ -783,6 +785,7 @@ try{
  await evaluate("document.querySelector('#floorButtons button[data-floor=\"all\"]').click()");
  await sleep(550);
  async function captureVisual(name,widthExpected){
+  console.log('STAGE9_CAPTURE_START',name);
   if(!STAGE9_QA_POLICY.screenshotScenes.includes(name))
    throw Error('Unexpected Stage 9 scene: '+name);
   const png=await captureCanvasPng();
@@ -794,6 +797,7 @@ try{
   const rel='analysis/stage9-visuals/'+name+'.png';
   fs.writeFileSync(rel,png);
   screenshots.push({id:name,path:rel,width,height,bytes:png.length});
+  console.log('STAGE9_CAPTURE_COMPLETE',JSON.stringify(screenshots.at(-1)));
  }
  await captureVisual('desktop-whole-house-day',1280);
  await evaluate("document.querySelector('#lightBtn').click()");
