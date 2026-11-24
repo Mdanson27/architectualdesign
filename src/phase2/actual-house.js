@@ -29,6 +29,7 @@ import {createStage6WetAreas} from './stage6-wet-areas.js';
 import {createStage7StairsBalconiesLighting} from './stage7-stairs-balconies-lighting.js';
 import {createStage8ExteriorLandscape} from './stage8-exterior-landscape.js';
 import {activateIntegratedHouseDesign} from './production-design.js';
+import {productionPixelRatio} from './stage9-quality-policy.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
 import {implementOpenPlanMaidAccess,createMainEntranceWallFinish} from './open-plan-access.js';
 
@@ -65,7 +66,7 @@ const renderer = new THREE.WebGLRenderer({
  powerPreference:'high-performance',
  alpha:false
 });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.3));
+renderer.setPixelRatio(productionPixelRatio(window.devicePixelRatio||1,window.innerWidth));
 renderer.setSize(innerWidth,innerHeight);
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping=THREE.ACESFilmicToneMapping;
@@ -940,8 +941,10 @@ async function begin(){
   $('elementTotal').textContent=Object.keys(map).length.toLocaleString();
   progress(7,'Read real IFC element index');
   await syncNewLayers();
-  // A source file may be converted while the browser remains open. Refresh layers periodically.
-  setInterval(()=>syncNewLayers().catch(err=>console.warn('Layer manifest poll failed',err)),35000);
+  // GitHub Pages deployments are immutable. Do not poll the source
+  // manifest every 35 seconds in normal production visitor sessions.
+  if(!publicPreview||qaPage)
+   setInterval(()=>syncNewLayers().catch(err=>console.warn('Layer manifest poll failed',err)),35000);
  }catch(e){fatal(e?.message||e)}
 }
 begin();
@@ -1943,6 +1946,8 @@ renderer.domElement.addEventListener('pointerup',e=>{if(e.pointerId===lookPointe
 renderer.domElement.addEventListener('pointercancel',e=>{if(e.pointerId===lookPointer)lookPointer=null;});
 function animate(){
  const dt=Math.min(clock.getDelta(),.06);
+ // Avoid GPU drawing for hidden tabs; the clock still consumes elapsed time.
+ if(document.hidden)return;
  if(state.doorSystem)state.doorSystem.update(dt);
  state.planCirculation?.kitchenDoor?.update(dt);
  state.stage3Kitchen?.update(dt);
@@ -2129,6 +2134,27 @@ if(isLocalQA){
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
     openingRegistry:state.doorApertureAudit?.summary??null,
     blockedCuts:state.doorApertureAudit?.occlusionDetails??[]}),
+  stage9PerformanceStatus:()=>{
+   const resources=performance.getEntriesByType('resource');
+   const glb=resources.filter(e=>/\.glb(?:\?|$)/i.test(e.name));
+   const nav=performance.getEntriesByType('navigation')[0];
+   return {
+    rendererDpr:renderer.getPixelRatio(),
+    canvasWidth:renderer.domElement.width,canvasHeight:renderer.domElement.height,
+    cssWidth:innerWidth,cssHeight:innerHeight,
+    drawCalls:renderer.info.render.calls,
+    triangles:renderer.info.render.triangles,
+    geometries:renderer.info.memory.geometries,
+    textures:renderer.info.memory.textures,
+    resourcesRequested:resources.length,glbRequests:glb.length,
+    navigationDomMs:nav?.domContentLoadedEventEnd??null,
+    elapsedSinceNavigationMs:Math.round(performance.now()),
+    documentHidden:document.hidden,
+    sourceLayers:state.loadedLayers,
+    browserViewport:{width:innerWidth,height:innerHeight},
+    webglResponsive:!renderer.getContext().isContextLost()
+   };
+  },
   sceneStatus:()=>({
     loaded:state.initialReady,showSite:state.showSurroundings,
     siteVisible:Boolean(state.siteContext?.root.visible),floor:state.floor,section:state.sectionEnabled,
@@ -2378,7 +2404,7 @@ if(isLocalQA){
 renderer.setAnimationLoop(animate);
 window.addEventListener('resize',()=>{
  camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();
- renderer.setPixelRatio(Math.min(devicePixelRatio,1.3));
+ renderer.setPixelRatio(productionPixelRatio(devicePixelRatio,innerWidth));
  renderer.setSize(innerWidth,innerHeight);
 });
 console.info('[AutoMinds SPACES] Source-based full-house walkthrough initialized: architecture from IFC, appearance approximated from original renders.');
