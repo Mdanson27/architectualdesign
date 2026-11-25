@@ -51,10 +51,10 @@ export function findSourceKitchenWorktop(records=[],origin={x:0,z:0}){
  return matches[0]||null;
 }
 const materials={
- cabinet:()=>new THREE.MeshStandardMaterial({color:0xe4dccf,roughness:.69,metalness:0}),
+ cabinet:()=>new THREE.MeshStandardMaterial({color:0x92927c,roughness:.69,metalness:0}),
  interior:()=>new THREE.MeshStandardMaterial({color:0xbcb3a7,roughness:.8}),
  steel:()=>new THREE.MeshStandardMaterial({color:0x9da5a7,roughness:.31,metalness:.75}),
- bronze:()=>new THREE.MeshStandardMaterial({color:0xb9a17b,roughness:.35,metalness:.65}),
+ bronze:()=>new THREE.MeshStandardMaterial({color:0xa47c40,roughness:.35,metalness:.65}),
  glass:()=>new THREE.MeshStandardMaterial({color:0x20272a,roughness:.20,metalness:.35}),
  black:()=>new THREE.MeshStandardMaterial({color:0x101419,roughness:.23,metalness:.24}),
  led:()=>new THREE.MeshStandardMaterial({color:0xfff3da,emissive:0xffdfab,emissiveIntensity:1.3})
@@ -75,6 +75,10 @@ export function createStage3KitchenSystem({
   material:source.record.mesh.material,visible:source.record.mesh.visible}:null;
  const palette=Object.fromEntries(Object.entries(materials).map(([k,fn])=>[k,fn()]));
  const switches={cabinetry:true,appliances:true,storage:true,lighting:true};
+ const ivory=new THREE.MeshStandardMaterial({color:0xede8df,roughness:.65});
+ const stone=new THREE.MeshStandardMaterial({color:0xf5f1ea,roughness:.32});
+ const wood=new THREE.MeshStandardMaterial({color:0xb58c65,roughness:.62});
+ const cream=new THREE.MeshStandardMaterial({color:0xe5d9c7,roughness:.9});
  const drawers=[];let enabled=false,opening=false,progress=0;
  let basePanels=0,appliances=0,storageFixtures=0,ledStrips=0,floorEvidence=0;
  const local=(x,y,z)=>[x-(origin.x||0),y,z-(origin.z||0)];
@@ -114,6 +118,14 @@ export function createStage3KitchenSystem({
    box(groups.cabinetry,'cabinet-horizontal-pull',
     [Math.min(width*.50,.25),.013,.022],palette.bronze,x,frontY+.24,
     z-(isX?.027:0),yaw);
+   // Recessed shaker panel: four raised rails surrounding the original front.
+   const outward=isX?new THREE.Vector3(0,0,-1):new THREE.Vector3(-1,0,0);
+   const rail=(key,w,h,dx,dy)=>{
+    const alongX=isX?dx:0,alongZ=isX?0:dx;
+    box(groups.cabinetry,key,[w,h,.024],palette.cabinet,x+alongX+outward.x*.026,frontY+dy,z+alongZ+outward.z*.026,yaw);
+   };
+   rail('shaker-top',width,.065,0,.30);rail('shaker-bottom',width,.065,0,-.30);
+   rail('shaker-left',.065,.60,-width/2+.033,0);rail('shaker-right',.065,.60,width/2-.033,0);
    basePanels++;
    // Alternating soft-close drawer fronts and concealed storage details.
    if(i%2===1){
@@ -154,9 +166,11 @@ export function createStage3KitchenSystem({
     }
     const tapX=sink.x+(axis==='z'?.26:0),tapZ=sink.z+(axis==='x'?.26:0);
     part(groups.appliances,'wall-tap-concept',
-     new THREE.CylinderGeometry(.012,.012,.32,10),palette.steel,
+     new THREE.CylinderGeometry(.012,.012,.32,10),palette.bronze,
      tapX,top+.18,tapZ);
-    appliances+=4;
+    const arc=new THREE.CatmullRomCurve3([new THREE.Vector3(0,0,0),new THREE.Vector3(0,.12,0),new THREE.Vector3(0,.19,-.09),new THREE.Vector3(0,.15,-.18)]);
+    const spout=part(groups.appliances,'brass-curved-spout',new THREE.TubeGeometry(arc,16,.012,8,false),palette.bronze,tapX,top+.32,tapZ,axis==='x'?0:Math.PI/2);
+    appliances+=5;
    }
    if(insideTop(cook.x,cook.z,.30)){
     box(groups.appliances,'induction-hob',
@@ -172,6 +186,10 @@ export function createStage3KitchenSystem({
      [.78,.16,.43],palette.steel,cook.x,2.08,cook.z,
      axis==='x'?0:Math.PI/2);
     vent.userData.ductingUnverified=true;
+    const hoodYaw=axis==='x'?0:Math.PI/2;
+    box(groups.appliances,'ivory-hood-surround',[.94,.46,.49],ivory,cook.x,2.34,cook.z,hoodYaw);
+    box(groups.appliances,'hood-crown-moulding',[1.02,.07,.54],ivory,cook.x,2.59,cook.z,hoodYaw);
+    box(groups.appliances,'hood-lower-trim',[1.00,.065,.53],ivory,cook.x,2.12,cook.z,hoodYaw);
     appliances+=6;
     // Strip and task light are decorative-only. No invented wiring/ducts.
     box(groups.lighting,'under-hood-task-led',
@@ -242,7 +260,7 @@ export function createStage3KitchenSystem({
   root.traverse(o=>{
    if(o.isMesh)o.geometry?.dispose();
   });
-  for(const material of Object.values(palette))material.dispose();
+  for(const material of [...Object.values(palette),ivory,stone,wood,cream])material.dispose();
   scene.remove(root);
  }
  return {root,groups,enable,setOptions,openStorage,update,updateVisibility,status,dispose};
