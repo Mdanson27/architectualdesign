@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {replaceSofaVisual,replaceCoffeeTableVisual} from './phase14abc-sofas.js';
+import {STAGE1_PLAN_SKETCHES,insidePolygon} from './stage1-plan-crosswalk.js';
 
 /**
  * Source-backed furniture repositioning without moving or deleting IFC meshes.
@@ -114,6 +116,42 @@ export function organizeSourceSittingFurniture(records,scene,origin={x:0,z:0},in
   Object.assign(row,{placed:false,insideRoom:false,reason:'Rejected overlapping furniture position'});
  }
  const upstairs=placements.find(p=>p.id==='first-floor');
+ // Replace the original rendered sofa geometry, retaining the source
+ // correction and collision records. Cover additional unambiguous FU-007
+ // sofas fully inside the two plan-backed living spaces.
+ const replacements=[],unresolvedSofas=[];
+ const ground=accepted.get('ground-sitting');
+ const family=accepted.get('first-floor');
+ const groundTarget=ground?ground.box.getCenter(new THREE.Vector3()).add(new THREE.Vector3(2,0,0)):null;
+ const familyTarget=table?.box.getCenter(new THREE.Vector3())??(family?family.box.getCenter(new THREE.Vector3()).add(new THREE.Vector3(0,0,2)):null);
+ const replace=(entry,target)=>{
+  const result=replaceSofaVisual(entry.preview,entry.box,target,root);
+  if(!result)return false;
+  const {model,...evidence}=result;replacements.push(evidence);return true;
+ };
+ if(ground&&!replace(ground,groundTarget))unresolvedSofas.push({id:'ground-sitting',reason:'Replacement envelope rejected'});
+ if(family&&!replace(family,familyTarget))unresolvedSofas.push({id:'first-floor',reason:'Replacement envelope rejected'});
+ for(const source of records){
+  if(sourceSet.has(source)||!inside(source)||source.category!=='furniture'||String(source.mesh.userData.ifc?.name||'').trim().toUpperCase()!=='FU - 007')continue;
+  const id=source.layer.level==='ground'?'G-SITTING':source.layer.level==='first'?'F-FAMILY':null;
+  if(!id)continue;
+  const poly=STAGE1_PLAN_SKETCHES[id].vertices,b=source.box,d=b.getSize(new THREE.Vector3()),c=b.getCenter(new THREE.Vector3());
+  if(!insidePolygon([c.x+origin.x,c.z+origin.z],poly))continue;
+  const corners=[b.min.x,b.max.x].flatMap(x=>[b.min.z,b.max.z].map(z=>[x+origin.x,z+origin.z]));
+  if(!corners.every(p=>insidePolygon(p,poly))||Math.max(d.x,d.z)<1.1||Math.min(d.x,d.z)<.65||d.y<.4||d.y>1.35||
+    colliders.some(r=>r.layer.level===source.layer.level&&r.box.clone().expandByScalar(.025).intersectsBox(b))){
+   unresolvedSofas.push({guid:source.mesh.userData.ifc?.guid,room:id,reason:'Unverified or overlapping source footprint'});continue;
+  }
+  source.mesh.updateWorldMatrix(true,false);
+  const preview=source.mesh.clone();preview.matrix.copy(source.mesh.matrixWorld);preview.matrix.decompose(preview.position,preview.quaternion,preview.scale);
+  preview.name='REPOSITIONED_IFC_FURNITURE_additional-'+source.mesh.userData.ifc?.guid;
+  preview.userData={...preview.userData,circulationPreview:true,sourceRegion:'additional-'+source.mesh.userData.ifc?.guid,originalGUID:source.mesh.userData.ifc?.guid};
+  root.add(preview);root.updateMatrixWorld(true);
+  const target=id==='G-SITTING'?new THREE.Vector3(116.7,c.y,-7.15).sub(new THREE.Vector3(origin.x,0,origin.z)):familyTarget;
+  if(!target||!replace({preview,box:b},target)){root.remove(preview);unresolvedSofas.push({guid:source.mesh.userData.ifc?.guid,room:id,reason:'Replacement envelope rejected'});continue;}
+  sourceSet.add(source);colliders.push({mesh:preview,box:b.clone(),category:'furniture',layer:source.layer});
+ }
+ const coffeeReplacement=table&&root.children.includes(table.preview)?replaceCoffeeTableVisual(table.preview,table.box,root):null;
  const roomArrangementValid=upstairs?.placed===true &&
    (placements.find(p=>p.id==='family-coffee-table')?.placed===true) &&
    coffeeTableGapMetres>=.30;
@@ -126,5 +164,5 @@ export function organizeSourceSittingFurniture(records,scene,origin={x:0,z:0},in
    familyRoomSofa:upstairs??null,
    familyRoomCoffeeTable:placements.find(p=>p.id==='family-coffee-table')??null,
    groundSittingRoom:placements.find(p=>p.id==='ground-sitting')??null,
-   presentations:placements}};
+   presentations:placements,sofaReplacements:replacements,coffeeReplacement,unresolvedSofas}};
 }

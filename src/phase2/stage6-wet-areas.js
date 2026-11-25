@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {buildClippedFloor} from './phase14abc-flooring.js';
+import {STAGE1_PLAN_SKETCHES,insidePolygon} from './stage1-plan-crosswalk.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 /**
@@ -169,20 +171,21 @@ export function createStage6WetAreas({
   activeZones++;sourceFittings+=validEntries.length;
   const bounds=zone.bounds;const tileStep=.42;
   const nearAnchor=(x,z)=>validEntries.some(e=>Math.hypot(x-e.x,z-e.z)<1.09);
-  const x0=Math.ceil((bounds[0]+.18)/tileStep)*tileStep;
-  const z0=Math.ceil((bounds[2]+.18)/tileStep)*tileStep;
-  for(let x=x0;x<bounds[1]-.2;x+=tileStep){
-   for(let z=z0;z<bounds[3]-.2;z+=tileStep){
-    if(!nearAnchor(x,z)||nearDoor(x,z,zone.level,.45))continue;
-    const floor=actualFloor(x,z,zone.level);
-    if(floor===null)continue;
-    const mesh=visual(new THREE.Mesh(
-     new THREE.BoxGeometry(tileStep-.012,.006,tileStep-.012),
-     materials.porcelain),'floor-porcelain-source-supported',zone.id);
-    mesh.position.set(...loc(x,floor+.014,z));group.add(mesh);
-    porcelainTiles++;zstat.floorTiles++;
-   }
-  }
+  // Do not fill an entire unverified bathroom bounding rectangle. Retain
+  // the existing anchor restriction and exclude overlapping Stage 2 rooms.
+  const [xmin,xmax,zmin,zmax]=bounds;
+  const overlappingRooms=Object.entries(STAGE1_PLAN_SKETCHES).filter(([id,p])=>p.floor===zone.level&&id!=='G-MAID');
+  const built=buildClippedFloor({polygon:[[xmin,zmin],[xmax,zmin],[xmax,zmax],[xmin,zmax]],origin,step:tileStep,datum,offset:.018,
+   sample:(lx,lz)=>{
+    const x=lx+originX,z=lz+originZ;
+    if(!nearAnchor(x,z)||overlappingRooms.some(([,p])=>insidePolygon([x,z],p.vertices)))return null;
+    const y=actualFloor(x,z,zone.level);return y===null?null:{y};
+   }});
+  if(built.cells){
+   const mesh=visual(new THREE.Mesh(built.geometry,materials.porcelain),'floor-porcelain-source-supported',zone.id);
+   group.add(mesh);porcelainTiles+=built.cells;zstat.floorTiles+=built.cells;
+  }else built.geometry.dispose();
+  zstat.floorCoverage={supportedArea:round(built.supportedArea),unverifiedArea:round(built.skippedArea),cutFragments:built.cutFragments};
   // Only existing IFC walls get thin porcelain surface strips. Never place
   // a panel where no source wall exists or where a functional doorway is near.
   const visited=new Set();

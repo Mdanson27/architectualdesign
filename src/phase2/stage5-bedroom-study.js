@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {fittedAsset} from './phase14abc-integration.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {STAGE1_PLAN_SKETCHES,insidePolygon} from './stage1-plan-crosswalk.js';
 
@@ -280,14 +281,9 @@ export function createStage5BedroomsStudy({
   const {x,z,f}=spot,g=groups[id];
   const desk=new THREE.Group();desk.name='STAGE5_READING_WALL_SIDE_DESK';
   desk.position.set(...loc(x,f,z));g.add(desk);
-  round(desk,'floating-desk-walnut-top',[1.15,.055,.53],.035,
-   material.walnut,0,.75,0);
-  for(const dx of [-.49,.49]){
-   round(desk,'reading-desk-slim-brass-support',[.034,.70,.035],
-    .009,material.brass,dx,.36,-.17);
-  }
-  round(desk,'desk-hidden-storage-drawer',[.77,.12,.37],.025,
-   material.stone,0,.65,.01);
+  const deskAsset=fittedAsset('fluted-writing-desk',[-.575,0,-.265],[.575,.7775,.265]);
+  for(const m of [...deskAsset.children]){visual(m,m.userData.component);m.userData.phase14Asset='fluted-writing-desk';desk.add(m);}
+  desk.userData.phase14Asset='fluted-writing-desk';
   studyDesk++;
   // Slender shelving rises from desk's own supports, not a new wall,
   // and stays entirely within its safe verified footprint.

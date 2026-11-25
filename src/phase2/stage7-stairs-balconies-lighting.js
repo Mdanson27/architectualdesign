@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import {fittedAsset,faceTarget,facingDot} from './phase14abc-integration.js';
+import {buildClippedFloor} from './phase14abc-flooring.js';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
 import {BALCONY_SPECS} from './balcony-restoration.js';
 
@@ -48,19 +50,14 @@ function baseMesh(g,name,geo,material,p){
  m.userData={stage7:true,sourceIFCUnmodified:true,visualConceptOnly:true,nonstructural:true};
  g.add(m);return m;
 }
-function makeChair(g,x,y,z,origin,materials,tag){
+function makeChair(g,x,y,z,origin,materials,tag,target){
  const group=new THREE.Group();group.name='STAGE7_BALCONY_CHAIR_'+tag;
- group.position.set(x-origin.x,y,z-origin.z);g.add(group);
- rounded(group,'WOVEN_SEAT_'+tag,[.59,.115,.58],.10,materials.woven,[0,.47,0]);
- rounded(group,'BACK_'+tag,[.59,.51,.095],.045,materials.woven,[0,.77,.25]);
- for(const sx of [-1,1]){
-  rounded(group,'ARM_'+tag,[.067,.24,.46],.026,materials.timber,[sx*.26,.56,-.005]);
-  for(const sz of [-1,1])
-   baseMesh(group,'CHAIR_FOOT_'+tag,new THREE.CylinderGeometry(.025,.035,.40,8),
-    materials.timber,[sx*.23,.22,sz*.22]);
- }
- rounded(group,'CUSHION_'+tag,[.43,.045,.46],.025,materials.ivory,[0,.54,-.02]);
- return group;
+ group.position.set(x-origin.x,y,z-origin.z);
+ group.rotation.y=faceTarget(x,z,...target);
+ const asset=fittedAsset('balcony-chair',[-.29,0,-.29],[.29,.89,.29]);
+ for(const m of [...asset.children]){m.userData={stage7:true,sourceIFCUnmodified:true,visualConceptOnly:true,nonstructural:true,phase14Asset:'balcony-chair'};m.castShadow=false;m.receiveShadow=false;group.add(m);}
+ group.userData={phase14Asset:'balcony-chair',facingDot:facingDot(group.rotation.y,x,z,...target),facingTarget:target};
+ g.add(group);return group;
 }
 function makePlanter(g,x,y,z,origin,materials,tag){
  const group=new THREE.Group();group.name='STAGE7_PLANTER_'+tag;
@@ -172,23 +169,16 @@ export function createStage7StairsBalconiesLighting({
   balconies.push(data);
   if(!accepted)continue;
   stats.sourceBalconiesFinished++;
-  const tileStep=.33;
-  const seen=new Set();
-  for(const region of BALCONY_DECK_REGIONS[spec.id]??[]){
-   const [xmin,xmax,zmin,zmax]=region;
-   for(let x=xmin+tileStep/2;x<xmax-tileStep/2+.005;x+=tileStep){
-    for(let z=zmin+tileStep/2;z<zmax-tileStep/2+.005;z+=tileStep){
-     const key=Math.round(x*100)+'_'+Math.round(z*100);
-     if(seen.has(key)||minDist(x,z,spec.door)<.57)continue;
-     seen.add(key);
-     const alternate=(Math.round(x/tileStep)+Math.round(z/tileStep))%2===0;
-     baseMesh(group,'WEATHER_TREATED_DECK_TILE',
-      new THREE.BoxGeometry(tileStep-.014,.012,tileStep-.014),
-      alternate?materials.plank:materials.plankAlternate,
-      [x-originX,stepY+.008,z-originZ]);
-     stats.balconyDeckPieces++;data.tiles++;
-    }
-   }
+    const tileStep=.33;
+  // Continuous, uniform finish in the established exterior-only zones.
+  // The shared family slab also covers the interior; do not expand blindly.
+  for(const [xmin,xmax,zmin,zmax] of BALCONY_DECK_REGIONS[spec.id]??[]){
+   const built=buildClippedFloor({polygon:[[xmin,zmin],[xmax,zmin],[xmax,zmax],[xmin,zmax]],origin,step:tileStep,datum:stepY,offset:.012,
+    sample:(x,z)=>records.some(r=>accepted.sourceSlabGuids.includes(r.mesh?.userData?.ifc?.guid)&&r.box&&x>=r.box.min.x-.001&&x<=r.box.max.x+.001&&z>=r.box.min.z-.001&&z<=r.box.max.z+.001)?{y:stepY}:null});
+   if(!built.cells){built.geometry.dispose();continue;}
+   baseMesh(group,'CONTINUOUS_WEATHER_RESISTANT_DECK_FINISH',built.geometry,materials.plank,[0,0,0]);
+   stats.balconyDeckPieces+=built.cells;data.tiles+=built.cells;
+   data.coveredAreaM2=(data.coveredAreaM2??0)+built.supportedArea;data.unverifiedAreaM2=(data.unverifiedAreaM2??0)+built.skippedArea;
   }
   // LED accents attach only along EXISTING guards: visual lighting lines
   // below the original handrail, not a second safety railing.
@@ -221,22 +211,21 @@ export function createStage7StairsBalconiesLighting({
   if(spec.id==='front-family'){
    for(const [tag,x,z] of [['west',116.65,.72],['east',117.89,.72]]){
     if(!furnish(tag,x,z))continue;
-    rec(makeChair(group,x,stepY,z,origin,materials,tag),'family-chair-'+tag);
+    rec(makeChair(group,x,stepY,z,origin,materials,tag,[117.27,.72]),'family-chair-'+tag);
     data.chairs++;stats.balconyChairs++;
    }
    const x=117.27,z=.72;
    if(furnish('table',x,z)){
     const tb=new THREE.Group();tb.name='STAGE7_BALCONY_FAMILY_TABLE';
     tb.position.set(x-originX,stepY,z-originZ);group.add(tb);
-    baseMesh(tb,'LOUNGE_TABLE_STEM',new THREE.CylinderGeometry(.040,.068,.42,10),
-     materials.timber,[0,.23,0]);
-    baseMesh(tb,'ROUND_OUTDOOR_TABLE_TOP',new THREE.CylinderGeometry(.29,.29,.041,18),
-     materials.stone,[0,.47,0]);
+    const asset=fittedAsset('balcony-wire-table',[-.29,0,-.29],[.29,.49,.29]);
+    for(const m of [...asset.children]){m.userData={stage7:true,sourceIFCUnmodified:true,visualConceptOnly:true,nonstructural:true,phase14Asset:'balcony-wire-table'};tb.add(m);}
+    tb.userData.phase14Asset='balcony-wire-table';
     rec(tb,'family-table');stats.balconyTables++;data.tables++;
    }
   }else if(spec.id==='east-projection'){
    if(furnish('chair',121.23,-8.18)){
-    rec(makeChair(group,121.23,stepY,-8.18,origin,materials,'east'),'east-chair');
+    rec(makeChair(group,121.23,stepY,-8.18,origin,materials,'east',[122.52,-8.18]),'east-chair');
     data.chairs++;stats.balconyChairs++;
    }
   }
@@ -288,6 +277,7 @@ export function createStage7StairsBalconiesLighting({
    originalOpenPlanPreserved:true,addedPartitionWalls:0,
    guardEngineeringApproved:false,electricalEngineeringApproved:false,
    balconyWaterproofingApproved:false,clientApproved:false,
+   seatingOrientation:colliders.filter(r=>r.mesh.userData.phase14Asset==='balcony-chair').map(r=>({tag:r.tag,dot:r.mesh.userData.facingDot,target:r.mesh.userData.facingTarget})),
    balconyDetails:balconies.map(b=>({...b}))
   };
  }

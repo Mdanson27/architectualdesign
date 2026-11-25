@@ -758,6 +758,13 @@ try{
   console.log('PHASE14_BROWSER_LIBRARY',JSON.stringify(library));report.phase14=library;
   if(stage4Initial.phase14LibraryChairs!==stage4Initial.pieces.sittingChairs||stage4Initial.phase14Placements?.length!==stage4Initial.pieces.sittingChairs||stage4Initial.phase14Placements.some(p=>!p.floorSupported||!p.withinPriorEnvelope||p.floorCorners.length!==4))throw Error('Phase 14 chair placement contract failed: '+JSON.stringify(stage4Initial.phase14Placements));
   console.log('PHASE14_POSITION_EVIDENCE',JSON.stringify(stage4Initial.phase14Placements));
+  const integration=JSON.parse(await evaluate('JSON.stringify(window.__AutoMindsQA.phase14abcAudit())'));
+  if(integration.dining?.length!==6||integration.dining.some(p=>p.dot<.999)||integration.balcony?.length<2||integration.balcony.some(p=>p.dot<.999)||integration.furniture.systems.dining.libraryInstances!==7||!integration.furniture.systems.study?.libraryInstances||!Object.values(integration.floor.floorCoverage).some(p=>p.cutFragments>0))throw Error('Phase 14ABC live integration contract: '+JSON.stringify(integration));
+  if(!['ground-sitting','first-floor'].every(id=>integration.sofas?.some(s=>s.id===id&&s.oldMeshNotRendered&&s.collisionTransformPreserved&&s.visualWithinPriorBounds&&s.facingDot>.70)))throw Error('Actual sofa replacement failed: '+JSON.stringify(integration.sofas));
+  const coffee=JSON.parse(await evaluate('JSON.stringify(window.__AutoMindsQA.summary().sittingRoomFurniture.coffeeReplacement)'));
+  if(!coffee?.oldMeshNotRendered||!coffee.collisionTransformPreserved||!coffee.visualWithinPriorBounds)throw Error('Brief p15 family coffee table replacement failed: '+JSON.stringify(coffee));
+  console.log('PHASE14ABC_BRIEF_COFFEE_TABLE',JSON.stringify(coffee));
+  console.log('PHASE14ABC_LIVE_AUDIT',JSON.stringify(integration));report.phase14abc=integration;
  const desktopPerf=JSON.parse(await rawMetrics());
  if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
     !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||

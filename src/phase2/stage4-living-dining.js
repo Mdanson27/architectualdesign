@@ -3,6 +3,7 @@ import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js'
 import {STAGE1_PLAN_SKETCHES,insidePolygon} from './stage1-plan-crosswalk.js';
 import {DINING_TABLE_WORLD} from './dining-furnishings.js';
 import {createFurnitureAsset,fitFurnitureEnvelope} from './phase14-furniture-library.js';
+import {installFittedAsset,faceTarget,facingDot} from './phase14abc-integration.js';
 
 /**
  * STAGE 4 — Studio Anne pp. 10, 13–21.
@@ -80,7 +81,7 @@ export function createStage4LivingDining({
  for(const [id,g] of Object.entries(groups)){
   g.name='STAGE4_'+id.replace(/-/g,'_');g.userData.stage4Room=id;root.add(g);
  }
- const mats=palette(),colliders=[],phase14Placements=[];
+ const mats=palette(),colliders=[],phase14Placements=[],revertDining=[],diningOrientation=[];
  const pieces={groundRug:0,sittingCoffeeTable:0,existingSourceCoffeeTables:0,sittingChairs:0,sittingSideTables:0,
   sofaCushions:0,firstFloorRug:0,familyAccent:0,diningRug:0,diningChairsImproved:0,
   diningTabletop:0,diningPlaceSettings:0,foyerMirror:0,foyerShelf:0,accentLights:0};
@@ -201,22 +202,25 @@ export function createStage4LivingDining({
  const diningTable=dining.children.find(o=>o.name==='REAL_3D_DINING_TABLE');
  if(diningTable){
   const [wx,,wz]=DINING_TABLE_WORLD;
-  // The existing table's top is 0.81m; new layer rests on it, without
-  // changing the original chairs or source-derived collision boxes.
-  rounded('G-DINING','sculpted-rounded-dining-tabletop',
-   [2.21,.041,1.145],.115,mats.timber,wx,.841,wz);
+  // Replace the generated table and chairs rather than adding shells on
+  // top. The old footprints and collision records remain authoritative.
+  revertDining.push(installFittedAsset(diningTable,'sculptural-dining-table',[-1.085,0,-.55],[1.085,.81,.55],{mark:visual,materials:mats}));
   pieces.diningTabletop++;
-  const settings=[[-.60,-.30], [.60,-.30],[-.60,.30],[.60,.30],[-.93,0],[.93,0]];
+  const settings=[[-.60,-.24],[.60,-.24],[-.60,.24],[.60,.24],[-.88,0],[.88,0]];
   for(const [dx,dz] of settings){
-   cylinder('G-DINING','glazed-table-place-setting',.105,.105,.008,
-    mats.ceramic,wx+dx,.869,wz+dz);pieces.diningPlaceSettings++;
+   cylinder('G-DINING','glazed-table-place-setting',.095,.095,.008,mats.ceramic,wx+dx,.815,wz+dz);pieces.diningPlaceSettings++;
   }
-  // Lift upholstery quality on the SIX existing real chair objects; no
-  // second six-seat set is introduced and collision geometry remains.
   for(const chair of dining.children.filter(o=>/^DINING_CHAIR_[1-6]$/.test(o.name))){
-   const m=visual(new THREE.Mesh(
-    new RoundedBoxGeometry(.38,.25,.074,3,.024),mats.taupe),'curved-dining-chair-upholstery');
-   m.position.set(0,.79,.165);chair.add(m);pieces.diningChairsImproved++;
+   const x=chair.position.x,z=chair.position.z;
+   // Face the tabletop directly along the original chair axis; diagonal
+   // rotation would enlarge the existing clearance envelope.
+   const target=Math.abs(z)>.5?[x,0]:[0,z];
+   const yaw=faceTarget(x,z,...target);
+   // Existing dining rotations already face the table; enforce the contract.
+   chair.rotation.y=yaw;
+   revertDining.push(installFittedAsset(chair,'curved-dining-chair',[-.26,0,-.255],[.26,.99,.2575],{mark:visual,materials:mats}));
+   diningOrientation.push({name:chair.name,dot:facingDot(yaw,x,z,...target)});
+   pieces.diningChairsImproved++;
   }
   if(getFloor('G-DINING',wx,wz)!==null&&
      stage4Rug('G-DINING',wx,wz,3.32,2.04,0,'dining')){
@@ -274,21 +278,18 @@ export function createStage4LivingDining({
      const g=new THREE.Group();g.name='STAGE4_SITTING_ROUNDED_COFFEE_TABLE';
      g.position.set(...local(accepted.x,accepted.y,accepted.z));
      groups['G-SITTING'].add(g);
-     for(const [xx,zz] of [[-.37,-.19],[.37,-.19],[-.37,.19],[.37,.19]]){
-      const leg=visual(new THREE.Mesh(new THREE.CylinderGeometry(.055,.075,.35,12),mats.timber),
-       'living-coffee-leg');
-      leg.position.set(xx,.21,zz);g.add(leg);
-     }
-     const top=visual(new THREE.Mesh(new RoundedBoxGeometry(1.07,.075,.61,4,.085),mats.stone),
-      'rounded-stone-coffee-table');
-     top.position.y=.43;g.add(top);
+     // p.15 overlapping organic tops and dark cylindrical bases replace
+     // the original rectangular top/four-leg stand-in.
+     installFittedAsset(g,'rounded-coffee-table',[-.535,.0,-.305],[.535,.4675,.305],{mark:visual,materials:mats});
      recordCollider(g,'G-SITTING','ground-coffee-table');
      pieces.sittingCoffeeTable++;
     }else skip.coffeeTable='No source-backed clear table location after eight footprint checks';
    }
    if(stage4Rug('G-SITTING',Math.min(117.5,sx+1.37),sz,2.55,1.79,y,'sitting'))
     pieces.groundRug++;
-   // Cushions rest on an actual IFC-backed sofa; not duplicate sofa geometry.
+   // New sofa has its own integrated loose cushions. Keep the previous
+   // decoration only when the source sofa could not safely be replaced.
+   if(!ground.mesh.userData.phase14CollisionOnly){
    const cushionY=Math.max(y+.56,box.max.y-.26);
    for(const zOffset of [-.52,0,.52]){
     const z=sz+zOffset;
@@ -297,6 +298,7 @@ export function createStage4LivingDining({
      [.24,.23,.37],.055,zOffset===0?mats.cream:mats.taupe,
      sx+.035,cushionY,z);
     pieces.sofaCushions++;
+   }
    }
   }else skip.sitting='No confirmed source floor at corrected ground sofa';
  }else skip.sitting='Source IFC ground sofa unavailable';
@@ -431,7 +433,7 @@ export function createStage4LivingDining({
   return {
    stage:4,productionIntegrated:true,previewActivationRequired:false,
    rooms:['G-SITTING','G-DINING','F-FAMILY','ENTRY'],
-   pieces:{...pieces},phase14Placements:phase14Placements.map(p=>({...p})),phase14LibraryChairs:groups['G-SITTING'].children.filter(o=>o.userData.phase14Asset==='sculptural-accent-chair').length,visibleRooms:Object.entries(groups)
+   pieces:{...pieces},diningOrientation,phase14Placements:phase14Placements.map(p=>({...p})),phase14LibraryChairs:groups['G-SITTING'].children.filter(o=>o.userData.phase14Asset==='sculptural-accent-chair').length,visibleRooms:Object.entries(groups)
     .filter(([,g])=>g.visible).map(([id])=>id),
    originalIFCGeometryPreserved:defaultSourceCondition(),
    sourceIFCCollidersPreserved:true,mainEntranceDoorId:27,
@@ -443,6 +445,7 @@ export function createStage4LivingDining({
   };
  }
  function dispose(){
+  for(const undo of revertDining)undo();
   // Revert enhancement additions to the existing six dining chair groups.
   for(const chair of dining.children.filter(x=>/^DINING_CHAIR_[1-6]$/.test(x.name))){
    for(const m of [...chair.children].filter(o=>o.userData?.stage4)){
