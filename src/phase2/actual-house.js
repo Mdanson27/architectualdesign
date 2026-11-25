@@ -2159,6 +2159,8 @@ if(isLocalQA){
    orbit.target.set(target[0]-state.origin.x,target[1],target[2]-state.origin.z);
    camera.lookAt(orbit.target);orbit.update();
    const k=state.stage3Kitchen;
+   // Settle the real drawer animation before QA capture, independent of software GPU frame rate.
+   for(let i=0;i<30;i++)k?.update(.1);
    return {status:k?.status(),visibleLegacy:[...(k?.sourceSet??[])].filter(r=>r.mesh.visible).length,sourceCount:k?.sourceSet?.size??0};
   },
   captureStage9CanvasFrame:()=>{
