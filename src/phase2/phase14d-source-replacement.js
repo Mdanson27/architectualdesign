@@ -64,7 +64,7 @@ export function createSourceKitchenReplacement({scene,origin,records,floorSample
    const doorH=h-plinth-.025;
    if(drawerBank){
     for(let j=0;j<3;j++){const draw=group(g,'STORAGE_DRAWER',0,plinth+doorH*(j+.5)/3,front);door(draw,w-.012,doorH/3-.008,0,0,0,m,false,false);rod(draw,'drawer-brass-pull',[-w*.22,0,.045],[w*.22,0,.045],.009,brass);
-     if(j===0){const dd=Math.min(depth*.75,.36),dh=Math.min(.09,doorH/6);box(draw,'cutlery-tray',w*.85,.025,dd,oak,0,-dh,-dd/2);for(const a of [-1,1])box(draw,'drawer-side',.018,dh,dd,oak,a*w*.41,-dh/2,-dd/2);box(draw,'drawer-back',w*.82,dh,.018,oak,0,-dh/2,-dd);for(const a of [-1,0,1])box(draw,'cutlery-divider',.012,.035,dd-.04,oak,a*w*.19,-dh+.028,-dd/2);moving.push(draw);}}
+     if(j===2){const dd=Math.min(depth*.75,.36),dh=Math.min(.09,doorH/6);box(draw,'cutlery-tray',w*.85,.025,dd,oak,0,-dh,-dd/2);for(const a of [-1,1])box(draw,'drawer-side',.018,dh,dd,oak,a*w*.41,-dh/2,-dd/2);box(draw,'drawer-back',w*.82,dh,.018,oak,0,-dh/2,-dd);for(const a of [-1,0,1])box(draw,'cutlery-divider',.012,.035,dd-.04,oak,a*w*.19,-dh+.028,-dd/2);moving.push(draw);}}
    }else if(w>.75){for(const a of [-1,1])door(g,w/2-.01,doorH,a*w/4,(h+plinth)/2,front,m,glazed);}
    else door(g,w-.012,doorH,0,(h+plinth)/2,front,m,glazed);
    if(upper){report.upperCabinets++;box(g,'crown-moulding',w+.014,.05,depth+.025,ivory,0,h-.015,.006);box(g,'task-led',w-.04,.012,.022,led,0,-.007,depth*.30);report.ledStrips++;}
@@ -101,6 +101,7 @@ export function createSourceKitchenReplacement({scene,origin,records,floorSample
    mesh(sink,'drain-ring',new THREE.TorusGeometry(.033,.004,6,18),steel,x,-.172,0).rotation.x=Math.PI/2;
   }
   box(sink,'double-bowl-divider',.026,.185,.42,steel,0,-.096,0);
+  box(sink,'rear-deck-for-faucet',.781,.016,.108,steel,0,-.003,.288);
   const faucet=group(groups.appliances,'CURVED_BRASS_FAUCET',110.4811-ox,.849,.4335-oz);
   mesh(faucet,'faucet-base',new THREE.CylinderGeometry(.034,.034,.025,18),brass,0,.012,0);
   tube(faucet,'brass-gooseneck',[[0,.02,0],[0,.24,0],[0,.35,-.06],[0,.36,-.18],[0,.24,-.25]],.016,brass);
