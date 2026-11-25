@@ -25,6 +25,9 @@ assert(p.replacedCabinets>=30,'source kitchen cabinet replacement count');
 assert(p.upperCabinets>=8);assert(p.baseCabinets>=10);
 assert.equal(p.fridges,1);assert.equal(p.applianceTowers,1);
 assert(p.floorPlanks>100);assert(q.sourceWorktopVerified);
+assert.equal(p.doubleBasinSinks,1);assert.equal(p.brassFaucets,1);assert.equal(p.windowBlinds,1);assert(p.drawerCavities>=3);
+assert(system.root.getObjectByName('DOUBLE_UNDERMOUNT_SOURCE_SINK'));assert(system.root.getObjectByName('CURVED_BRASS_FAUCET'));
+assert(system.sourceSet.has(records.find(r=>r.mesh.userData.ifc.guid==='2cQS1JNqv1YxecJOZ$0uiM')));
 for(const r of records){if(system.sourceSet.has(r))assert(!r.mesh.visible);else assert(r.mesh.visible);}
 assert.equal([...system.sourceSet].filter(r=>r.category==='slabs').length,0);
 assert.equal(p.worktopGuids.length,2);
