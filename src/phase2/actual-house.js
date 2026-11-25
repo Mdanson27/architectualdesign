@@ -274,6 +274,7 @@ function refreshVisibility(){
   if(state.decor?.sources.includes(rec)&&state.enhancedFurniture&&state.showFurniture)rec.mesh.visible=false;
   if(state.dining?.sourceSet?.has(rec)&&state.showFurniture)rec.mesh.visible=false;
   if(state.movedSofa?.sourceSet?.has(rec)&&state.showFurniture)rec.mesh.visible=false;
+  if(state.stage3Kitchen?.sourceSet?.has(rec)&&state.stage3Kitchen.status().enabled)rec.mesh.visible=false;
   if(rec.mesh.visible)count++;
  }
  if(state.decor)state.decor.group.visible=state.enhancedFurniture&&state.showFurniture;
@@ -1204,6 +1205,7 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius)){
   state.lastCollisionBlocker={kind:'balcony glass guard'};return true;
  }
+ if(state.stage3Kitchen?.blocks?.(nextX,nextZ,footY,visitorRadius)){state.lastCollisionBlocker={kind:'Phase 14D kitchen furniture'};return true;}
  const candidates=nearby(state.solids,nextX,footY+1.05,nextZ,1.3);
  const rayMeshes=candidates.filter(r=>{
   if(!r.mesh.visible||r.mesh.userData.functionallyReplacedDoorId)return false;
