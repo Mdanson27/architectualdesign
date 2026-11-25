@@ -72,6 +72,8 @@ jobs:
         run: npm run test:kitchen-clearance
       - name: Verify Stage 3 source-supported kitchen cabinetry, appliance and storage previews
         run: npm run test:stage3
+      - name: Verify Phase 14D exact source kitchen replacement
+        run: node tests/verify-phase14d-source-kitchen.mjs
       - name: Verify all completed designs render by default with no visitor activation
         run: npm run test:production
       - name: Verify Studio Anne Stage 4 furnished rooms and automatic production integration
@@ -120,7 +122,7 @@ jobs:
       - name: Verify walkable IFC floor classification
         run: npm run test:floor
       - name: Real-browser architectural walkthrough QA
-        timeout-minutes: 7
+        timeout-minutes: 20
         run: |
           command -v google-chrome
           npm run test:browser
@@ -138,6 +140,7 @@ jobs:
           path: |
             architecture-browser-qa.json
             analysis/stage9-visuals/*.png
+            analysis/phase14d/*.png
             analysis/phase14-visuals/*.png
             analysis/phase14-visuals/review.json
             analysis/stage1-room-candidate-crosswalk.json
