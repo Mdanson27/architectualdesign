@@ -32,7 +32,11 @@ jobs:
           CHROME_BIN: /usr/bin/google-chrome
         run: npm run build
       - run: npm run test:phase13
-      - name: Real browser regression
+      - name: First browser pass — required six reference captures and mobile QA
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+        run: npm run test:browser
+      - name: Real browser regression — all doors and routes
         env:
           QA_ALL_DOORS: '1'
           CHROME_BIN: /usr/bin/google-chrome
