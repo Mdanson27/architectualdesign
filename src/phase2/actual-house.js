@@ -2150,6 +2150,17 @@ if(isLocalQA){
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
     openingRegistry:state.doorApertureAudit?.summary??null,
     blockedCuts:state.doorApertureAudit?.occlusionDetails??[]}),
+  phase14dKitchenView:(eye,target)=>{
+   if(!state.initialReady||!qaPage)return null;
+   if(state.mode==='walk')exitWalk();
+   state.floor='ground';state.sectionEnabled=false;state.showFurniture=true;
+   refreshVisibility();
+   camera.position.set(eye[0]-state.origin.x,eye[1],eye[2]-state.origin.z);
+   orbit.target.set(target[0]-state.origin.x,target[1],target[2]-state.origin.z);
+   camera.lookAt(orbit.target);orbit.update();
+   const k=state.stage3Kitchen;
+   return {status:k?.status(),visibleLegacy:[...(k?.sourceSet??[])].filter(r=>r.mesh.visible).length,sourceCount:k?.sourceSet?.size??0};
+  },
   captureStage9CanvasFrame:()=>{
    if(!state.initialReady)return null;
    syncViewport();
