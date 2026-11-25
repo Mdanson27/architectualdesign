@@ -13,7 +13,7 @@ export function createSourceKitchenReplacement({scene,origin,records,floorSample
  const top=records.filter(r=>r.layer?.level==='ground'&&TOPS.has(id(r)));
  if(eligible.length<25||top.length!==2)return null;
  const ox=origin.x||0,oz=origin.z||0;
- const sourceSet=new Set(),root=new THREE.Group();root.name='PHASE14D_REAL_KITCHEN_REPLACEMENT';root.visible=false;scene.add(root);
+ const sourceSet=new Set(),sourceMaterials=new Map(),root=new THREE.Group();root.name='PHASE14D_REAL_KITCHEN_REPLACEMENT';root.visible=false;scene.add(root);
  const groups=Object.fromEntries(['cabinetry','appliances','storage','lighting','floor'].map(k=>[k,new THREE.Group()]));Object.entries(groups).forEach(([k,g])=>{g.name='KITCHEN_'+k;root.add(g)});
  const mat=(color,roughness=.65,metalness=0)=>new THREE.MeshStandardMaterial({color,roughness,metalness});
  const sage=mat(0x92927c),ivory=mat(0xeee8de),stone=mat(0xf7f3eb,.38),brass=mat(0xb28b50,.36,.65),steel=mat(0xb9bdbe,.36,.65),black=mat(0x202323,.23),oak=mat(0xb58c65),cream=mat(0xe8ddcc),glass=new THREE.MeshStandardMaterial({color:0xc6d0cd,transparent:true,opacity:.32,roughness:.15,depthWrite:false}),led=new THREE.MeshStandardMaterial({color:0xffe7c0,emissive:0xffd6a0,emissiveIntensity:.8});
@@ -35,6 +35,7 @@ export function createSourceKitchenReplacement({scene,origin,records,floorSample
  function hide(r){sourceSet.add(r);}
  const applianceTowerId='1i4uGbbCb1sfVKL64tKps7',fridgeId='2VwmdgVG98iR_5aCtntVj9';
  for(const r of eligible){
+  if(id(r)==='1zZMP66nD1NP$twHOIMIzO'){hide(r);report.replacedCabinets++;continue;} // dedicated hood bay
   const L=layout(r),{c,d,w,depth,h,yaw}=L,upper=r.box.min.y>1.45;
   if(w<.12||depth<.035||h<.12){report.rejected.push(id(r));continue;}
   const g=group(groups.cabinetry,'REPLACEMENT_'+id(r),c.x,r.box.min.y,c.z,yaw);
@@ -68,18 +69,19 @@ export function createSourceKitchenReplacement({scene,origin,records,floorSample
  }
  // Original oven/fridge meshes duplicate the new exact-envelope models.
  for(const r of records){if(r.layer?.level!=='ground'||!APPLIANCES.has(id(r)))continue;
-  if(id(r)==='2keCsr0mD6VQFrRoVeV3j3')continue; // preserve original mounted fixture pending identification
+  if(id(r)==='2keCsr0mD6VQFrRoVeV3j3'){hide(r);report.replacedAppliances++;continue;} // source hood in the dedicated bay
   if((id(r)==='16DJgqQcHChxwsLDJooVJ6'&&report.fridges)||(id(r)!=='16DJgqQcHChxwsLDJooVJ6'&&report.applianceTowers)){hide(r);report.replacedAppliances++;}
  }
  // Preserve the two actual L-shaped worktops and existing sink geometry.
  // A cooktop belongs to the west counter, not the empty bounding-box centre.
- const cookX=108.16-ox,cookZ=-3.45-oz,topY=top[0].box.max.y;
+ for(const r of records){if(r.layer?.level==='ground'&&id(r)==='2cQS1JNqv1YxecJOZ$0uiM'){sourceMaterials.set(r,r.mesh.material);r.mesh.material=steel;}}
+ const cookX=108.16-ox,cookZ=-3.77-oz,topY=top[0].box.max.y;
  const cook=group(groups.appliances,'COOKTOP_ON_SOURCE_RUN',cookX,topY+.008,cookZ,Math.PI/2);
  box(cook,'gas-cooktop',.48,.025,.46,black,0,0,0,true);
  for(const x of [-.12,.12])for(const z of [-.105,.105]){const t=mesh(cook,'burner',new THREE.TorusGeometry(.064,.008,8,16),steel,x,.023,z);t.rotation.x=Math.PI/2;for(const a of [-1,1])box(cook,'burner-grate',.12,.017,.012,black,x,.035,z+a*.055);}
- const hood=group(groups.appliances,'IVORY_HOOD',108.09-ox,1.94,-3.45-oz,Math.PI/2);
+ const hood=group(groups.appliances,'IVORY_HOOD',108.09-ox,1.94,-3.77-oz,Math.PI/2);
  box(hood,'hood-body',.48,.61,.42,ivory,0,.31,0);box(hood,'hood-moulding',.51,.065,.46,ivory,0,.045,.015);box(hood,'hood-crown',.52,.055,.46,ivory,0,.59,0);
- const filler=group(groups.appliances,'POT_FILLER',107.88-ox,1.22,-3.45-oz,Math.PI/2);
+ const filler=group(groups.appliances,'POT_FILLER',107.88-ox,1.22,-3.77-oz,Math.PI/2);
  rod(filler,'brass-pot-filler',[0,0,0],[.12,0,.12],.012,brass);rod(filler,'brass-pot-filler',[.12,0,.12],[0,0,.24],.012,brass);
  // Island fits between the actual perimeter runs; retain east open access.
  const cx=110.05,cz=-2.25,iw=.70,il=1.65;
@@ -102,10 +104,10 @@ export function createSourceKitchenReplacement({scene,origin,records,floorSample
  // Floor planks on the real kitchen slab, only inside the measured cabinet-room
  // rectangle; never cover dining or a doorway. Lightweight instanced batches.
  const colors=[0xb28b64,0xbd9972,0xa77d57,0xc39c76,0xb8906a];
- const plankGeo=new THREE.BoxGeometry(.94,.006,.18);const matrices=colors.map(()=>[]);
- for(let j=0;j<30;j++)for(let i=0;i<5;i++){const x=108.08+i*.94+(j%2)*.47,z=-5.11+j*.18;if(x-.47<107.85||x+.47>112.20||z+.09>.50)continue;const f=floorSampler(x-ox,z-oz,0);if(!Number.isFinite(f?.y)||Math.abs(f.y)>.15)continue;matrices[(i*7+j*3)%5].push(new THREE.Matrix4().makeTranslation(x-ox,f.y+.018,z-oz));report.floorPlanks++;}
+ const plankGeo=new THREE.BoxGeometry(1,1,1);const matrices=colors.map(()=>[]);
+ for(let j=0;j<32;j++)for(let i=-1;i<6;i++){const a=Math.max(107.85,107.85+i*.94+(j%2)*.47),b=Math.min(112.20,107.85+(i+1)*.94+(j%2)*.47),c=-5.22+j*.18,e=Math.min(.50,c+.18);if(b-a<.015||e-c<.015)continue;const x=(a+b)/2,z=(c+e)/2;const f=floorSampler(x-ox,z-oz,0);if(!Number.isFinite(f?.y)||Math.abs(f.y)>.15)continue;const matrix=new THREE.Matrix4().makeScale(b-a-.003,.006,e-c-.003);matrix.setPosition(x-ox,f.y+.018,z-oz);matrices[(i*7+j*3+100)%5].push(matrix);report.floorPlanks++;}
  matrices.forEach((arr,i)=>{if(!arr.length)return;const m=mat(colors[i],.74);materials.push(m);const batch=new THREE.InstancedMesh(plankGeo,m,arr.length);batch.name='KITCHEN_CARAMEL_PLANKS';arr.forEach((a,k)=>batch.setMatrixAt(k,a));batch.instanceMatrix.needsUpdate=true;groups.floor.add(batch);});
- function sync(){root.visible=enabled;for(const r of sourceSet)r.mesh.visible=!enabled;for(const k of Object.keys(switches))groups[k].visible=switches[k];}
+ function sync(){root.visible=enabled;for(const r of sourceSet)r.mesh.visible=!enabled;for(const [r,m] of sourceMaterials)r.mesh.material=enabled?steel:m;for(const k of Object.keys(switches))groups[k].visible=switches[k];}
  function status(){return {stage:3,roomId:'G-KITCHEN',enabled,visible:root.visible,sourceWorktopVerified:true,sourceWorktopGuid:id(top[0]),baseCabinetPanels:report.baseCabinets,appliancePieces:report.replacedAppliances+4,storageFixtures:moving.length,ledStrips:report.ledStrips,sourceFloorProbesPassed:report.floorPlanks,sourceGeometryUnmodified:true,sourceCollidersUnmodified:true,openConceptConnectionsUnchanged:true,pantryShelvesCreated:0,separatePantryFootprintCertified:false,clearanceMeasuredAndApproved:false,workTriangleMeasuredAndApproved:false,finalApplianceCoordinatesApproved:false,clientApproved:false,options:{...switches},storageOpen:opening,requirements,phase14d:report};}
- return {root,groups,sourceSet,colliders,status,enable(v=true){enabled=!!v;sync();return status();},setOptions(p={}){for(const [k,v] of Object.entries(p)){if(!(k in switches)||typeof v!=='boolean')throw Error('Invalid Stage 3 kitchen option: '+k);switches[k]=v;}sync();return status();},openStorage(v=true){opening=!!v;return status();},update(dt){progress=THREE.MathUtils.damp(progress,opening?1:0,10,Math.min(.1,Math.max(0,dt)));for(const d of moving){d.userData.closedZ??=d.position.z;d.position.z=d.userData.closedZ+progress*.20;}},updateVisibility(floor='all',walking=false,showFurniture=true,taskOn=true,lightsOn=true){root.visible=enabled&&showFurniture&&(floor==='all'||floor==='ground'||walking);if(enabled)for(const r of sourceSet)r.mesh.visible=false;for(const l of lights)l.intensity=root.visible&&taskOn&&lightsOn&&switches.lighting?2:0;led.emissiveIntensity=taskOn&&lightsOn?.8:0;return status();},blocks(x,z,foot,radius){return root.visible&&colliders.some(({group,box:b})=>group.visible&&foot+.25<b.max.y&&foot+1.45>b.min.y&&x>b.min.x-radius&&x<b.max.x+radius&&z>b.min.z-radius&&z<b.max.z+radius);},dispose(){for(const r of sourceSet)r.mesh.visible=true;root.traverse(o=>{if(o.isMesh)o.geometry.dispose();});materials.forEach(m=>m.dispose());scene.remove(root);}};
+ return {root,groups,sourceSet,colliders,status,enable(v=true){enabled=!!v;sync();return status();},setOptions(p={}){for(const [k,v] of Object.entries(p)){if(!(k in switches)||typeof v!=='boolean')throw Error('Invalid Stage 3 kitchen option: '+k);switches[k]=v;}sync();return status();},openStorage(v=true){opening=!!v;return status();},update(dt){progress=THREE.MathUtils.damp(progress,opening?1:0,10,Math.min(.1,Math.max(0,dt)));for(const d of moving){d.userData.closedZ??=d.position.z;d.position.z=d.userData.closedZ+progress*.20;}},updateVisibility(floor='all',walking=false,showFurniture=true,taskOn=true,lightsOn=true){root.visible=enabled&&showFurniture&&(floor==='all'||floor==='ground'||walking);if(enabled)for(const r of sourceSet)r.mesh.visible=false;for(const l of lights)l.intensity=root.visible&&taskOn&&lightsOn&&switches.lighting?2:0;led.emissiveIntensity=taskOn&&lightsOn?.8:0;return status();},blocks(x,z,foot,radius){return root.visible&&colliders.some(({group,box:b})=>group.visible&&foot+.25<b.max.y&&foot+1.45>b.min.y&&x>b.min.x-radius&&x<b.max.x+radius&&z>b.min.z-radius&&z<b.max.z+radius);},dispose(){for(const r of sourceSet)r.mesh.visible=true;for(const [r,m] of sourceMaterials)r.mesh.material=m;root.traverse(o=>{if(o.isMesh)o.geometry.dispose();});materials.forEach(m=>m.dispose());scene.remove(root);}};
 }
