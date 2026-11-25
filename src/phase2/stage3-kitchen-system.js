@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {createSourceKitchenReplacement} from './phase14d-source-replacement.js';
 import {buildPhase14DKitchen} from './phase14d-kitchen.js';
 import {STAGE1_PLAN_SKETCHES,insidePolygon} from './stage1-plan-crosswalk.js';
 
@@ -64,6 +65,8 @@ export function createStage3KitchenSystem({
  scene,origin={x:0,z:0},records=[],floorSampler=()=>null
 }={}){
  if(!scene||typeof floorSampler!=='function')throw Error('Stage 3 needs scene + source floor sampler');
+ const replacement=createSourceKitchenReplacement({scene,origin,records,floorSampler,requirements:STAGE3_KITCHEN_REQUIREMENTS});
+ if(replacement)return replacement;
  const root=new THREE.Group();root.name='STAGE3_SOURCE_ANCHORED_KITCHEN_PREVIEW_NOT_IFC';
  root.userData={stage3:true,collidable:false,approved:false};root.visible=false;scene.add(root);
  const groups={

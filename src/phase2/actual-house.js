@@ -274,6 +274,7 @@ function refreshVisibility(){
   if(state.decor?.sources.includes(rec)&&state.enhancedFurniture&&state.showFurniture)rec.mesh.visible=false;
   if(state.dining?.sourceSet?.has(rec)&&state.showFurniture)rec.mesh.visible=false;
   if(state.movedSofa?.sourceSet?.has(rec)&&state.showFurniture)rec.mesh.visible=false;
+  if(state.stage3Kitchen?.sourceSet?.has(rec)&&state.stage3Kitchen.status().enabled)rec.mesh.visible=false;
   if(rec.mesh.visible)count++;
  }
  if(state.decor)state.decor.group.visible=state.enhancedFurniture&&state.showFurniture;
@@ -1204,6 +1205,7 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius)){
   state.lastCollisionBlocker={kind:'balcony glass guard'};return true;
  }
+ if(state.stage3Kitchen?.blocks?.(nextX,nextZ,footY,visitorRadius)){state.lastCollisionBlocker={kind:'Phase 14D kitchen furniture'};return true;}
  const candidates=nearby(state.solids,nextX,footY+1.05,nextZ,1.3);
  const rayMeshes=candidates.filter(r=>{
   if(!r.mesh.visible||r.mesh.userData.functionallyReplacedDoorId)return false;
@@ -2148,6 +2150,19 @@ if(isLocalQA){
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
     openingRegistry:state.doorApertureAudit?.summary??null,
     blockedCuts:state.doorApertureAudit?.occlusionDetails??[]}),
+  phase14dKitchenView:(eye,target)=>{
+   if(!state.initialReady||!qaPage)return null;
+   if(state.mode==='walk')exitWalk();
+   state.floor='ground';state.sectionEnabled=false;state.showFurniture=true;
+   refreshVisibility();
+   camera.position.set(eye[0]-state.origin.x,eye[1],eye[2]-state.origin.z);
+   orbit.target.set(target[0]-state.origin.x,target[1],target[2]-state.origin.z);
+   camera.lookAt(orbit.target);orbit.update();
+   const k=state.stage3Kitchen;
+   // Settle the real drawer animation before QA capture, independent of software GPU frame rate.
+   for(let i=0;i<30;i++)k?.update(.1);
+   return {status:k?.status(),visibleLegacy:[...(k?.sourceSet??[])].filter(r=>r.mesh.visible).length,sourceCount:k?.sourceSet?.size??0};
+  },
   captureStage9CanvasFrame:()=>{
    if(!state.initialReady)return null;
    syncViewport();

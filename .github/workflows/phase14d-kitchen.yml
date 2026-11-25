@@ -1,0 +1,50 @@
+name: Phase 14D kitchen validation
+on:
+  pull_request:
+    paths:
+      - 'src/phase2/phase14d-source-replacement.js'
+      - 'src/phase2/stage3-kitchen-system.js'
+      - 'src/phase2/actual-house.js'
+      - 'tests/verify-phase14d-source-kitchen.mjs'
+      - '.github/workflows/phase14d-kitchen.yml'
+jobs:
+  kitchen-source-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node tests/verify-phase14d-source-kitchen.mjs
+      - run: npm run test:stage3
+      - run: npm run test:production
+      - name: Install pinned Khronos KTX tools
+        run: |
+          curl --fail --location --retry 3 --output /tmp/ktx-4.4.2.deb https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.deb
+          echo 'ca635ed489d8bf54fac8d7687056c651193de0740830a7738cc034adc63e3027  /tmp/ktx-4.4.2.deb' | sha256sum --check
+          sudo dpkg -i /tmp/ktx-4.4.2.deb
+          ktx --version
+      - name: Build with mandatory compressed textures
+        env:
+          PHASE13_REQUIRE_KTX2: '1'
+          CHROME_BIN: /usr/bin/google-chrome
+        run: npm run build
+      - run: npm run test:phase13
+      - name: First browser pass — required six reference captures and mobile QA
+        env:
+          CHROME_BIN: /usr/bin/google-chrome
+        run: npm run test:browser
+      - name: Real browser regression — all doors and routes
+        env:
+          QA_ALL_DOORS: '1'
+          CHROME_BIN: /usr/bin/google-chrome
+        run: npm run test:browser
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: phase14d-browser-evidence
+          path: |
+            architecture-browser-qa.json
+            analysis/
