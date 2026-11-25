@@ -292,7 +292,9 @@ export function createStage4LivingDining({
    }
    if(stage4Rug('G-SITTING',Math.min(117.5,sx+1.37),sz,2.55,1.79,y,'sitting'))
     pieces.groundRug++;
-   // Cushions rest on an actual IFC-backed sofa; not duplicate sofa geometry.
+   // New sofa has its own integrated loose cushions. Keep the previous
+   // decoration only when the source sofa could not safely be replaced.
+   if(!ground.mesh.userData.phase14CollisionOnly){
    const cushionY=Math.max(y+.56,box.max.y-.26);
    for(const zOffset of [-.52,0,.52]){
     const z=sz+zOffset;
@@ -301,6 +303,7 @@ export function createStage4LivingDining({
      [.24,.23,.37],.055,zOffset===0?mats.cream:mats.taupe,
      sx+.035,cushionY,z);
     pieces.sofaCushions++;
+   }
    }
   }else skip.sitting='No confirmed source floor at corrected ground sofa';
  }else skip.sitting='Source IFC ground sofa unavailable';

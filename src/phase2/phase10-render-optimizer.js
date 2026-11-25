@@ -19,7 +19,7 @@ function bytes(g){
 function eligible(o){
  const g=o.geometry,m=o.material;
  return o.isMesh&&!o.isInstancedMesh&&!o.isSkinnedMesh&&!o.isBatchedMesh&&
-  !o.children.length&&o.visible&&g?.isBufferGeometry&&
+  !o.children.length&&o.visible&&!o.userData.phase14CollisionOnly&&m?.visible!==false&&g?.isBufferGeometry&&
   m?.isMeshStandardMaterial&&!m.transparent&&m.opacity===1&&
   m.alphaTest===0&&!m.wireframe&&!m.displacementMap&&
   !m.clippingPlanes?.length&&!m.vertexColors&&!o.morphTargetInfluences&&

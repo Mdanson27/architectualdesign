@@ -16,3 +16,19 @@ assert(!old.visible);assert.equal(auditFurniture({dining:group},[]).systems.dini
 assert(group.children.filter(m=>m.visible).every(m=>m.userData.phase14Asset==='curved-dining-chair'));
 undo();assert.equal(group.children.length,1);assert(old.visible);
 console.log('PHASE14ABC_UNIT',JSON.stringify({fullArea:full.supportedArea,cutFragments:full.cutFragments,missingArea:hole.skippedArea,orientation:4,reversibleReplacement:true}));
+
+import {createTailoredSectional,replaceSofaVisual} from '../src/phase2/phase14abc-sofas.js';
+for(const chaise of ['left','right','none']){
+ const g=createTailoredSectional({width:2.4,depth:1.65,height:.85,chaise});
+ assert(g.children.filter(o=>o.name.includes('individual-deep-seat')).length>=3);
+ assert.equal(g.children.some(o=>o.name.includes('long-chaise')),chaise!=='none');
+ assert(g.children.every(o=>o.geometry.attributes.position.array.every(Number.isFinite)));
+}
+const sofaRoot=new THREE.Group(),oldSofa=new THREE.Mesh(new THREE.BoxGeometry(2.5,.85,1.65),new THREE.MeshStandardMaterial());
+oldSofa.position.set(3,.425,4);oldSofa.userData={sourceRegion:'test',originalGUID:'test-guid'};sofaRoot.add(oldSofa);sofaRoot.updateMatrixWorld(true);
+const oldGeo=oldSofa.geometry,oldWorld=oldSofa.matrixWorld.clone(),oldBounds=new THREE.Box3().setFromObject(oldSofa);
+const fitted=replaceSofaVisual(oldSofa,oldBounds,new THREE.Vector3(3,0,6),sofaRoot);
+assert(fitted?.oldMeshNotRendered&&fitted.collisionTransformPreserved&&fitted.visualWithinPriorBounds&&fitted.facingDot>.999);
+assert.equal(oldSofa.geometry,oldGeo);assert(oldSofa.matrixWorld.elements.every((v,i)=>Math.abs(v-oldWorld.elements[i])<1e-6));assert(!oldSofa.material.visible);
+assert.equal(sofaRoot.children.length,1);
+console.log('PHASE14ABC_REAL_SOFA_REPLACEMENT',JSON.stringify({variants:3,oldSurfaceHidden:true,originalCollisionPreserved:true}));
