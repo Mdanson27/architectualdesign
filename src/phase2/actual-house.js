@@ -35,6 +35,7 @@ import {createCompressedAssetLoader} from './phase13-compressed-assets.js';
 import {drawStudioTexture,STUDIO_TEXTURE_NAMES} from './phase13-studio-textures.js';
 import {loadStudioKTX2} from './phase13-ktx2.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
+import {auditFurniture} from './phase14abc-integration.js';
 import {createPhase10Renderer,createPhase10SpatialIndex} from './phase10-render-optimizer.js';
 import {createPhase11Residency,loadLayersInOrder,loadingConcurrency} from './phase11-residency.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
@@ -2237,6 +2238,7 @@ if(isLocalQA){
    return {full,simplified,foliage:foliage.length,sourcePreserved:state.meshes.every((r,i)=>r.mesh.geometry===original[i].geometry&&r.mesh.visible===original[i].visible),
     originalFoliagePreserved:foliage.every(r=>r.mesh.geometry===r.geometry&&r.mesh.visible===r.visible)};
   },
+  phase14abcAudit:()=>({furniture:auditFurniture({dining:state.dining?.root,sitting:state.stage4LivingDining?.groups['G-SITTING'],family:state.stage4LivingDining?.groups['F-FAMILY'],sourceRepositioned:state.movedSofa?.root,study:state.stage5BedroomsStudy?.groups['F-READING'],balconies:state.stage7StairsBalconiesLighting?.balconyGroup,kitchen:state.stage3Kitchen?.root},state.meshes),floor:state.stage2SurfaceSystem?.summary(),dining:state.stage4LivingDining?.status()?.diningOrientation,balcony:state.stage7StairsBalconiesLighting?.status()?.seatingOrientation}),
   phase13Status:()=>({loader:phase13Assets.status(),manifest:state.sourceManifest?.phase13??null,textures:phase13Textures,sourceLayers:state.layers.size}),
   stage9PerformanceStatus:()=>{
    const resources=performance.getEntriesByType('resource');

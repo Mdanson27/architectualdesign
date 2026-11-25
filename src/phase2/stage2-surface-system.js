@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {buildClippedFloor} from './phase14abc-flooring.js';
 import {STAGE1_PLAN_SKETCHES,insidePolygon,polygonBounds} from './stage1-plan-crosswalk.js';
 import {STAGE1_ROOMS} from './stage1-room-audit.js';
 import {STUDIO_ANNE_SCHEMES} from './studio-anne-brief.js';
@@ -175,28 +176,13 @@ export function createStage2SurfaceSystem({
   const mapName={porcelain:'marble',ash:'ash',caramel:'caramel'}[spec.floor];
   const map=textureMaps[mapName];if(!map)throw Error('Stage 2 missing tile material '+mapName);
   const shape=STAGE1_PLAN_SKETCHES[room.id].vertices,b=polygonBounds(shape);
-  const datum=DATUM[room.level],points=[];
-  for(let x=b.minX+STEP/2;x<b.maxX-STEP/2+.001;x+=STEP){
-   for(let z=b.minZ+STEP/2;z<b.maxZ-STEP/2+.001;z+=STEP){
-    if(!withinRoom(x,z,shape,STEP/2+EDGE_INSET))continue;
-    const floor=floorSampler(x-(origin.x||0),z-(origin.z||0),datum);
-    if(!finite(floor?.y)||Math.abs(floor.y-datum)>.18)continue;
-    points.push([x-(origin.x||0),floor.y+.012,z-(origin.z||0)]);
-   }
-  }
-  if(!points.length)return;
-  const geo=new THREE.BoxGeometry(TILE-JOINT,.006,TILE-JOINT);
-  const mat=new THREE.MeshStandardMaterial({
-   color:'#ffffff',map,roughness:spec.floor==='porcelain'?.40:.67,
-   metalness:0,side:THREE.DoubleSide
-  });
-  const mesh=objectIsVisualOnly(new THREE.InstancedMesh(geo,mat,points.length),room.id,'floor');
-  const dummy=new THREE.Object3D();
-  points.forEach((p,i)=>{dummy.position.set(...p);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);});
-  mesh.instanceMatrix.needsUpdate=true;
-  mesh.frustumCulled=false;mesh.name='STAGE2_SOURCE_SAMPLED_FLOOR_'+room.id;
-  group.add(mesh);stats.tiles=points.length;
-  stats.sampleFloorAreaM2=round(points.length*(TILE-JOINT)**2);
+  const built=buildClippedFloor({polygon:shape,origin,step:STEP,sample:floorSampler,datum:DATUM[room.level],uvScale:spec.floor==='porcelain'?.55:1.1});
+  stats.floorCoverage={polygonArea:round(built.polygonArea),supportedArea:round(built.supportedArea),unverifiedArea:round(built.skippedArea),cutFragments:built.cutFragments};
+  if(!built.cells){built.geometry.dispose();return;}
+  const mat=new THREE.MeshStandardMaterial({color:'#ffffff',map,roughness:spec.floor==='porcelain'?.40:.67,metalness:0,side:THREE.DoubleSide});
+  const mesh=objectIsVisualOnly(new THREE.Mesh(built.geometry,mat),room.id,'floor');
+  mesh.name='STAGE2_SOURCE_SAMPLED_FLOOR_'+room.id;mesh.userData.coveredCells=built.cells;
+  group.add(mesh);stats.tiles=built.cells;stats.sampleFloorAreaM2=round(built.supportedArea);
  }
  function addSkirting(room,spec,group,stats){
   if(!spec.skirting)return;
@@ -373,6 +359,7 @@ export function createStage2SurfaceSystem({
    finalPaletteApproved:false,roomPolygonsCertified:false,
    sourceWallMaterialsOverriddenReversibly:originalMaterials.size,
    stage:2,studioAnnePages:[3,4,5,6,7,8],
+   floorCoverage:Object.fromEntries(list.filter(r=>r.floorCoverage).map(r=>[r.roomId,r.floorCoverage])),
    roomSelections:Object.fromEntries([...selections].map(([id,x])=>[id,{...x}]))
   };
  }

@@ -71,10 +71,10 @@ const wallsGroup=system.root.children.find(x=>x.name.includes('G-DINING'));
 assert(wallsGroup);
 let tiles=0,skirt=0,ceiling=0;
 wallsGroup.traverse(o=>{
+ if(o.isMesh&&o.userData.part==='floor'){assert(o.userData.collidable===false);tiles+=o.userData.coveredCells;}
  if(o.isInstancedMesh){
   assert(o.userData.stage2&&o.userData.collidable===false);
   assert(o.userData.planPolygonCertified===false);
-  if(o.userData.part==='floor')tiles+=o.count;
   if(o.userData.part==='skirting')skirt+=o.count;
   if(o.userData.part==='ceiling')ceiling+=o.count;
  }

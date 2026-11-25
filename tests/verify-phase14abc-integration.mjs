@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import * as THREE from 'three';
+import {buildClippedFloor} from '../src/phase2/phase14abc-flooring.js';
+import {faceTarget,facingDot,installFittedAsset,auditFurniture} from '../src/phase2/phase14abc-integration.js';
+const poly=[[0,0],[2.13,0],[2.13,.78],[.81,.78],[.81,1.91],[0,1.91]];
+const full=buildClippedFloor({polygon:poly,datum:0,sample:()=>({y:0})});
+assert(Math.abs(full.supportedArea-full.polygonArea)<1e-6,JSON.stringify(full));assert(full.cutFragments>0);
+assert(full.geometry.attributes.normal.array.every(Number.isFinite));
+const hole=buildClippedFloor({polygon:poly,datum:0,sample:(x,z)=>x>.95?null:{y:0}});
+assert(hole.skippedArea>0&&hole.supportedArea<full.supportedArea);
+assert(Math.abs(hole.supportedArea+hole.skippedArea-full.polygonArea)<1e-6);
+for(const [x,z] of [[-1,0],[1,0],[0,-1],[0,1]])assert(facingDot(faceTarget(x,z,0,0),x,z,0,0)>.999);
+const group=new THREE.Group();group.add(new THREE.Mesh(new THREE.BoxGeometry(.52,.9,.51)));
+const old=group.children[0],undo=installFittedAsset(group,'curved-dining-chair',[-.26,0,-.255],[.26,.9,.255]);
+assert(!old.visible);assert.equal(auditFurniture({dining:group},[]).systems.dining.libraryInstances,1);
+assert(group.children.filter(m=>m.visible).every(m=>m.userData.phase14Asset==='curved-dining-chair'));
+undo();assert.equal(group.children.length,1);assert(old.visible);
+console.log('PHASE14ABC_UNIT',JSON.stringify({fullArea:full.supportedArea,cutFragments:full.cutFragments,missingArea:hole.skippedArea,orientation:4,reversibleReplacement:true}));
