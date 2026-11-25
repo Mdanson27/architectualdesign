@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {replaceSofaVisual} from './phase14abc-sofas.js';
+import {replaceSofaVisual,replaceCoffeeTableVisual} from './phase14abc-sofas.js';
 import {STAGE1_PLAN_SKETCHES,insidePolygon} from './stage1-plan-crosswalk.js';
 
 /**
@@ -151,6 +151,7 @@ export function organizeSourceSittingFurniture(records,scene,origin={x:0,z:0},in
   if(!target||!replace({preview,box:b},target)){root.remove(preview);unresolvedSofas.push({guid:source.mesh.userData.ifc?.guid,room:id,reason:'Replacement envelope rejected'});continue;}
   sourceSet.add(source);colliders.push({mesh:preview,box:b.clone(),category:'furniture',layer:source.layer});
  }
+ const coffeeReplacement=table&&root.children.includes(table.preview)?replaceCoffeeTableVisual(table.preview,table.box,root):null;
  const roomArrangementValid=upstairs?.placed===true &&
    (placements.find(p=>p.id==='family-coffee-table')?.placed===true) &&
    coffeeTableGapMetres>=.30;
@@ -163,5 +164,5 @@ export function organizeSourceSittingFurniture(records,scene,origin={x:0,z:0},in
    familyRoomSofa:upstairs??null,
    familyRoomCoffeeTable:placements.find(p=>p.id==='family-coffee-table')??null,
    groundSittingRoom:placements.find(p=>p.id==='ground-sitting')??null,
-   presentations:placements,sofaReplacements:replacements,unresolvedSofas}};
+   presentations:placements,sofaReplacements:replacements,coffeeReplacement,unresolvedSofas}};
 }

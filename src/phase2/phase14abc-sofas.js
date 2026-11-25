@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {RoundedBoxGeometry} from 'three/addons/geometries/RoundedBoxGeometry.js';
-import {faceTarget,facingDot} from './phase14abc-integration.js';
+import {faceTarget,facingDot,fittedAsset} from './phase14abc-integration.js';
 
 // Original tailored upholstered sectional. Local -Z is the seating front.
 // Dimensions are adapted to the retained source footprint, not a product survey.
@@ -31,15 +31,20 @@ export function createTailoredSectional({width,depth,height,chaise='none',detail
  };
  add('recessed-walnut-plinth',width-.10,h*.12,baseDepth-.10,.045,m.timber,0,h*.08,seatCenter);
  add('rounded-upholstered-base',width,h*.30,baseDepth,.12,m.taupe,0,h*.24,seatCenter);
- const seatWidth=(width-.36)/Math.max(2,Math.round(width/.72)),n=Math.max(2,Math.round(width/.72));
+ // Brief p.14 shows exactly three deep seats on the main sofa; only
+ // narrow source footprints use two seats rather than implausibly small cushions.
+ const n=width>=1.95?3:2,seatWidth=(width-.36)/n;
  for(let i=0;i<n;i++){
   const x=(i-(n-1)/2)*seatWidth;
   add('individual-deep-seat-cushion-'+i,seatWidth-.018,h*.20,baseDepth*.68,.085,m.cream,x,h*.46,seatCenter-.025);
   const backCushion=add('padded-back-cushion-'+i,seatWidth-.025,h*.37,.18,.085,m.ivory,x,h*.79,back-.14);backCushion.rotation.x=-.07;
  }
- add('continuous-rounded-back',width-.07,h*.49,.18,.085,m.taupe,0,h*.73,back-.10);
+ add('continuous-rounded-back',width-.07,h*.49,.18,.085,m.cream,0,h*.73,back-.10);
  for(const s of [-1,1]){
-  add('curved-wrap-arm',.18,h*.56,baseDepth-.035,.085,m.cream,s*(width/2-.09),h*.48,seatCenter);
+  // Continuous tall rounded cream arms with dark walnut side detailing,
+  // as opposed to the exposed squared source-frame arms.
+  add('curved-wrap-arm',.20,h*.72,baseDepth-.035,.098,m.cream,s*(width/2-.10),h*.55,seatCenter);
+  add('walnut-side-wrap-trim',.045,h*.55,baseDepth-.16,.021,m.timber,s*(width/2-.025),h*.32,seatCenter+.035);
  }
  if(chaise!=='none'&&depth>baseDepth+.15){
   const s=chaise==='left'?-1:1,w=Math.min(width*.44,.90),d=depth-baseDepth+.085,x=s*(width/2-w/2),z=-depth/2+d/2;
@@ -50,7 +55,7 @@ export function createTailoredSectional({width,depth,height,chaise='none',detail
  for(const s of [-1,1]){
   const p=add('loose-tailored-pillow',Math.min(.32,width*.19),h*.29,.13,.06,s<0?m.accent:m.ivory,s*(width/2-.34),h*.72,back-.28);p.rotation.z=s*.14;
  }
- group.userData={phase14Asset:'tailored-sectional',chaise,originalDesign:true,clientApproved:false};
+ group.userData={phase14Asset:'tailored-sectional',chaise,briefPages:[14,18,19],originalDesign:true,clientApproved:false};
  return group;
 }
 export function sofaFacing(center,target){
@@ -99,4 +104,21 @@ export function replaceSofaVisual(preview,box,target,root){
  const hidden=Array.isArray(preview.material)?preview.material.every(m=>!m.visible):!preview.material.visible;
  const direction=facingDot(yaw,center.x,center.z,target.x,target.z);
  return {id:preview.userData.sourceRegion,guid:preview.userData.originalGUID,asset:'tailored-sectional',chaise,orientationYaw:yaw,facingDot:direction,oldMeshNotRendered:hidden,collisionTransformPreserved:poseUnchanged,visualWithinPriorBounds:true,visualBounds:[visualBox.min.toArray(),visualBox.max.toArray()],retainedBounds:[box.min.toArray(),box.max.toArray()],model};
+}
+
+// Replace the moved source coffee-table surface, retaining its exact existing
+// raycast geometry and world transform as a collision-only child.
+export function replaceCoffeeTableVisual(preview,box,root){
+ const c=box.getCenter(new THREE.Vector3()),d=box.getSize(new THREE.Vector3());
+ if(Math.min(d.x,d.z)<.25||d.y<.22)return null;
+ const yaw=d.z>d.x?Math.PI/2:0,w=Math.max(d.x,d.z)-.012,z=Math.min(d.x,d.z)-.012;
+ const g=fittedAsset('rounded-coffee-table',[-w/2,0,-z/2],[w/2,Math.min(d.y-.008,.47),z/2]);
+ g.name=preview.name;g.userData={phase14Asset:'rounded-coffee-table',briefPages:[15,18],sourceRegion:preview.userData.sourceRegion,originalGUID:preview.userData.originalGUID};
+ g.position.set(c.x,box.min.y+.004,c.z);g.rotation.y=yaw;
+ const world=preview.matrixWorld.clone();root.add(g);g.updateMatrixWorld(true);
+ if(!box.clone().expandByScalar(.001).containsBox(new THREE.Box3().setFromObject(g,true))){root.remove(g);g.traverse(o=>{if(o.isMesh)o.geometry.dispose();});return null;}
+ g.add(preview);preview.matrix.copy(g.matrixWorld.clone().invert().multiply(world));preview.matrix.decompose(preview.position,preview.quaternion,preview.scale);
+ const clone=m=>{const n=m.clone();n.visible=false;return n;};preview.material=Array.isArray(preview.material)?preview.material.map(clone):clone(preview.material);
+ preview.userData.phase14CollisionOnly=true;g.updateMatrixWorld(true);
+ return {asset:'rounded-coffee-table',id:preview.userData.sourceRegion,oldMeshNotRendered:true,collisionTransformPreserved:preview.matrixWorld.elements.every((v,i)=>Math.abs(v-world.elements[i])<1e-6),visualWithinPriorBounds:true,briefPages:[15,18]};
 }

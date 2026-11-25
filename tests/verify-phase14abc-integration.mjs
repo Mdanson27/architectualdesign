@@ -32,3 +32,14 @@ assert(fitted?.oldMeshNotRendered&&fitted.collisionTransformPreserved&&fitted.vi
 assert.equal(oldSofa.geometry,oldGeo);assert(oldSofa.matrixWorld.elements.every((v,i)=>Math.abs(v-oldWorld.elements[i])<1e-6));assert(!oldSofa.material.visible);
 assert.equal(sofaRoot.children.length,1);
 console.log('PHASE14ABC_REAL_SOFA_REPLACEMENT',JSON.stringify({variants:3,oldSurfaceHidden:true,originalCollisionPreserved:true}));
+
+import {replaceCoffeeTableVisual} from '../src/phase2/phase14abc-sofas.js';
+const tableRoot=new THREE.Group(),sourceTable=new THREE.Mesh(new THREE.BoxGeometry(1.2,.5,.6),new THREE.MeshStandardMaterial());
+sourceTable.position.set(0,.25,0);sourceTable.userData={sourceRegion:'family-coffee-table'};tableRoot.add(sourceTable);tableRoot.updateMatrixWorld(true);
+const tableReplacement=replaceCoffeeTableVisual(sourceTable,new THREE.Box3().setFromObject(sourceTable),tableRoot);
+assert(tableReplacement?.oldMeshNotRendered&&tableReplacement.collisionTransformPreserved&&tableReplacement.visualWithinPriorBounds);
+assert.equal(tableRoot.children.length,1);assert.equal(sourceTable.material.visible,false);
+const briefSofa=createTailoredSectional({width:2.4,depth:1.65,height:.85,chaise:'left'});
+assert.equal(briefSofa.children.filter(o=>o.name.includes('individual-deep-seat')).length,3);
+assert.equal(briefSofa.children.filter(o=>o.name.includes('walnut-side-wrap-trim')).length,2);
+console.log('PHASE14ABC_BRIEF_SOFA_TABLE',JSON.stringify({mainSofaSeats:3,walnutTrim:true,familyCoffeeTableReplacement:true}));

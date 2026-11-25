@@ -278,14 +278,9 @@ export function createStage4LivingDining({
      const g=new THREE.Group();g.name='STAGE4_SITTING_ROUNDED_COFFEE_TABLE';
      g.position.set(...local(accepted.x,accepted.y,accepted.z));
      groups['G-SITTING'].add(g);
-     for(const [xx,zz] of [[-.37,-.19],[.37,-.19],[-.37,.19],[.37,.19]]){
-      const leg=visual(new THREE.Mesh(new THREE.CylinderGeometry(.055,.075,.35,12),mats.timber),
-       'living-coffee-leg');
-      leg.position.set(xx,.21,zz);g.add(leg);
-     }
-     const top=visual(new THREE.Mesh(new RoundedBoxGeometry(1.07,.075,.61,4,.085),mats.stone),
-      'rounded-stone-coffee-table');
-     top.position.y=.43;g.add(top);
+     // p.15 overlapping organic tops and dark cylindrical bases replace
+     // the original rectangular top/four-leg stand-in.
+     installFittedAsset(g,'rounded-coffee-table',[-.535,.0,-.305],[.535,.4675,.305],{mark:visual,materials:mats});
      recordCollider(g,'G-SITTING','ground-coffee-table');
      pieces.sittingCoffeeTable++;
     }else skip.coffeeTable='No source-backed clear table location after eight footprint checks';

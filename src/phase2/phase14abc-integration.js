@@ -34,12 +34,12 @@ export function auditFurniture(roots,records){
   // Count installed objects irrespective of the currently selected floor,
   // but exclude hidden legacy children retained only for reversible disposal.
   root.traverse(o=>{
-   if(o.isMesh&&!o.visible)return;
+   if(o.isMesh&&(!o.visible||o.userData.phase14CollisionOnly||(!Array.isArray(o.material)&&o.material?.visible===false)))return;
    if(o.isMesh){if(o.userData.phase14Asset)row.libraryMeshes++;else row.legacyMeshes++;}
    if(o.isGroup&&o.userData.phase14Asset){row.libraryInstances++;const id=o.userData.phase14Asset;row.assets[id]=(row.assets[id]??0)+1;}
   });count[name]=row;
  }
  const sourceFurniture=records.filter(r=>r.category==='furniture');
  return {systems:count,sourceFurnitureRecords:sourceFurniture.length,visibleSourceFurnitureRecords:sourceFurniture.filter(r=>r.mesh.visible&&r.mesh.parent?.visible!==false).length,
- unresolved:['IFC/repositioned sectional sofas and coffee tables','bed and wardrobe treatments','kitchen single-worktop concept and retained original cabinetry','wet-area fittings and unverified room boundaries'],clientApproved:false};
+ unresolved:['additional source sofa candidates and distinct rest-sofa placement','ground source coffee table where retained','bed and wardrobe treatments','kitchen single-worktop concept and retained original cabinetry','wet-area fittings and unverified room boundaries'],clientApproved:false};
 }
