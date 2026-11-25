@@ -388,6 +388,7 @@ try{
  if(kitchenInitial.phase14d?.revision!=='14D-source-repair'||kitchenInitial.phase14d.replacedCabinets!==35||kitchenInitial.phase14d.stools!==3||kitchenInitial.phase14d.islands!==1)throw Error('Kitchen live replacement incomplete: '+JSON.stringify(kitchenInitial));
  fs.mkdirSync('analysis/phase14d',{recursive:true});
  const kitchenViews=[['K01-main',[111.95,1.65,-2.9],[108.75,1.25,-3.2]],['K02-cabinets',[110.95,1.64,-2.15],[108.75,1.45,-4.9]],['K03-cooktop',[109.45,1.56,-3.7],[108.12,1.45,-3.77]],['K04-sink',[110.4,1.65,-1.35],[110.4,.97,.18]],['K05-island',[111.85,1.65,-3.9],[110.05,.78,-2.25]],['K06-storage',[109.5,1.57,-2.05],[108.15,.67,-3.0]],['K07-night',[111.95,1.65,-2.9],[108.75,1.25,-3.2]],['K08-dining-access',[113.4,1.64,-2.8],[109.3,1.25,-2.7]]];
+ if(process.env.QA_ALL_DOORS!=='1'){
  for(const [name,eye,target] of kitchenViews){
   if(name==='K06-storage')await evaluate('window.__AutoMindsQA.stage3KitchenStorage(true)');
   if(name==='K07-night'){await evaluate('window.__AutoMindsQA.stage3KitchenStorage(false)');await evaluate("document.querySelector('#lightBtn').click()");}
@@ -397,6 +398,14 @@ try{
   await sleep(500);
   const png=await captureCanvasPng();fs.writeFileSync('analysis/phase14d/'+name+'.png',png);
   console.log('PHASE14D_KITCHEN_CAPTURE',name,png.length);
+ }
+ }else{
+  for(const [name] of kitchenViews){
+   const file='analysis/phase14d/'+name+'.png';
+   if(!fs.existsSync(file)||fs.statSync(file).size<5000)throw Error('Missing first-pass kitchen screenshot: '+name);
+  }
+  const audit=await evaluate('window.__AutoMindsQA.phase14dKitchenView([111.95,1.65,-2.9],[108.75,1.25,-3.2])');
+  if(!audit||audit.visibleLegacy!==0||audit.sourceCount<35)throw Error('Full-pass source visibility regression: '+JSON.stringify(audit));
  }
  await evaluate("document.querySelector('#floorButtons [data-floor=all]').click()");
  const kitchenPreview=kitchenInitial;
