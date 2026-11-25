@@ -30,8 +30,11 @@ export function auditFurniture(roots,records){
  const count={};
  for(const [name,root] of Object.entries(roots)){
   if(!root)continue;
-  const row={libraryMeshes:0,legacyMeshes:0,libraryInstances:0,assets:{}};
-  root.traverseVisible(o=>{
+  const row={libraryMeshes:0,legacyMeshes:0,libraryInstances:0,assets:{},rootVisible:root.visible};
+  // Count installed objects irrespective of the currently selected floor,
+  // but exclude hidden legacy children retained only for reversible disposal.
+  root.traverse(o=>{
+   if(o.isMesh&&!o.visible)return;
    if(o.isMesh){if(o.userData.phase14Asset)row.libraryMeshes++;else row.legacyMeshes++;}
    if(o.isGroup&&o.userData.phase14Asset){row.libraryInstances++;const id=o.userData.phase14Asset;row.assets[id]=(row.assets[id]??0)+1;}
   });count[name]=row;

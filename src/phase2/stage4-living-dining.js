@@ -212,11 +212,14 @@ export function createStage4LivingDining({
   }
   for(const chair of dining.children.filter(o=>/^DINING_CHAIR_[1-6]$/.test(o.name))){
    const x=chair.position.x,z=chair.position.z;
-   const yaw=faceTarget(x,z,0,0);
+   // Face the tabletop directly along the original chair axis; diagonal
+   // rotation would enlarge the existing clearance envelope.
+   const target=Math.abs(z)>.5?[x,0]:[0,z];
+   const yaw=faceTarget(x,z,...target);
    // Existing dining rotations already face the table; enforce the contract.
    chair.rotation.y=yaw;
    revertDining.push(installFittedAsset(chair,'curved-dining-chair',[-.26,0,-.255],[.26,.99,.2575],{mark:visual,materials:mats}));
-   diningOrientation.push({name:chair.name,dot:facingDot(yaw,x,z,0,0)});
+   diningOrientation.push({name:chair.name,dot:facingDot(yaw,x,z,...target)});
    pieces.diningChairsImproved++;
   }
   if(getFloor('G-DINING',wx,wz)!==null&&
