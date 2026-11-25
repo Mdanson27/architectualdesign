@@ -20,7 +20,18 @@ jobs:
       - run: node tests/verify-phase14d-source-kitchen.mjs
       - run: npm run test:stage3
       - run: npm run test:production
-      - run: npm run build
+      - name: Install pinned Khronos KTX tools
+        run: |
+          curl --fail --location --retry 3 --output /tmp/ktx-4.4.2.deb https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.deb
+          echo 'ca635ed489d8bf54fac8d7687056c651193de0740830a7738cc034adc63e3027  /tmp/ktx-4.4.2.deb' | sha256sum --check
+          sudo dpkg -i /tmp/ktx-4.4.2.deb
+          ktx --version
+      - name: Build with mandatory compressed textures
+        env:
+          PHASE13_REQUIRE_KTX2: '1'
+          CHROME_BIN: /usr/bin/google-chrome
+        run: npm run build
+      - run: npm run test:phase13
       - name: Real browser regression
         env:
           QA_ALL_DOORS: '1'
