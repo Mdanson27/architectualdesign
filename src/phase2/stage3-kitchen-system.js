@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {buildPhase14DKitchen} from './phase14d-kitchen.js';
 import {STAGE1_PLAN_SKETCHES,insidePolygon} from './stage1-plan-crosswalk.js';
 
 /**
@@ -79,6 +80,7 @@ export function createStage3KitchenSystem({
  const stone=new THREE.MeshStandardMaterial({color:0xf5f1ea,roughness:.32});
  const wood=new THREE.MeshStandardMaterial({color:0xb58c65,roughness:.62});
  const cream=new THREE.MeshStandardMaterial({color:0xe5d9c7,roughness:.9});
+ let phase14d=null;
  const drawers=[];let enabled=false,opening=false,progress=0;
  let basePanels=0,appliances=0,storageFixtures=0,ledStrips=0,floorEvidence=0;
  const local=(x,y,z)=>[x-(origin.x||0),y,z-(origin.z||0)];
@@ -200,6 +202,7 @@ export function createStage3KitchenSystem({
    }
   }
  }
+ if(source&&basePanels>0)phase14d=buildPhase14DKitchen({THREE,root,groups,source,origin,records,floorSampler,within,palette,ivory,stone,wood,cream,visual});
  // All fixture positions depend on real source evidence. A missing worktop
  // yields an EMPTY group, not an arbitrary cabinet or fabricated pantry.
  function assertSourceUntouched(){
@@ -229,7 +232,8 @@ export function createStage3KitchenSystem({
   return status();
  }
  function update(delta=.016){
-  if(!drawers.length||!enabled)return;
+  if(!enabled)return;
+  phase14d?.update(delta,opening);
   progress=THREE.MathUtils.damp(progress,opening?1:0,11,Math.min(.1,Math.max(0,delta)));
   for(const drawer of drawers){
    drawer.node.position.copy(drawer.base);
@@ -241,6 +245,7 @@ export function createStage3KitchenSystem({
   root.visible=enabled&&showFurniture&&(floor==='all'||floor==='ground'||walking);
   if(groups.lighting.userData.light)
    groups.lighting.userData.light.intensity=root.visible&&switches.lighting&&taskOn&&lightsOn?2.5:0;
+  phase14d?.setLights(root.visible&&switches.lighting&&taskOn&&lightsOn);
   return status();
  }
  function status(){
@@ -254,12 +259,13 @@ export function createStage3KitchenSystem({
    workTriangleMeasuredAndApproved:false,finalApplianceCoordinatesApproved:false,
    sourceGeometryUnmodified:assertSourceUntouched(),sourceCollidersUnmodified:true,
    openConceptConnectionsUnchanged:true,clientApproved:false,
-   options:{...switches},storageOpen:opening,requirements:STAGE3_KITCHEN_REQUIREMENTS};
+   phase14d:phase14d?.report??null,options:{...switches},storageOpen:opening,requirements:STAGE3_KITCHEN_REQUIREMENTS};
  }
  function dispose(){
   root.traverse(o=>{
    if(o.isMesh)o.geometry?.dispose();
   });
+  phase14d?.dispose();
   for(const material of [...Object.values(palette),ivory,stone,wood,cream])material.dispose();
   scene.remove(root);
  }
