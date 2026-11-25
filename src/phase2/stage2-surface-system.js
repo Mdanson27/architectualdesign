@@ -29,7 +29,7 @@ const selectedDefaults=()=>({floor:'source',wall:'source',ceiling:'source',palet
 const PROPOSALS=Object.freeze({
  'G-SITTING':{floor:'porcelain',wall:'textured',ceiling:'suspended',palette:'taupe',skirting:true},
  'G-DINING':{floor:'porcelain',wall:'painted',ceiling:'flat',palette:'taupe',skirting:true},
- 'G-KITCHEN':{floor:'porcelain',wall:'painted',ceiling:'flat',palette:'mint',skirting:true},
+ 'G-KITCHEN':{floor:'caramel',wall:'painted',ceiling:'flat',palette:'mint',skirting:true},
  'G-BEDROOM':{floor:'ash',wall:'painted',ceiling:'flat',palette:'powder',skirting:true},
  'G-MAID':{floor:'source',wall:'source',ceiling:'source',palette:'source',skirting:false},
  'F-MASTER':{floor:'ash',wall:'textured',ceiling:'beamed',palette:'taupe',skirting:true},
