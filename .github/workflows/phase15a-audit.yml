@@ -4,6 +4,10 @@ on:
     branches: [main]
     paths:
       - 'architecture/phase15a-living-dining-audit.json'
+      - 'src/phase2/phase15-seating.js'
+      - 'phase15b-review.html'
+      - 'tests/verify-phase15b-seating.mjs'
+      - 'tests/qa-phase15b-seating-browser.mjs'
       - 'tests/verify-phase15a-audit.mjs'
       - '.github/workflows/phase15a-audit.yml'
       - 'src/phase2/phase14-furniture-library.js'
@@ -28,6 +32,17 @@ jobs:
           npm run test:clearance
           npm run test:stage4
           npm run test:phase14abc
+      - name: Verify Phase 15B geometry, physical orientation and LOD
+        run: node tests/verify-phase15b-seating.mjs
+      - name: Capture all independent seating views
+        timeout-minutes: 8
+        run: node tests/qa-phase15b-seating-browser.mjs
+      - name: Preserve independent seating evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15b-seating-renders
+          path: analysis/phase15b-visuals/
       - name: Preserve audit register
         if: always()
         uses: actions/upload-artifact@v4
