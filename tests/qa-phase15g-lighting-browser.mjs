@@ -14,12 +14,13 @@ try{
  const dir='analysis/phase15g-visuals';fs.mkdirSync(dir,{recursive:true});const result=[];
  for(const id of ids)for(const detail of ['high','low'])for(const view of ['day','perspective','night','dimmed']){
   const data=await evaluate('window.__LightQA.render('+JSON.stringify(id)+','+JSON.stringify(detail)+','+JSON.stringify(view)+')');
-  if(!data?.png?.startsWith('data:image/png;base64,')||data.uniqueSampleColors<40||data.triangles<1)throw Error('Invalid render '+id+' '+detail+' '+view);
+  if(!data?.png?.startsWith('data:image/png;base64,')||data.uniqueSampleColors<40||data.triangles<1)throw Error('Invalid render '+id+' '+detail+' '+view+' colors='+data?.uniqueSampleColors+' triangles='+data?.triangles);
   const buf=Buffer.from(data.png.split(',')[1],'base64');if(buf.length<5000)throw Error('Invalid PNG');fs.writeFileSync(path.join(dir,id+'-'+detail+'-'+view+'.png'),buf);delete data.png;result.push(data);
  }
  for(const id of ids)for(const detail of ['high','low']){
   const rows=result.filter(r=>r.id===id&&r.detail===detail),day=rows.find(r=>r.view==='day'),night=rows.find(r=>r.view==='night'),dim=rows.find(r=>r.view==='dimmed');
   if(day.intensity!==0||night.intensity<=0||Math.abs(dim.intensity/night.intensity-.25)>.001)throw Error('Rendered dimming state mismatch '+id);
+  if(id==='linear-cove-light'&&!(night.meanLuminance>dim.meanLuminance+.5))throw Error('Cove receiving surface does not visibly respond to dimming: '+night.meanLuminance+' / '+dim.meanLuminance);
  }
  if(exceptions.length)throw Error(exceptions.join(';'));
  fs.writeFileSync(path.join(dir,'review.json'),JSON.stringify(result,null,2));console.log('PHASE15G_WEBGL_RENDERS',JSON.stringify({families:ids.length,variants:14,captures:result.length,exceptions:exceptions.length}));
