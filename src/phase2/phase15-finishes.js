@@ -153,3 +153,27 @@ export function createPhase15SourceFloors({origin={x:0,z:0},floorSampler,detail=
 export function canInstallBotanicalPanel({uninterruptedWidth,uninterruptedHeight,sourceWallVisible,openingIntersects,sourceSurfaceProbesPassed,clientApproved}={}){
  return sourceWallVisible===true&&openingIntersects===false&&sourceSurfaceProbesPassed===true&&clientApproved===true&&uninterruptedWidth>=1.75&&uninterruptedHeight>=2.55;
 }
+
+// Entire ceiling overlay is refused when any source sample is missing or
+// inconsistent. No lowering of the walkable architectural collision shell.
+export function createPhase15SourceCeilings({origin={x:0,z:0},ceilingSampler,detail='high'}){
+ if(typeof ceilingSampler!=='function')throw Error('Actual source ceiling sampler required');
+ const root=new THREE.Group(),m=materialFactory(detail),regions=[];
+ root.name='PHASE15E_SOURCE_SUPPORTED_CEILINGS';root.userData={installationApproved:false,hideInSection:true};
+ for(const spec of FINISH15_SPEC.floorRegions.slice(0,2)){
+  const xs=spec.polygon.map(p=>p[0]),zs=spec.polygon.map(p=>p[1]),x0=Math.min(...xs)+.10,x1=Math.max(...xs)-.10,z0=Math.min(...zs)+.10,z1=Math.max(...zs)-.10;
+  const nx=Math.ceil((x1-x0)/.40),nz=Math.ceil((z1-z0)/.40),heights=[];let rejected=0;
+  for(let i=0;i<=nx;i++)for(let j=0;j<=nz;j++){
+   const y=ceilingSampler(x0+(x1-x0)*i/nx-(origin.x||0),z0+(z1-z0)*j/nz-(origin.z||0),0)?.y;
+   if(!Number.isFinite(y)||y<2.50||y>3.65)rejected++;else heights.push(y);
+  }
+  const variation=heights.length?Math.max(...heights)-Math.min(...heights):null;
+  const accepted=!rejected&&variation!==null&&variation<=.035;
+  regions.push({id:spec.id,accepted,probes:heights.length+rejected,rejected,variation,sourceHeight:heights.length?Math.min(...heights):null});
+  if(!accepted)continue;
+  const g=new THREE.Group();g.name='PHASE15E_CEILING_'+spec.id;g.position.set((x0+x1)/2-(origin.x||0),0,(z0+z1)/2-(origin.z||0));
+  ceilingDetail(g,m,x1-x0,z1-z0,Math.min(...heights)-.035,detail);root.add(g);
+ }
+ root.userData.dispose=()=>{root.traverse(o=>{if(o.isMesh)o.geometry.dispose();});m.dispose();};
+ return {root,regions,sourceGeometryModified:false,liveInstalled:false};
+}
