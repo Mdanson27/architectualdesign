@@ -164,6 +164,16 @@ try{
   noStageEnableButtonsRequired:true,
   sourceGeometryProtected:fullStatus0.sourceGeometryUnmodified
  }));
+ const phase15=await evaluate('window.__AutoMindsQA.phase15Status?.()??null');
+ if(phase15){
+  console.log('PHASE15H_LIVE_INTEGRATION',JSON.stringify(phase15));
+  if(!phase15.defaultOn||!phase15.rooms['G-SITTING'].installed||!phase15.rooms['G-DINING'].installed||phase15.visibleLegacy!==0||phase15.sourceCount<3||phase15.orientation.length!==8||phase15.orientation.some(o=>o.dot<.999)||phase15.colliders<12)
+   throw Error('Phase 15H mandatory room replacement or orientation gate: '+JSON.stringify(phase15));
+  const ids=phase15.placed.map(p=>p.id);
+  for(const id of ['main-sofa','rest-sofa','paired-coffee-tables','six-seat-set','living-contour-rug','dining-woven-rug','dining-pendant-cluster'])if(!ids.includes(id))throw Error('Missing installed Phase 15H asset: '+id);
+  if(ids.filter(id=>id==='accent-chair').length!==2)throw Error('Expected two installed accent chairs');
+  report.phase15h=phase15;
+ }
  const stage4Initial=JSON.parse(await evaluate(
   "JSON.stringify(window.__AutoMindsQA.stage4LivingDiningStatus())"));
  if(!stage4Initial?.productionIntegrated||stage4Initial.previewActivationRequired||
@@ -174,8 +184,8 @@ try{
     stage4Initial.diningChairsTotal!==6||
     stage4Initial.pieces.diningTabletop!==1||
     stage4Initial.pieces.diningChairsImproved!==6||
-    !stage4Initial.visibleRooms.includes('G-DINING')||
-    !stage4Initial.visibleRooms.includes('G-SITTING')||
+    (!phase15&&(!stage4Initial.visibleRooms.includes('G-DINING')||!stage4Initial.visibleRooms.includes('G-SITTING')))||
+    (phase15&&stage4Initial.visibleRooms.some(id=>['G-DINING','G-SITTING'].includes(id)))||
     !integratedStart.stage4LivingDiningIntegrated||
     !integratedStart.currentStage4Rooms.includes('F-FAMILY'))
   throw Error('Stage 4 must be a complete integrated default living/dining scene, no preview action: '+
@@ -643,21 +653,22 @@ try{
  const nightOff=JSON.parse(await evaluate("(()=>{document.querySelector('#lightBtn').click();return JSON.stringify(window.__AutoMindsQA.lightingStatus());})()"));
  const nightOn=JSON.parse(await evaluate("(()=>{document.querySelector('#houseLightsBtn').click();return JSON.stringify(window.__AutoMindsQA.lightingStatus());})()"));
  const restoredLights=JSON.parse(await evaluate("(()=>{document.querySelector('#lightBtn').click();return JSON.stringify(window.__AutoMindsQA.lightingStatus());})()"));
- if(lightBefore.activeEmitters!==14 || lightsOff.activeEmitters!==0 ||
+ const remainingAmbient=14-(phase15?.replacedAmbient?.length??0),remainingBrief=5-(phase15?.replacedBrief?.length??0);
+ if(lightBefore.activeEmitters!==remainingAmbient || lightsOff.activeEmitters!==0 ||
    nightOff.night!==true||nightOff.activeEmitters!==0 ||
-   nightOn.activeEmitters!==14||restoredLights.night!==false||
-   restoredLights.activeEmitters!==14)
+   nightOn.activeEmitters!==remainingAmbient||restoredLights.night!==false||
+   restoredLights.activeEmitters!==remainingAmbient)
    throw Error('Independent night and house-light controls failed');
  console.log('PHASE7_BALCONY_LIGHTS',JSON.stringify({restored:balcony.restored,concealed:balcony.concealedOpaqueEdgeMeshes,
   lights:lightBefore.activeEmitters,nightIndependent:true}));
  const briefBefore=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.designBriefStatus())"));
  const briefTest=JSON.parse(await evaluate("JSON.stringify((()=>{\n const panel=document.querySelector('#designStudioPanel');\n document.querySelector('#designStudioBtn').click();\n const panelVisible=!panel.classList.contains('hidden');\n const select=document.querySelector('#designScheme');\n const initial=window.__AutoMindsQA.designBriefStatus().scheme;\n select.value='mint';select.dispatchEvent(new Event('change',{bubbles:true}));\n const mint=window.__AutoMindsQA.designBriefStatus().scheme;\n select.value='powder';select.dispatchEvent(new Event('change',{bubbles:true}));\n const powder=window.__AutoMindsQA.designBriefStatus().scheme;\n select.value='source';select.dispatchEvent(new Event('change',{bubbles:true}));\n const restored=window.__AutoMindsQA.designBriefStatus().scheme;\n document.querySelector('#designTaskToggle').click();\n const taskOff=window.__AutoMindsQA.lightingStatus();\n document.querySelector('#designTaskToggle').click();\n const taskRestored=window.__AutoMindsQA.lightingStatus();\n document.querySelector('#designStudioBtn').click();\n return {panelVisible,initial,mint,powder,restored,taskOff,\n  taskRestored,panelClosed:panel.classList.contains('hidden')};\n})())"));
  if(briefBefore.scheme!=='source'||briefBefore.lighting?.briefFixtureCount!==5||
-  briefBefore.lighting?.activeEmitters!==14||!briefTest.panelVisible||
+  briefBefore.lighting?.activeEmitters!==remainingAmbient||!briefTest.panelVisible||
   !briefTest.panelClosed||briefTest.initial!=='source'||briefTest.mint!=='mint'||
   briefTest.powder!=='powder'||briefTest.restored!=='source'||
-  briefTest.taskOff.layers.task!==false||briefTest.taskOff.activeBriefEmitters!==3||
-  briefTest.taskRestored.layers.task!==true||briefTest.taskRestored.activeBriefEmitters!==5)
+  briefTest.taskOff.layers.task!==false||briefTest.taskOff.activeBriefEmitters!==remainingBrief-2||
+  briefTest.taskRestored.layers.task!==true||briefTest.taskRestored.activeBriefEmitters!==remainingBrief)
   throw Error('Studio Anne material preview / lighting failed: '+
    JSON.stringify({briefBefore,briefTest}));
  console.log('STUDIO_ANNE_BRIEF_PREVIEW_PASSED',
@@ -779,15 +790,51 @@ try{
   const library=await evaluate("(async()=>{const r=await fetch('/architectualdesign/furniture/manifest.json');if(!r.ok)throw Error('Furniture manifest missing');const m=await r.json();const a=m.assets.find(x=>x.id==='sculptural-accent-chair');const response=await fetch('/architectualdesign'+a.variants.high.path);const b=await response.arrayBuffer();return {assets:m.assets.length,variants:m.assets.reduce((n,x)=>n+Object.keys(x.variants).length,0),chairGLB:new DataView(b).getUint32(0,true)===0x46546c67,chairBytes:b.byteLength,expectedBytes:a.variants.high.bytes};})()");
   if(!library?.chairGLB||library.assets!==35||library.variants!==70||library.chairBytes!==library.expectedBytes)throw Error('Phase 14 published furniture library unavailable: '+JSON.stringify(library));
   console.log('PHASE14_BROWSER_LIBRARY',JSON.stringify(library));report.phase14=library;
-  if(stage4Initial.phase14LibraryChairs!==stage4Initial.pieces.sittingChairs||stage4Initial.phase14Placements?.length!==stage4Initial.pieces.sittingChairs||stage4Initial.phase14Placements.some(p=>!p.floorSupported||!p.withinPriorEnvelope||p.floorCorners.length!==4))throw Error('Phase 14 chair placement contract failed: '+JSON.stringify(stage4Initial.phase14Placements));
+  if(!phase15&&(stage4Initial.phase14LibraryChairs!==stage4Initial.pieces.sittingChairs||stage4Initial.phase14Placements?.length!==stage4Initial.pieces.sittingChairs||stage4Initial.phase14Placements.some(p=>!p.floorSupported||!p.withinPriorEnvelope||p.floorCorners.length!==4)))throw Error('Phase 14 chair placement contract failed: '+JSON.stringify(stage4Initial.phase14Placements));
   console.log('PHASE14_POSITION_EVIDENCE',JSON.stringify(stage4Initial.phase14Placements));
   const integration=JSON.parse(await evaluate('JSON.stringify(window.__AutoMindsQA.phase14abcAudit())'));
   if(integration.dining?.length!==6||integration.dining.some(p=>p.dot<.999)||integration.balcony?.length<2||integration.balcony.some(p=>p.dot<.999)||integration.furniture.systems.dining.libraryInstances!==7||!integration.furniture.systems.study?.libraryInstances||!Object.values(integration.floor.floorCoverage).some(p=>p.cutFragments>0))throw Error('Phase 14ABC live integration contract: '+JSON.stringify(integration));
-  if(!['ground-sitting','first-floor'].every(id=>integration.sofas?.some(s=>s.id===id&&s.oldMeshNotRendered&&s.collisionTransformPreserved&&s.visualWithinPriorBounds&&s.facingDot>.70)))throw Error('Actual sofa replacement failed: '+JSON.stringify(integration.sofas));
+  if(!(phase15?['first-floor']:['ground-sitting','first-floor']).every(id=>integration.sofas?.some(s=>s.id===id&&s.oldMeshNotRendered&&s.collisionTransformPreserved&&s.visualWithinPriorBounds&&s.facingDot>.70)))throw Error('Actual sofa replacement failed: '+JSON.stringify(integration.sofas));
   const coffee=JSON.parse(await evaluate('JSON.stringify(window.__AutoMindsQA.summary().sittingRoomFurniture.coffeeReplacement)'));
   if(!coffee?.oldMeshNotRendered||!coffee.collisionTransformPreserved||!coffee.visualWithinPriorBounds)throw Error('Brief p15 family coffee table replacement failed: '+JSON.stringify(coffee));
   console.log('PHASE14ABC_BRIEF_COFFEE_TABLE',JSON.stringify(coffee));
   console.log('PHASE14ABC_LIVE_AUDIT',JSON.stringify(integration));report.phase14abc=integration;
+ if(phase15){
+  const dim=await evaluate("(()=>{const a=document.querySelector('[data-phase15-zone=dining][data-phase15-layer=task]');const before=window.__AutoMindsQA.phase15Status();a.value='25';a.dispatchEvent(new Event('input',{bubbles:true}));const after=window.__AutoMindsQA.phase15Status();a.value='100';a.dispatchEvent(new Event('input',{bubbles:true}));return {before,after};})()");
+  const get=(s,z,id)=>s.fixtures.find(f=>f.zone===z&&f.id===id)?.intensity;
+  const first=get(dim.before,'dining','dining-pendant-cluster'),second=get(dim.after,'dining','dining-pendant-cluster');
+  if(!(first>0)||Math.abs(second/first-.25)>.001||dim.before.fixtures.filter(f=>f.zone==='sitting').some(f=>get(dim.after,'sitting',f.id)!==f.intensity))throw Error('Phase 15H independent room dimmer regression');
+  if(process.env.QA_ALL_DOORS!=='1'){
+   fs.mkdirSync('analysis/phase15h',{recursive:true});
+   const views=[
+    ['S01-entry',[113.05,1.64,-5.30],[116.4,.95,-7.1]],
+    ['S02-main-sofa',[116.1,1.45,-6.85],[114.1,.60,-7.35]],
+    ['S03-rest-sofa',[116.3,1.40,-6.0],[116.8,.62,-8.15]],
+    ['S04-accent',[116.55,1.5,-6.7],[118.15,.65,-7.4]],
+    ['S05-coffee',[115.4,1.65,-6.1],[116.55,.35,-6.9]],
+    ['S06-media',[116.5,1.64,-6.0],[116.5,1.40,-9.0]],
+    ['S07-night',[113.05,1.64,-5.3],[116.4,.95,-7.1]],
+    ['S08-overhead',[116,2.5,-7.1],[116,.1,-7.11]],
+    ['D01-entry',[113.0,1.64,-3.8],[114.8,.85,-2.25]],
+    ['D02-pedestal',[114.8,.65,-3.65],[114.8,.40,-2.25]],
+    ['D03-chair',[115.7,1.3,-3.85],[115.25,.65,-3.1]],
+    ['D04-wall',[114.8,1.64,-2.3],[116.9,1.5,-1.9]],
+    ['D05-pendant',[113.9,1.64,-3.65],[114.8,1.85,-2.25]],
+    ['D06-night',[113.0,1.64,-3.8],[114.8,.85,-2.25]],
+    ['D07-overhead',[114.8,2.5,-2.25],[114.8,0,-2.26]],
+    ['C01-open-plan',[113.0,1.64,-4.6],[114.8,1,-2.1]]
+   ];
+   for(const [name,eye,target] of views){
+    if(name==='S07-night'||name==='D06-night')await evaluate("document.querySelector('#lightBtn').click()");
+    if(name==='S08-overhead'||name==='D07-overhead')await evaluate("document.querySelector('#lightBtn').click()");
+    const a=await evaluate('window.__AutoMindsQA.phase15View('+JSON.stringify(eye)+','+JSON.stringify(target)+')');
+    if(!a||a.visibleLegacy!==0)throw Error('Phase 15H legacy mesh regression');
+    const png=await captureCanvasPng();if(png.length<5000)throw Error('Invalid actual walkthrough capture '+name);fs.writeFileSync('analysis/phase15h/'+name+'.png',png);
+    console.log('PHASE15H_CAPTURE',name,png.length);
+   }
+  }else{const count=fs.readdirSync('analysis/phase15h').filter(f=>f.endsWith('.png')&&fs.statSync('analysis/phase15h/'+f).size>=5000).length;if(count!==16)throw Error('Missing retained Phase 15H evidence: '+count);}
+  await evaluate("document.querySelector('#floorButtons button[data-floor=all]').click()");
+ }
  const desktopPerf=JSON.parse(await rawMetrics());
  if(!desktopPerf.webglResponsive||!Number.isFinite(desktopPerf.drawCalls)||
     !Number.isFinite(desktopPerf.triangles)||desktopPerf.drawCalls<1||
