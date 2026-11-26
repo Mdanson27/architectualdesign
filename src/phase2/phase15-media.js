@@ -98,6 +98,12 @@ export function createPhase15Media(id,{detail='high'}={}){
   lathe('right-tall-ceramic-vase',[[0,0],[.087,0],[.102,.07],[.083,.19],[.038,.26],[.039,.30],[.027,.30]],ceramic,1.38,.3525,-.015);
   for(let i=0;i<6;i++){const dx=(i-2.5)*.055;const x=1.38;const pts=[[x,.60,-.015],[x+dx*.4,.86,.005],[x+dx,1.12+(i%3)*.095,-.02],[x+dx*1.4,1.34+(i%2)*.13,.005]];tube('decorative-dry-branch',pts,.004,base);}
   lathe('left-niche-vessel',[[0,0],[.06,0],[.075,.07],[.045,.14],[.03,.19],[.02,.19]],brass,-1.37,.3525,.035);
+  // Camera at local -Z sees +X on the viewer's left. Match p15's
+  // left illuminated niche and right vase without reflecting any mesh.
+  for(const child of g.children){
+   child.position.x=-child.position.x;
+   if(child.name==='decorative-dry-branch')child.geometry.translate(-2*1.38,0,0);
+  }
   g.userData.wallMountRequired=true;g.userData.cableAndElectricalCertified=false;
  }
  g.userData.dispose=()=>{g.traverse(o=>{if(o.isMesh)o.geometry.dispose();});materials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());};
