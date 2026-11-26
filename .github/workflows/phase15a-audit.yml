@@ -9,6 +9,10 @@ on:
       - 'src/phase2/phase15-dining.js'
       - 'src/phase2/phase15-finishes.js'
       - 'src/phase2/phase15-styling.js'
+      - 'src/phase2/phase15-lighting.js'
+      - 'phase15g-review.html'
+      - 'tests/verify-phase15g-lighting.mjs'
+      - 'tests/qa-phase15g-lighting-browser.mjs'
       - 'phase15f-review.html'
       - 'tests/verify-phase15f-styling.mjs'
       - 'tests/qa-phase15f-styling-browser.mjs'
@@ -103,6 +107,17 @@ jobs:
         with:
           name: phase15f-styling-renders
           path: analysis/phase15f-visuals/
+      - name: Verify Phase 15G lighting fixture geometry and independent dimming zones
+        run: node tests/verify-phase15g-lighting.mjs
+      - name: Capture day, night and dimmed lighting fixture views
+        timeout-minutes: 10
+        run: node tests/qa-phase15g-lighting-browser.mjs
+      - name: Preserve lighting visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15g-lighting-renders
+          path: analysis/phase15g-visuals/
       - name: Preserve audit register
         if: always()
         uses: actions/upload-artifact@v4
