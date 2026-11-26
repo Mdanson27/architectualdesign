@@ -8,6 +8,10 @@ on:
       - 'src/phase2/phase15-media.js'
       - 'src/phase2/phase15-dining.js'
       - 'src/phase2/phase15-finishes.js'
+      - 'src/phase2/phase15-styling.js'
+      - 'phase15f-review.html'
+      - 'tests/verify-phase15f-styling.mjs'
+      - 'tests/qa-phase15f-styling-browser.mjs'
       - 'phase15e-review.html'
       - 'tests/verify-phase15e-finishes.mjs'
       - 'tests/qa-phase15e-finishes-browser.mjs'
@@ -88,6 +92,17 @@ jobs:
         with:
           name: phase15e-finishes-renders
           path: analysis/phase15e-visuals/
+      - name: Verify Phase 15F textile, accessory and rug support geometry
+        run: node tests/verify-phase15f-styling.mjs
+      - name: Capture independent styling and accessory views
+        timeout-minutes: 10
+        run: node tests/qa-phase15f-styling-browser.mjs
+      - name: Preserve styling visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15f-styling-renders
+          path: analysis/phase15f-visuals/
       - name: Preserve audit register
         if: always()
         uses: actions/upload-artifact@v4
