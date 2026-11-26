@@ -1,0 +1,147 @@
+name: Phase 15H full pre-merge production validation
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/phase2/**'
+      - 'actual-house.html'
+      - 'tests/**'
+      - '.github/workflows/phase15h-production.yml'
+permissions:
+  contents: read
+concurrency:
+  group: phase15h-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    name: Validate actual static 3D viewer (no deployment)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout viewer
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Install dependencies
+        run: npm ci
+      - name: Verify S1 site layout geometry
+        run: npm run test:site
+      - name: Verify transparent glazing and navigation barriers
+        run: npm run test:windows
+      - name: Verify reversible window aperture cuts
+        run: npm run test:apertures
+      - name: Verify source geometry and scene integrity
+        run: npm run test:scene
+      - name: Verify source-based stair guards and safe floor egress
+        run: npm run test:stairs
+      - name: Verify matched IFC openings and door collisions
+        run: npm run test:openings
+      - name: Check balcony glazing and fitted furniture
+        run: npm run test:facade
+      - name: Verify source-supported balconies, lighting and room route graph
+        run: npm run test:phase7
+      - name: Verify Studio Anne design palette and layered lighting preview
+        run: npm run test:studio-anne
+      - name: Audit Stage 1 architectural room index and IFC source provenance
+        run: npm run test:stage1
+      - name: Validate Stage 1 evidence and approval gates
+        run: npm run test:stage1-acceptance
+      - name: Verify Stage 2 room-specific floor tile samples preserve IFC and walking
+        run: npm run test:stage2
+      - name: Verify all Stage 2 architectural finishes and reversible geometry
+        run: npm run test:stage2-whole
+      - name: Verify original S1 room footprints, candidate GUIDs and site-revision precedence
+        run: npm run test:stage1-plan
+      - name: Verify S1 drawing-confirmed ground-floor circulation openings
+        run: npm run test:plan-circulation
+      - name: Verify client ground stair-kitchen wall removal and main door enclosure
+        run: npm run test:client-open-plan
+      - name: Reject stair/sitting floating glazing and kitchen divider; keep enclosing facade
+        run: npm run test:open-plan
+      - name: Verify stair window stops at landing and ground stair-to-sitting wall is absent
+        run: npm run test:stair-wall-window
+      - name: Verify continuous source-backed doorway portal navigation
+        run: npm run test:portal
+      - name: Verify client-corrected kitchen/dining OPEN layout and compound walking
+        run: npm run test:kitchen-outdoor
+      - name: Verify source kitchen counter remains clear at OPEN dining connection
+        run: npm run test:kitchen-clearance
+      - name: Verify Stage 3 source-supported kitchen cabinetry, appliance and storage previews
+        run: npm run test:stage3
+      - name: Verify Phase 14D exact source kitchen replacement
+        run: node tests/verify-phase14d-source-kitchen.mjs
+      - name: Verify all completed designs render by default with no visitor activation
+        run: npm run test:production
+      - name: Verify Studio Anne Stage 4 furnished rooms and automatic production integration
+        run: npm run test:stage4
+      - name: Verify Stage 5 source-backed beds, wardrobes, reading desk and production defaults
+        run: npm run test:stage5
+      - name: Verify Stage 6 IFC-anchored porcelain, wall finishes and service lighting
+        run: npm run test:stage6
+      - name: Verify Stage 7 original stair flights, wraparound balcony finishes and layered LEDs
+        run: npm run test:stage7-production
+      - name: Verify Stage 8 approved gate, landscaping, parking, lighting and outdoor walking
+        run: npm run test:stage8
+      - name: Verify Stage 9 final quality budget and pending-approval release contract
+        run: npm run test:stage9
+      - name: Verify Phase 10 render batching and spatial collision parity
+        run: npm run test:phase10
+      - name: Verify Phase 11 ordered loading and reversible GPU residency
+        run: npm run test:phase11
+      - name: Verify Phase 12 adaptive resolution and stability
+        run: npm run test:phase12
+      - name: Install pinned Khronos KTX tools
+        run: |
+          curl --fail --location --retry 3 --output /tmp/ktx-4.4.2.deb https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.deb
+          echo 'ca635ed489d8bf54fac8d7687056c651193de0740830a7738cc034adc63e3027  /tmp/ktx-4.4.2.deb' | sha256sum --check
+          sudo dpkg -i /tmp/ktx-4.4.2.deb
+          ktx --version
+      - name: Build public GitHub Pages site
+        run: npm run build
+        env:
+          GITHUB_PAGES: 'true'
+          VITE_PUBLIC_PREVIEW: 'true'
+          PHASE13_REQUIRE_KTX2: '1'
+      - name: Verify Phase 13 lossless compression and original fallback
+        run: npm run test:phase13
+      - name: Verify Phase 14 reusable furniture GLBs and LOD bounds
+        run: npm run test:phase14
+      - name: Verify Phase 14ABC orientation and floor coverage
+        run: npm run test:phase14abc
+      - name: Independent browser furniture render review
+        timeout-minutes: 6
+        run: node tests/qa-phase14-furniture-browser.mjs
+      - name: Verify source-supported balcony floor seams
+        run: npm run test:thresholds
+      - name: Verify IFC-preserving room circulation furniture
+        run: npm run test:clearance
+      - name: Verify walkable IFC floor classification
+        run: npm run test:floor
+      - name: Real-browser architectural walkthrough QA
+        timeout-minutes: 20
+        run: |
+          command -v google-chrome
+          npm run test:browser
+      - name: Required 26 active doors, 5 open-plan routes and maid access
+        if: success()
+        timeout-minutes: 20
+        env:
+          QA_ALL_DOORS: '1'
+        run: npm run test:browser
+      - name: Save browser QA diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: autominds-architectural-qa
+          path: |
+            architecture-browser-qa.json
+            analysis/stage9-visuals/*.png
+            analysis/phase14d/*.png
+            analysis/phase15h/*.png
+            analysis/phase14-visuals/*.png
+            analysis/phase14-visuals/review.json
+            analysis/stage1-room-candidate-crosswalk.json
+            analysis/stage1-dining-draft.png
+          if-no-files-found: ignore
