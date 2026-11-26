@@ -43,12 +43,12 @@ export function createPhase15Seating(id,{detail='high'}={}){
    const t=i/n,c=curve.getPointAt(t),v=curve.getTangentAt(t),normal=new THREE.Vector3(-v.z,0,v.x).normalize(),h=top(t);
    for(let j=0;j<=ring;j++){
     const a=2*Math.PI*j/ring,cs=pow(Math.cos(a),.45),sn=pow(Math.sin(a),.50);
-    const rib=high&&ribs?.0045*(1+Math.cos(2*Math.PI*ribs*t))*Math.max(0,-cs):0;
+    const rib=high&&ribs?.0045*(1+Math.cos(2*Math.PI*ribs*t))*Math.max(0,cs):0;
     const q=c.clone().addScaledVector(normal,cs*(thickness/2+rib));q.y=(h+bottom)/2+sn*(h-bottom)/2;p.push(...q.toArray());uv.push(t,j/ring);
    }
   }
-  for(let i=0;i<n;i++)for(let j=0;j<ring;j++){const a=i*(ring+1)+j,b=a+ring+1;ix.push(a,a+1,b,b,a+1,b+1);}
-  for(const end of [0,n]){const a=end*(ring+1),c=p.length/3;let x=0,y=0,z=0;for(let j=0;j<ring;j++){x+=p[(a+j)*3];y+=p[(a+j)*3+1];z+=p[(a+j)*3+2];}p.push(x/ring,y/ring,z/ring);uv.push(end/n,.5);for(let j=0;j<ring;j++)ix.push(...(end===0?[c,a+j+1,a+j]:[c,a+j,a+j+1]));}
+  for(let i=0;i<n;i++)for(let j=0;j<ring;j++){const a=i*(ring+1)+j,b=a+ring+1;ix.push(a,b,a+1,b,b+1,a+1);}
+  for(const end of [0,n]){const a=end*(ring+1),c=p.length/3;let x=0,y=0,z=0;for(let j=0;j<ring;j++){x+=p[(a+j)*3];y+=p[(a+j)*3+1];z+=p[(a+j)*3+2];}p.push(x/ring,y/ring,z/ring);uv.push(end/n,.5);for(let j=0;j<ring;j++)ix.push(...(end===0?[c,a+j,a+j+1]:[c,a+j+1,a+j]));}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(ix);geo.computeVertexNormals();
   return add(name,geo,mat);
  }
