@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Phase 15E isolated architectural finishes review</title><style>body{margin:0;background:#e9e3da;font:14px system-ui}canvas{display:block}</style></head><body><script type="module">
+import * as THREE from 'three';
+import {createPhase15Finishes,finishesStats,FINISHES15} from './src/phase2/phase15-finishes.js';
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setSize(1000,740);renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xe9e3da);
+scene.add(new THREE.HemisphereLight(0xfff5e6,0x77716b,2.4));
+const light=new THREE.DirectionalLight(0xffe9d1,3);light.position.set(-3,5,-4);light.castShadow=true;light.shadow.mapSize.set(1024,1024);Object.assign(light.shadow.camera,{left:-3,right:3,top:3,bottom:-3,near:.1,far:15});scene.add(light);
+const fill=new THREE.DirectionalLight(0xffffff,1.3);fill.position.set(4,3,4);scene.add(fill);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.MeshStandardMaterial({color:0xbdb1a1,roughness:.92}));floor.rotation.x=-Math.PI/2;floor.position.y=-.008;floor.receiveShadow=true;scene.add(floor);
+const camera=new THREE.PerspectiveCamera(35,1000/740,.05,50);
+let current;
+window.__FinishesQA={ids:Object.keys(FINISHES15),render(id,detail,view){
+ if(current){scene.remove(current);current.userData.dispose();}
+ current=createPhase15Finishes(id,{detail});scene.add(current);
+ const stats=finishesStats(current),h=stats.dimensions[1];
+ if(id==='botanical-relief'){
+  const views={front:[[0,1.25,-4.9],[0,1.22,0]],perspective:[[1.7,1.45,-4.5],[0,1.22,0]],detail:[[.15,1.48,-1.6],[.15,1.48,0]],ceiling:[[-1.1,2.18,-2.2],[-.2,2.03,0]]};
+  const [eye,target]=views[view];camera.position.set(...eye);camera.lookAt(...target);
+ }else{
+  const views={front:[[0,1.38,-5.3],[0,1.35,.15]],perspective:[[2.65,1.62,-4.6],[0,1.30,.25]],detail:[[.05,.72,-1.2],[0,.28,.62]],ceiling:[[0,1.24,-1.4],[0,2.60,.45]]};
+  const [eye,target]=views[view];camera.position.set(...eye);camera.lookAt(...target);
+ }
+ renderer.render(scene,camera);
+ const gl=renderer.getContext(),pixels=new Uint8Array(1000*740*4);gl.readPixels(0,0,1000,740,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+ const counts=new Set();for(let i=0;i<pixels.length;i+=64)counts.add((pixels[i]<<16)|(pixels[i+1]<<8)|pixels[i+2]);
+ return {...stats,view,uniqueSampleColors:counts.size,png:renderer.domElement.toDataURL('image/png')};
+}};
+</script></body></html>
