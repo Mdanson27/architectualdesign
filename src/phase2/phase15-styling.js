@@ -67,6 +67,7 @@ export function createPhase15Style(id,{detail='high'}={}){
   cloth('right-full-height-linen-drape',.84,1.30,-.045,5,taupe);
   cloth('left-translucent-sheer',-1.25,-.25,.055,9,sheer);
   cloth('right-translucent-sheer',.25,1.25,.055,9,sheer);
+  for(const [a,b,z] of [[-1.30,-.84,-.045],[.84,1.30,-.045],[-1.25,-.25,.055],[.25,1.25,.055]])for(let i=0;i<5;i++)box('concealed-curtain-track-glider',.012,.031,.018,.002,cream,a+(b-a)*(i+.5)/5,h-.051,z);
   g.userData.installationRequiresOpeningAudit=true;
  }
  if(id==='cushion-set'){
@@ -126,10 +127,10 @@ export function createPhase15Style(id,{detail='high'}={}){
   const n=high?70:30,k=high?38:18,p=[],uv=[],ix=[];
   for(let j=0;j<=k;j++)for(let i=0;i<=n;i++){const u=i/n,v=j/k;const phase=(v+.10*Math.sin(u*9)+.045*Math.sin(u*18+v*4))*Math.PI*18;p.push((u-.5)*.89,.36+(v-.5)*.64,-.006-.013*Math.pow(.5+.5*Math.sin(phase),3));uv.push(u,v);}
   for(let j=0;j<k;j++)for(let i=0;i<n;i++){const a=j*(n+1)+i,b=a+n+1;ix.push(a,b,a+1,b,b+1,a+1);}
-  const o=surface('sculptural-wavy-art-relief',p,uv,ix,palette[0]);o.material=palette;
-  for(let j=0;j<k;j++)for(let i=0;i<n;i++){const phase=((j+.5)/k+.10*Math.sin((i+.5)/n*9)+.045*Math.sin((i+.5)/n*18+(j+.5)/k*4))*Math.PI*18;o.geometry.addGroup((j*n+i)*6,6,Math.floor((.5+.5*Math.sin(phase))*3.99));}
-  // Merge contiguous material groups to keep draw-call count low.
-  const groups=o.geometry.groups.slice();o.geometry.clearGroups();for(const a of groups){const last=o.geometry.groups.at(-1);if(last&&last.materialIndex===a.materialIndex&&last.start+last.count===a.start)last.count+=a.count;else o.geometry.addGroup(a.start,a.count,a.materialIndex);}
+  const o=surface('sculptural-wavy-art-relief',p,uv,ix,palette[0]);const colors=[];
+  for(let j=0;j<=k;j++)for(let i=0;i<=n;i++){const u=i/n,v=j/k,phase=(v+.10*Math.sin(u*9)+.045*Math.sin(u*18+v*4))*Math.PI*18;const a=(.5+.5*Math.sin(phase))*3,c=palette[Math.floor(a)].color.clone().lerp(palette[Math.min(3,Math.floor(a)+1)].color,a%1);colors.push(c.r,c.g,c.b);}
+  o.geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));o.material=mat('continuous multitone sculptural art',0xffffff,.89);o.material.vertexColors=true;
+
  }
  g.userData.dispose=()=>{reflectors.forEach(r=>r.dispose());g.traverse(o=>{if(o.isMesh)o.geometry.dispose();});materials.forEach(m=>m.dispose());textures.forEach(t=>t.dispose());};
  return g;
