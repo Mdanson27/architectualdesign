@@ -7,6 +7,10 @@ on:
       - 'src/phase2/phase15-seating.js'
       - 'src/phase2/phase15-media.js'
       - 'src/phase2/phase15-dining.js'
+      - 'src/phase2/phase15-finishes.js'
+      - 'phase15e-review.html'
+      - 'tests/verify-phase15e-finishes.mjs'
+      - 'tests/qa-phase15e-finishes-browser.mjs'
       - 'phase15d-review.html'
       - 'tests/verify-phase15d-dining.mjs'
       - 'tests/qa-phase15d-dining-browser.mjs'
@@ -73,6 +77,17 @@ jobs:
         with:
           name: phase15d-dining-renders
           path: analysis/phase15d-visuals/
+      - name: Verify Phase 15E botanical panel, source-supported floors and ceilings
+        run: node tests/verify-phase15e-finishes.mjs
+      - name: Capture independent architectural finish views
+        timeout-minutes: 8
+        run: node tests/qa-phase15e-finishes-browser.mjs
+      - name: Preserve finish visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15e-finishes-renders
+          path: analysis/phase15e-visuals/
       - name: Preserve audit register
         if: always()
         uses: actions/upload-artifact@v4
