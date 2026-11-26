@@ -51,22 +51,22 @@ export function createPhase15Media(id,{detail='high'}={}){
  if(id==='paired-coffee-tables'){
   // Two independent drums. Overlapping tabletop projections have vertical
   // separation; the actual bases are separate and do not intersect.
-  const low=new THREE.Group();low.name='LOW_MARBLE_TABLE';low.position.set(-.38,0,.10);g.add(low);
+  const low=new THREE.Group();low.name='LOW_MARBLE_TABLE';low.position.set(.38,0,.10);g.add(low);
   cyl('low-recessed-foot',.229,.229,.025,base,0,.0125,0,low);
   cyl('low-dark-drum-pedestal',.245,.245,.315,base,0,.1825,0,low);
   organicTop('low-veined-marble-organic-top',.83,.81,.045,marble,0,.3625,0,low);
-  const tall=new THREE.Group();tall.name='TALL_COCOA_TABLE';tall.position.set(.31,0,-.12);g.add(tall);
+  const tall=new THREE.Group();tall.name='TALL_COCOA_TABLE';tall.position.set(-.31,0,-.12);g.add(tall);
   cyl('tall-recessed-foot',.209,.209,.025,base,0,.0125,0,tall);
   cyl('tall-dark-drum-pedestal',.235,.235,.415,base,0,.2325,0,tall);
   organicTop('tall-polished-organic-top',.79,.78,.046,cocoa,0,.463,0,tall);
   // p15 styling: two dark glass-like bottles on low top and a book on tall.
   const decor=new THREE.Group();decor.name='REMOVABLE_TABLE_STYLING';g.add(decor);
   const bottle=mat('smoked-amber-glass-appearance',0x44301e,.21,.12);
-  for(const [x,z,h] of [[-.53,.15,.22],[-.29,.27,.28]])lathe('dark-sculptural-bottle',[[0,0],[.055,0],[.067,.07],[.053,h*.65],[.025,h*.78],[.024,h],[.016,h]],bottle,x,.385,z,decor);
-  box('linen-book',.19,.038,.24,.004,book,.31,.505,-.12,decor);
-  box('book-page-block',.18,.024,.228,.001,paper,.31,.505,-.12,decor);
+  for(const [x,z,h] of [[.53,.15,.22],[.29,.27,.28]])lathe('dark-sculptural-bottle',[[0,0],[.055,0],[.067,.07],[.053,h*.65],[.025,h*.78],[.024,h],[.016,h]],bottle,x,.385,z,decor);
+  box('linen-book',.19,.038,.24,.004,book,-.31,.505,-.12,decor);
+  box('book-page-block',.18,.024,.228,.001,paper,-.31,.505,-.12,decor);
   // Sculptural pale branch ornament, independently supported on book.
-  const ornament=new THREE.Group();ornament.name='SCULPTURAL_ORNAMENT';ornament.position.set(.31,.524,-.12);decor.add(ornament);
+  const ornament=new THREE.Group();ornament.name='SCULPTURAL_ORNAMENT';ornament.position.set(-.31,.524,-.12);decor.add(ornament);
   lathe('ornament-base',[[0,0],[.045,0],[.052,.025],[.031,.045]],ceramic,0,0,0,ornament);
   for(let i=0;i<7;i++){const a=i*2*Math.PI/7;const dx=Math.cos(a),dz=Math.sin(a);tube('ceramic-branch',[[0,.028,0],[dx*.026,.07,dz*.026],[dx*.047,.11+(i%3)*.014,dz*.047],[dx*.042,.14+(i%2)*.02,dz*.042]],.009,ceramic,ornament);}
  }
