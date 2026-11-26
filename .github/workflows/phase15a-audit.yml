@@ -1,0 +1,36 @@
+name: Phase 15A living and dining source audit
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'architecture/phase15a-living-dining-audit.json'
+      - 'tests/verify-phase15a-audit.mjs'
+      - '.github/workflows/phase15a-audit.yml'
+      - 'src/phase2/phase14-furniture-library.js'
+      - 'src/phase2/phase14abc-integration.js'
+      - 'src/phase2/stage4-living-dining.js'
+      - 'src/phase2/dining-furnishings.js'
+      - 'src/phase2/circulation-furniture.js'
+jobs:
+  source-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify exact IFC register and physical seating direction
+        run: node tests/verify-phase15a-audit.mjs
+      - name: Existing circulation and furniture regressions
+        run: |
+          npm run test:clearance
+          npm run test:stage4
+          npm run test:phase14abc
+      - name: Preserve audit register
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15a-source-audit
+          path: architecture/phase15a-living-dining-audit.json
