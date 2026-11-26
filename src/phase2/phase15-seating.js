@@ -43,7 +43,7 @@ export function createPhase15Seating(id,{detail='high'}={}){
    const t=i/n,c=curve.getPointAt(t),v=curve.getTangentAt(t),normal=new THREE.Vector3(-v.z,0,v.x).normalize(),h=top(t);
    for(let j=0;j<=ring;j++){
     const a=2*Math.PI*j/ring,cs=pow(Math.cos(a),.45),sn=pow(Math.sin(a),.50);
-    const rib=high&&ribs?.0045*(1+Math.cos(2*Math.PI*ribs*t))*Math.max(0,cs):0;
+    const rib=ribs?(high?.0045:.0025)*(1+Math.cos(2*Math.PI*(high?ribs:Math.round(ribs/3))*t))*Math.max(0,cs):0;
     const q=c.clone().addScaledVector(normal,cs*(thickness/2+rib));q.y=(h+bottom)/2+sn*(h-bottom)/2;p.push(...q.toArray());uv.push(t,j/ring);
    }
   }
@@ -56,15 +56,15 @@ export function createPhase15Seating(id,{detail='high'}={}){
  if(id==='main-sofa'){
   rounded('walnut-recessed-plinth',2.25,.085,.83,.035,walnut,0,.045,.035);
   const outline=[[-1.12,-.39],[-1.12,.15],[-1.02,.36],[-.73,.43],[0,.44],[.73,.43],[1.02,.36],[1.12,.15],[1.12,-.39]];
-  shell('continuous-walnut-outer-wrap',outline,t=>.63+.12*Math.sin(Math.PI*t),.025,.105,walnut,{segments:84});
-  const inside=outline.map(([x,z])=>[x*.94,z*.91]);
+  shell('continuous-walnut-outer-wrap',outline.map(([x,z])=>[x*1.012,z*1.055]),t=>.59+.12*Math.sin(Math.PI*t),.025,.07,walnut,{segments:84});
+  const inside=outline.map(([x,z])=>[x*.90,z*.82]);
   shell('enveloping-upholstered-arms-and-back',inside,t=>.75+.13*Math.sin(Math.PI*t),.11,.215,ivory,{segments:84});
   rounded('upholstered-seat-deck',2.00,.28,.84,.12,ivory,0,.25,-.015);
   for(let i=0;i<3;i++){
    const x=(i-1)*.655;
-   cushion('individual-seat-cushion-'+(i+1),.65,.26,.74,ivory,x,.43,-.055,.35,.62);
+   cushion('individual-seat-cushion-'+(i+1),.653,.31,.78,ivory,x,.405,-.075,.30,.47);
   }
-  cushion('backrest-landmark',1.99,.46,.24,ivory,0,.65,.31,.38,.67);
+  cushion('backrest-landmark',1.99,.46,.20,ivory,0,.65,.26,.38,.67);
   for(const side of [-1,1]){
    const p=cushion('loose-pillow-'+side,.36,.39,.16,side<0?cream:taupe,side*.81,.65,.15,.65,.75);p.rotation.z=side*.19;p.rotation.x=-.13;
   }
@@ -74,25 +74,25 @@ export function createPhase15Seating(id,{detail='high'}={}){
   // not a sectional or a mirrored copy of the main sofa.
   cushion('continuous-rounded-rest-base',1.78,.31,.98,cream,0,.18,0,.56,.47);
   cushion('single-rest-seat',1.72,.22,.92,cream,0,.43,-.035,.54,.58);
-  const path=[[-.78,.25],[-.52,.38],[-.16,.43],[.25,.42],[.57,.32],[.75,.12],[.78,-.19]];
-  shell('asymmetric-crescent-backrest',path,t=>.53+.33*Math.sin(Math.PI*t*.91),.28,.15,cream,{segments:72});
+  const path=[[.78,.25],[.52,.38],[.16,.43],[-.25,.42],[-.57,.32],[-.75,.12],[-.78,-.30]];
+  shell('asymmetric-crescent-backrest',path,t=>.48+.39*Math.sin(Math.PI*t*.64),.08,.15,cream,{segments:72});
   // Dark contour piping follows the upholstered base perimeter.
-  const pts=[];for(let i=0;i<32;i++){const a=2*Math.PI*i/32;pts.push([.883*pow(Math.cos(a),.56),.295,.48*pow(Math.sin(a),.56)]);}tube('dark-contour-piping',pts,.005,piping,true);
-  const p=cushion('backrest-landmark',.30,.35,.14,taupe,.34,.65,.25,.6,.7);p.rotation.z=-.11;
-  cushion('second-loose-pillow',.27,.31,.13,throwMat,.09,.63,.30,.56,.7);
+  const pts=[];for(let i=0;i<32;i++){const a=2*Math.PI*i/32;pts.push([(.89*Math.pow(Math.max(0,1-Math.pow((.295-.18)/.155,2/.47)),.47/2)+.003)*pow(Math.cos(a),.56),.295,(.49*Math.pow(Math.max(0,1-Math.pow((.295-.18)/.155,2/.47)),.47/2)+.003)*pow(Math.sin(a),.56)]);}tube('dark-contour-piping',pts,.005,piping,true);
+  const p=cushion('backrest-landmark',.33,.35,.14,taupe,-.34,.65,.25,.6,.7);p.rotation.z=-.11;
+  cushion('second-loose-pillow',.31,.33,.13,throwMat,-.09,.63,.30,.56,.7);
   // One continuous folded textile surface following the open end and front.
   const nu=high?20:10,nv=high?28:14,verts=[],uv=[],ix=[];
-  for(let j=0;j<=nv;j++){const t=j/nv;for(let i=0;i<=nu;i++){const u=i/nu,x=-.56+(u-.5)*.34,theta=t*Math.PI*.57,z=.21-.74*Math.sin(theta),y=.548-Math.max(0,t-.58)*.94+.009*Math.sin(u*Math.PI*9);verts.push(x,y,z);uv.push(u,t);}}
+  for(let j=0;j<=nv;j++){const t=j/nv;for(let i=0;i<=nu;i++){const u=i/nu,x=.55+(u-.5)*.34,theta=t*Math.PI*.50,z=.18-.65*Math.sin(theta),y=.548-Math.max(0,t-.52)*.96+.006*Math.sin(u*Math.PI*9);verts.push(x,y,z);uv.push(u,t);}}
   for(let j=0;j<nv;j++)for(let i=0;i<nu;i++){const a=j*(nu+1)+i,b=a+nu+1;ix.push(a,b,a+1,b,b+1,a+1);}
   const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(verts,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(ix);geo.computeVertexNormals();throwMat.side=THREE.DoubleSide;add('draped-folded-throw',geo,throwMat);
  }
  if(id==='accent-chair'){
   rounded('hidden-floor-plinth',.63,.045,.61,.022,oliveDark,0,.023,.025);
-  cushion('floor-hugging-upholstered-base',.68,.37,.67,olive,0,.225,-.014,.44,.57);
+  cushion('floor-hugging-upholstered-base',.70,.43,.70,olive,0,.242,-.014,.44,.47);
   const path=[[-.34,-.28],[-.345,-.06],[-.29,.23],[-.16,.32],[0,.35],[.16,.32],[.29,.23],[.345,-.06],[.34,-.28]];
-  shell('vertically-ribbed-wraparound-shell',path,t=>.67+.255*Math.sin(Math.PI*t),.035,.105,olive,{ribs:60,segments:360});
-  cushion('deep-seat-cushion',.63,.19,.63,olive,0,.45,-.045,.40,.65);
-  const p=cushion('backrest-landmark',.48,.37,.18,oliveDark,0,.68,.205,.62,.68);p.rotation.x=-.15;
+  shell('vertically-ribbed-wraparound-shell',path,t=>.55+.36*Math.sin(Math.PI*t),.025,.125,olive,{ribs:60,segments:360});
+  cushion('deep-seat-cushion',.65,.14,.65,olive,0,.435,-.045,.40,.55);
+  const p=cushion('backrest-landmark',.47,.37,.15,oliveDark,0,.66,.205,.55,.65);p.rotation.x=-.15;
  }
  // Anchor ground at y=0, preserve scale and orientation; no envelope
  // stretching or reflected geometry is permitted.
