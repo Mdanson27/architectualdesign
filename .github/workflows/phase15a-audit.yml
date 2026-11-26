@@ -6,6 +6,10 @@ on:
       - 'architecture/phase15a-living-dining-audit.json'
       - 'src/phase2/phase15-seating.js'
       - 'src/phase2/phase15-media.js'
+      - 'src/phase2/phase15-dining.js'
+      - 'phase15d-review.html'
+      - 'tests/verify-phase15d-dining.mjs'
+      - 'tests/qa-phase15d-dining-browser.mjs'
       - 'phase15c-review.html'
       - 'tests/verify-phase15c-media.mjs'
       - 'tests/qa-phase15c-media-browser.mjs'
@@ -58,6 +62,17 @@ jobs:
         with:
           name: phase15c-media-renders
           path: analysis/phase15c-visuals/
+      - name: Verify Phase 15D physical chair direction and source slab support
+        run: node tests/verify-phase15d-dining.mjs
+      - name: Capture all independent dining furniture and arrangement views
+        timeout-minutes: 8
+        run: node tests/qa-phase15d-dining-browser.mjs
+      - name: Preserve dining visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15d-dining-renders
+          path: analysis/phase15d-visuals/
       - name: Preserve audit register
         if: always()
         uses: actions/upload-artifact@v4
