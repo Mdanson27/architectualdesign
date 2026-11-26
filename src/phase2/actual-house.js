@@ -36,6 +36,7 @@ import {drawStudioTexture,STUDIO_TEXTURE_NAMES} from './phase13-studio-textures.
 import {loadStudioKTX2} from './phase13-ktx2.js';
 import {MeshoptDecoder} from 'three/addons/libs/meshopt_decoder.module.js';
 import {auditFurniture} from './phase14abc-integration.js';
+import {createPhase15Integration} from './phase15-integration.js';
 import {createPhase10Renderer,createPhase10SpatialIndex} from './phase10-render-optimizer.js';
 import {createPhase11Residency,loadLayersInOrder,loadingConcurrency} from './phase11-residency.js';
 import {createPlanCirculationCorrections} from './plan-circulation.js';
@@ -288,6 +289,7 @@ function refreshVisibility(){
  state.stage4LivingDining?.update({floor:state.floor,walking:state.mode==='walk',
   furnitureVisible:state.showFurniture,sectionEnabled:state.sectionEnabled,
   night:state.night,enabled:state.houseLightsOn,lightLayers:state.lightLayers});
+ updatePhase15Visibility();
  state.stage5BedroomsStudy?.update({floor:state.floor,walking:state.mode==='walk',
   furnitureVisible:state.showFurniture&&state.enhancedFurniture,
   night:state.night,enabled:state.houseLightsOn,lightLayers:state.lightLayers});
@@ -624,6 +626,15 @@ function setupEnhancements(){
   stairsBalconiesLighting:state.stage7StairsBalconiesLighting,
   exteriorLandscape:state.stage8ExteriorLandscape
  });
+ state.phase15=createPhase15Integration({
+  scene,origin:state.origin,records:state.meshes.filter(isResidenceRecord),solids:state.solids,
+  sofaSystem:state.movedSofa,diningSystem:state.dining,stage4:state.stage4LivingDining,
+  surfaces:state.stage2SurfaceSystem,lighting:state.lightingSystem,
+  floorSampler:(x,z,datum)=>sampleGround(x,z,datum,.30,.48),ceilingSampler:sampleSourceCeiling,
+  detail:'low'
+ });
+ console.info('[AutoMinds Phase 15H actual integration]',JSON.stringify(state.phase15.status()));
+ refreshVisibility();
  updateFullStage2Controls();
  renderStage3Status();
  console.info('[AutoMinds integrated house design]',state.productionDesign);
@@ -867,7 +878,7 @@ async function syncSourceLayers(initialManifest){
  phase10Renderer?.dispose();
  phase10Indexes.clear();
  phase10Renderer=createPhase10Renderer({scene,sourceRecords:state.meshes,residency:createPhase11Residency({now:()=>performance.now()+(qaPage?phase11QAClockOffset:0)}),
-  roots:[sourceRoot,state.siteContext?.root,state.stage4LivingDining?.root,
+  roots:[sourceRoot,state.siteContext?.root,state.stage4LivingDining?.root,state.phase15?.root,
    state.stage5BedroomsStudy?.root,state.stage6WetAreas?.root,
    state.stage7StairsBalconiesLighting?.root,state.dining?.root,
    state.decor?.group,state.movedSofa?.root,state.stairSafety?.root,
@@ -1074,7 +1085,7 @@ function findSpawn(level=0,x=null,z=null,nearFurniture=false){
     if(candidate.y+.28>b.max.y||candidate.y+1.56<b.min.y)return false;
     return candidate.x>b.min.x-visitorRadius&&candidate.x<b.max.x+visitorRadius&&candidate.z>b.min.z-visitorRadius&&candidate.z<b.max.z+visitorRadius;
    });
-  if(hazard.length)continue;
+  if(hazard.length||state.phase15?.blocks(candidate.x,candidate.z,candidate.y,visitorRadius))continue;
   if(state.dining?.root.visible&&state.dining.collisionBoxes.some(b=>
    candidate.y+1.2>b.min.y&&candidate.y+.2<b.max.y &&
    candidate.x>b.min.x-.3 && candidate.x<b.max.x+.3 &&
@@ -1205,6 +1216,7 @@ function detectObstacle(oldX,oldZ,nextX,nextZ,footY){
   new THREE.Vector3(nextX,footY+1,nextZ),footY,visitorRadius)){
   state.lastCollisionBlocker={kind:'balcony glass guard'};return true;
  }
+ if(state.phase15?.blocks(nextX,nextZ,footY,visitorRadius)){state.lastCollisionBlocker={kind:'Phase 15H living/dining furniture'};return true;}
  if(state.stage3Kitchen?.blocks?.(nextX,nextZ,footY,visitorRadius)){state.lastCollisionBlocker={kind:'Phase 14D kitchen furniture'};return true;}
  const candidates=nearby(state.solids,nextX,footY+1.05,nextZ,1.3);
  const rayMeshes=candidates.filter(r=>{
@@ -1537,11 +1549,15 @@ function enableStage3Kitchen(enabled=true){
  return out;
 }
 
+function updatePhase15Visibility(){
+ state.phase15?.update({floor:state.floor,walking:state.mode==='walk',furnitureVisible:state.showFurniture,sectionEnabled:state.sectionEnabled,night:state.night,enabled:state.houseLightsOn,lightLayers:state.lightLayers,footY:state.footY});
+}
 function toggleStudioAnneLayer(layer,enabled){
  state.lightLayers[layer]=enabled;
  state.lightingSystem?.update({layers:state.lightLayers});
  state.stage3Kitchen?.updateVisibility(state.floor,state.mode==='walk',state.showFurniture,state.lightLayers.task,state.houseLightsOn);
  state.stage4LivingDining?.update({lightLayers:state.lightLayers});
+ updatePhase15Visibility();
  state.stage5BedroomsStudy?.update({lightLayers:state.lightLayers});
  state.stage6WetAreas?.update({lightLayers:state.lightLayers});
  state.stage7StairsBalconiesLighting?.update({lightLayers:state.lightLayers});
@@ -1560,6 +1576,7 @@ function toggleLighting(){
  renderer.toneMappingExposure=state.night?1.08:1.02;
  state.lightingSystem?.update({night:state.night});
  state.stage4LivingDining?.update({night:state.night});
+ updatePhase15Visibility();
  state.stage5BedroomsStudy?.update({night:state.night});
  state.stage6WetAreas?.update({night:state.night});
  state.stage7StairsBalconiesLighting?.update({night:state.night});
@@ -1572,6 +1589,7 @@ function toggleHouseLights(){
  state.houseLightsOn=!state.houseLightsOn;
  state.lightingSystem?.update({enabled:state.houseLightsOn});
  state.stage4LivingDining?.update({enabled:state.houseLightsOn});
+ updatePhase15Visibility();
  state.stage5BedroomsStudy?.update({enabled:state.houseLightsOn});
  state.stage6WetAreas?.update({enabled:state.houseLightsOn});
  state.stage7StairsBalconiesLighting?.update({enabled:state.houseLightsOn});
@@ -1649,6 +1667,9 @@ $('sectionToggle').addEventListener('change',e=>{
  toast(state.sectionEnabled?'Architectural section enabled: roof and upper floors cut away':'Complete structure restored');
 });
 $('lightBtn').addEventListener('click',toggleLighting);
+ for(const input of document.querySelectorAll('[data-phase15-zone][data-phase15-layer]')){
+  input.addEventListener('input',()=>{state.phase15?.setDimmer(input.dataset.phase15Zone,input.dataset.phase15Layer,Number(input.value)/100);input.nextElementSibling.textContent=input.value+'%';});
+ }
 $('houseLightsBtn').addEventListener('click',toggleHouseLights);
 $('stage1AuditBtn').addEventListener('click',()=>{
  const panel=$('stage1AuditPanel'),open=panel.classList.toggle('hidden')===false;
@@ -2150,6 +2171,14 @@ if(isLocalQA){
     repairedWindowApertures:state.doorApertureAudit?.windowObstructedCount??0,
     openingRegistry:state.doorApertureAudit?.summary??null,
     blockedCuts:state.doorApertureAudit?.occlusionDetails??[]}),
+  phase15Status:()=>state.phase15?.status()??null,
+  phase15View:(eye,target)=>{
+   if(!state.initialReady||!qaPage||!state.phase15)return null;
+   if(state.mode==='walk')exitWalk();
+   state.floor='ground';state.sectionEnabled=false;state.showFurniture=true;refreshVisibility();
+   camera.position.set(eye[0]-state.origin.x,eye[1],eye[2]-state.origin.z);orbit.target.set(target[0]-state.origin.x,target[1],target[2]-state.origin.z);
+   camera.lookAt(orbit.target);orbit.update();return state.phase15.status();
+  },
   phase14dKitchenView:(eye,target)=>{
    if(!state.initialReady||!qaPage)return null;
    if(state.mode==='walk')exitWalk();
