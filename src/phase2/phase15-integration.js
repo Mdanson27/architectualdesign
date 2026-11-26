@@ -197,7 +197,15 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
    }else{o.userData.dispose();blocked.push({id:'layered-curtains',reason:'Missing slab or floor support'});}
   }
  }
- for(const id of ['botanical-relief','organic-mirror','contour-artwork','double-branch-wall-sconce','recessed-downlight','linear-cove-light','vases-and-books'])blocked.push({id,reason:'Final source anchor/host clearance and placement not yet certified'});
+ for(const id of ['botanical-relief','organic-mirror','contour-artwork','double-branch-wall-sconce','vases-and-books'])blocked.push({id,reason:'Final source anchor/host clearance and placement not yet certified'});
+ // Independent ambient/accent layers are installed only under actual slab
+ // support, in both rooms, rather than relying on old fixture emissives.
+ for(const [room,z,x] of [['G-SITTING',-6.3,115.9],['G-DINING',-2.25,114.0]]){
+  if(!rooms[room].installed)continue;
+  const zone=room==='G-DINING'?'dining':'sitting';
+  ceilingFixture('recessed-downlight',room,x,z,{zone});
+  ceilingFixture('linear-cove-light',room,x,z-.95,{zone});
+ }
  const controller=createPhase15LightingController(fixtures);
  let visible=true,section=false,master=true,layers={ambient:true,task:true,accent:true},night=false;const dimLevels={sitting:{ambient:1,task:1,accent:1},dining:{ambient:1,task:1,accent:1}};let lastUpdate={};
  function update({floor:level='all',walking=false,furnitureVisible=true,sectionEnabled=false,enabled=master,lightLayers=layers,night:nextNight=night,footY=0}={}){
@@ -210,6 +218,12 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
   floor.root.visible=visible;ceiling.root.visible=visible&&!section;
   suppressSurface();
   for(const f of fixtures){if(f.userData.anchor==='ceiling')f.visible=!section;f.userData.setLevel(master&&visible&&furnitureVisible&&f.visible&&layers[f.userData.layer]?(night?1:.28)*dimLevels[f.userData.zone][f.userData.layer]:0);}
+  for(const e of lighting.emitters){
+   const zone=e.zone.id==='dining'?'dining':['living','living-window'].includes(e.zone.id)?'sitting':null;
+   if(zone&&fixtures.some(f=>f.userData.zone===zone&&f.userData.assetId==='recessed-downlight')){
+    e.light.parent.visible=false;e.light.intensity=0;
+   }
+  }
   if(rooms['G-DINING'].installed&&fixtures.some(f=>f.userData.assetId==='dining-pendant-cluster')){
    for(const e of lighting.briefEmitters.filter(e=>e.id==='dining-table-pendant')){e.assembly.visible=false;e.light.intensity=0;}
   }
@@ -219,7 +233,7 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
  function status(){
   const orientation=[];if(rooms['G-DINING'].installed)ds.children.filter(o=>/^DINING_CHAIR_/.test(o.name)).forEach(o=>{const back=box(o.getObjectByName('backrest-landmark')).getCenter(new THREE.Vector3()),seat=box(o.getObjectByName('seat-landmark')).getCenter(new THREE.Vector3()),v=seat.sub(back);v.y=0;const dir=new THREE.Vector3(o.userData.target[0]-o.position.x,0,o.userData.target[1]-o.position.z).normalize();orientation.push({id:o.name,dot:v.normalize().dot(dir)});});
   for(const p of seats.filter(p=>p.id==='accent-chair')){const back=box(p.asset.getObjectByName('backrest-landmark')).getCenter(new THREE.Vector3()),seat=box(p.asset.getObjectByName('deep-seat-cushion')).getCenter(new THREE.Vector3()),v=seat.sub(back);v.y=0;const dir=new THREE.Vector3(p.target[0]-p.x,0,p.target[1]-p.z).normalize();orientation.push({id:p.asset.name,dot:v.normalize().dot(dir)});}
-  return {revision:'15H-integration',defaultOn:true,rooms:Object.fromEntries(Object.entries(rooms).map(([id,r])=>[id,{installed:r.installed,centre:r.centre??null}])),placed,blocked,orientation,sourceCount:sourceSet.size,visibleLegacy:[...sourceSet].filter(r=>r.mesh.visible).length,hiddenLegacyObjects:hiddenLegacy.length,colliders:colliders.length,floorRegions,ceilingRegions,fixtures:fixtures.map(f=>({id:f.userData.assetId,zone:f.userData.zone,intensity:f.userData.lights.reduce((s,l)=>s+l.intensity,0)})),dimmers:JSON.parse(JSON.stringify(dimLevels)),liveClearanceCertified:false,clientApproved:false};
+  return {revision:'15H-integration',defaultOn:true,rooms:Object.fromEntries(Object.entries(rooms).map(([id,r])=>[id,{installed:r.installed,centre:r.centre??null}])),placed,blocked,orientation,sourceCount:sourceSet.size,visibleLegacy:[...sourceSet].filter(r=>r.mesh.visible).length,hiddenLegacyObjects:hiddenLegacy.length,colliders:colliders.length,floorRegions,ceilingRegions,fixtures:fixtures.map(f=>({id:f.userData.assetId,zone:f.userData.zone,intensity:f.userData.lights.reduce((s,l)=>s+l.intensity,0)})),replacedAmbient:lighting.emitters.filter(e=>e.light.parent.visible===false&&['dining','living','living-window'].includes(e.zone.id)).map(e=>e.zone.id),replacedBrief:lighting.briefEmitters.filter(e=>e.id==='dining-table-pendant'&&!e.assembly.visible).map(e=>e.id),dimmers:JSON.parse(JSON.stringify(dimLevels)),liveClearanceCertified:false,clientApproved:false};
  }
  update();return {root,sourceSet,colliders,fixtures,controller,rooms,update,blocks,status,setDimmer};
 }
