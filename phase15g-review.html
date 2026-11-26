@@ -1,0 +1,28 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Phase 15G isolated lighting review</title><style>body{margin:0;background:#e9e3da;font:14px system-ui}canvas{display:block}</style></head><body><script type="module">
+import * as THREE from 'three';
+import {createPhase15Light,lightingStats,LIGHT15} from './src/phase2/phase15-lighting.js';
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setSize(1000,740);renderer.setPixelRatio(1);renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;document.body.appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color(0xe9e3da);
+const ambient=new THREE.HemisphereLight(0xfff5e6,0x77716b,2.4);scene.add(ambient);
+const light=new THREE.DirectionalLight(0xffe9d1,3);light.position.set(-3,5,-4);light.castShadow=true;light.shadow.mapSize.set(1024,1024);Object.assign(light.shadow.camera,{left:-3,right:3,top:3,bottom:-3,near:.1,far:15});scene.add(light);
+const fill=new THREE.DirectionalLight(0xffffff,1.3);fill.position.set(4,3,4);scene.add(fill);
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.MeshStandardMaterial({color:0xbdb1a1,roughness:.92}));floor.rotation.x=-Math.PI/2;floor.position.y=-.008;floor.receiveShadow=true;scene.add(floor);
+const camera=new THREE.PerspectiveCamera(35,1000/740,.05,50);
+let current;
+window.__LightQA={ids:Object.keys(LIGHT15),render(id,detail,view){
+ if(current){scene.remove(current);current.userData.dispose();}
+ current=createPhase15Light(id,{detail});scene.add(current);
+ const stats=lightingStats(current),d=Math.max(...stats.dimensions),target=new THREE.Vector3(0,(stats.min[1]+stats.max[1])/2,0);
+ const night=view==='night'||view==='dimmed',level=view==='dimmed'?.25:view==='day'?0:1;
+ current.userData.setLevel(level);
+ ambient.intensity=night?.12:2.4;light.intensity=night?.08:3;fill.intensity=night?.06:1.3;scene.background.setHex(night?0x393330:0xe9e3da);
+ floor.position.y=current.userData.anchor==='ceiling'?-2.796:current.userData.anchor==='wall'?-.9:-.008;
+ const directions={day:[0,.10,-1],perspective:[.65,.15,-1],night:[.55,.04,-1],dimmed:[.55,.04,-1]};
+ const direction=new THREE.Vector3(...directions[view]).normalize();camera.position.copy(target).addScaledVector(direction,Math.max(.32,d*2.15));camera.lookAt(target);
+ renderer.render(scene,camera);
+ const gl=renderer.getContext(),pixels=new Uint8Array(1000*740*4);gl.readPixels(0,0,1000,740,gl.RGBA,gl.UNSIGNED_BYTE,pixels);
+ const counts=new Set();for(let i=0;i<pixels.length;i+=64)counts.add((pixels[i]<<16)|(pixels[i+1]<<8)|pixels[i+2]);
+ return {...stats,view,level,intensity:current.userData.lights.reduce((s,l)=>s+l.intensity,0),uniqueSampleColors:counts.size,png:renderer.domElement.toDataURL('image/png')};
+}};
+</script></body></html>
