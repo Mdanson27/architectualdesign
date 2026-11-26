@@ -15,10 +15,10 @@ for(const id of Object.keys(MEDIA15)){
   if(id==='paired-coffee-tables'){
    const lo=g.getObjectByName('LOW_MARBLE_TABLE'),hi=g.getObjectByName('TALL_COCOA_TABLE');
    const lt=bounds(g.getObjectByName('low-veined-marble-organic-top')),ht=bounds(g.getObjectByName('tall-polished-organic-top')),lb=bounds(g.getObjectByName('low-dark-drum-pedestal')),hb=bounds(g.getObjectByName('tall-dark-drum-pedestal'));
-   near(bounds(lo).min.y,0);near(bounds(hi).min.y,0);near(lb.max.y,lt.min.y);near(hb.max.y,ht.min.y);
+   assert(lo.position.x>hi.position.x,'p15 viewer-left marble table');near(bounds(lo).min.y,0);near(bounds(hi).min.y,0);near(lb.max.y,lt.min.y);near(hb.max.y,ht.min.y);
    assert(ht.min.y>lt.max.y+.04,'tabletop vertical separation');
    assert(!lb.intersectsBox(hb),'drum bases collide');assert(!lt.intersectsBox(hb),'low top collides with tall base');
-   assert(lt.max.x>ht.min.x&&lt.max.z>ht.min.z&&ht.max.z>lt.min.z,'nesting tabletop projections');
+   assert(lt.max.x>ht.min.x&&ht.max.x>lt.min.x&&lt.max.z>ht.min.z&&ht.max.z>lt.min.z,'nesting tabletop projections');
    const d=lt.getSize(new THREE.Vector3()),e=ht.getSize(new THREE.Vector3());assert(d.x>.7&&e.x>.7);
    const book=g.getObjectByName('linen-book');near(bounds(book).min.y,ht.max.y);near(bounds(g.getObjectByName('SCULPTURAL_ORNAMENT')).min.y,bounds(book).max.y);
    assert(g.getObjectByName('low-veined-marble-organic-top').material.map);
@@ -29,7 +29,7 @@ for(const id of Object.keys(MEDIA15)){
   }
   if(id==='entertainment-wall'){
    const p=bounds(g.getObjectByName('ivory-feature-wall-panel')),tv=bounds(g.getObjectByName('tv-screen')),c=bounds(g.getObjectByName('floating-console-top'));
-   assert(tv.max.z<p.min.z,'screen must face room in front of backing');assert(tv.min.y>c.max.y+.4);
+   assert(g.getObjectByName('left-walnut-niche-back').position.x>g.getObjectByName('tv-screen').position.x,'viewer-left niche');assert(g.getObjectByName('right-tall-ceramic-vase').position.x<g.getObjectByName('tv-screen').position.x,'viewer-right vase');assert(tv.max.z<p.min.z,'screen must face room in front of backing');assert(tv.min.y>c.max.y+.4);
    assert(c.min.y>.25&&g.userData.wallMountRequired&&!g.userData.cableAndElectricalCertified);
    assert.equal(g.children.filter(o=>o.name.startsWith('handleless-concealed-storage-front')).length,4);
    assert(g.getObjectByName('niche-warm-light-strip').material.emissiveIntensity>0);
