@@ -1,0 +1,593 @@
+{
+  "schema": "autominds.phase15a-audit.v1",
+  "baselineCommit": "4c42bc66a23f9ccfdccec7239629227d9758c17e",
+  "scope": [
+    "G-SITTING",
+    "G-DINING"
+  ],
+  "status": "source-audit-not-visual-approval",
+  "coordinateSystem": "IFC absolute world X,Y,Z metres; ground datum 0; subtract scene origin only once",
+  "rooms": [
+    {
+      "id": "G-SITTING",
+      "label": "Sitting Room",
+      "planLabelAreaM2": 35,
+      "provisionalPlanBoundsXZ": [
+        112.4,
+        119.73,
+        -9.62,
+        -4.89
+      ],
+      "derivedRectangularAreaM2": 34.671,
+      "briefPages": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19
+      ],
+      "certified": false
+    },
+    {
+      "id": "G-DINING",
+      "label": "Dining Room",
+      "planLabelAreaM2": 19,
+      "provisionalPlanBoundsXZ": [
+        112.45,
+        117.15,
+        -4.42,
+        -0.38
+      ],
+      "derivedRectangularAreaM2": 18.988,
+      "briefPages": [
+        10,
+        20,
+        21
+      ],
+      "certified": false
+    }
+  ],
+  "evidence": {
+    "brief": "Studio Anne / Emmanuel’s design brief (9), pages 4,7–10,14–21",
+    "roomBounds": "src/phase2/stage1-plan-crosswalk.js, moderate confidence; not certified as-built",
+    "planAreas": "src/phase2/stage1-room-audit.js",
+    "sourceBounds": "GLB node matrix applied to POSITION accessor bounds, rounded to .001 m; conservative AABB, not physical surface certification",
+    "baselineImages": "Two user-provided overhead screenshots; not independently captured from this exact commit"
+  },
+  "exactSourceRegister": [
+    {
+      "id": "1q4YZutsD4TgduM8eW5Ara",
+      "name": "FU - 007",
+      "layer": "ground-furniture-01",
+      "min": [
+        113.071,
+        0,
+        -7.854
+      ],
+      "max": [
+        114.721,
+        0.6,
+        -5.354
+      ],
+      "action": "replace existing ground sofa presentation; current source reposition offset +0.82 X; preserve source node and recompute collision for fitted actual geometry"
+    },
+    {
+      "id": "2xEu3ohP52EhzvosO6BHlM",
+      "name": "FU - 007",
+      "layer": "ground-furniture-01",
+      "min": [
+        116.146,
+        0,
+        -7.192
+      ],
+      "max": [
+        118.646,
+        0.6,
+        -5.542
+      ],
+      "action": "replace second sectional with distinct reference rest sofa only after floor/clearance checks"
+    },
+    {
+      "id": "3ra6Gls3T5jApOmAAeSrCT",
+      "name": "FU - 008",
+      "layer": "ground-furniture-01",
+      "min": [
+        116.214,
+        0,
+        -7.296
+      ],
+      "max": [
+        117.414,
+        0.5,
+        -6.7
+      ],
+      "action": "replace source coffee table and its Stage 4 stone-top overlay with paired p15 tables; select clear placement"
+    },
+    {
+      "id": "1afWXEKC12RAcvs6gS6fzo",
+      "name": "FU - 005",
+      "layer": "ground-furniture-00",
+      "min": [
+        112.196,
+        0.868,
+        -0.615
+      ],
+      "max": [
+        112.396,
+        2.5,
+        -0.41
+      ],
+      "action": "retain current threshold suppression only after exact runtime identity verification; do not classify as dining chair"
+    },
+    {
+      "id": "2uXH5I0az5ve7ZLR9Ku1x$",
+      "name": "FU - 005",
+      "layer": "ground-furniture-00",
+      "min": [
+        117.025,
+        0,
+        -9.237
+      ],
+      "max": [
+        119.706,
+        0.477,
+        -8.917
+      ],
+      "action": "media-wall candidate only; inspect real shape, overlap and visibility before deciding replacement; do not hide automatically"
+    },
+    {
+      "id": "1EuFhkbkzDauGp9vhICW8c",
+      "name": "FU - 005",
+      "layer": "ground-furniture-00",
+      "min": [
+        114.634,
+        0,
+        -9.247
+      ],
+      "max": [
+        115.834,
+        0.3,
+        -8.926
+      ],
+      "action": "media-wall candidate only; inspect real shape, overlap and visibility before deciding replacement; do not hide automatically"
+    },
+    {
+      "id": "0JKmU$FxHC6v9MgSvkAkUr",
+      "name": "FU - 005",
+      "layer": "ground-furniture-00",
+      "min": [
+        115.834,
+        0,
+        -9.247
+      ],
+      "max": [
+        117.034,
+        0.3,
+        -8.926
+      ],
+      "action": "media-wall candidate only; inspect real shape, overlap and visibility before deciding replacement; do not hide automatically"
+    },
+    {
+      "id": "1TVF3gbiv5PfQwZqliYRAe",
+      "name": "FU - 005",
+      "layer": "ground-furniture-00",
+      "min": [
+        117.034,
+        0,
+        -9.247
+      ],
+      "max": [
+        118.234,
+        0.3,
+        -8.926
+      ],
+      "action": "media-wall candidate only; inspect real shape, overlap and visibility before deciding replacement; do not hide automatically"
+    },
+    {
+      "id": "08kI5oKxL0bOHDnyUi7gAA",
+      "name": "FU - 005",
+      "layer": "ground-furniture-00",
+      "min": [
+        118.234,
+        0,
+        -9.247
+      ],
+      "max": [
+        119.434,
+        0.3,
+        -8.926
+      ],
+      "action": "media-wall candidate only; inspect real shape, overlap and visibility before deciding replacement; do not hide automatically"
+    },
+    {
+      "id": "18l3xfOOT4HgQkQeITi787",
+      "name": "FU - 005",
+      "layer": "ground-furniture-01",
+      "min": [
+        114.634,
+        0.31,
+        -9.242
+      ],
+      "max": [
+        115.084,
+        2.65,
+        -8.947
+      ],
+      "action": "media-wall candidate only; inspect real shape, overlap and visibility before deciding replacement; do not hide automatically"
+    }
+  ],
+  "protectedSource": [
+    {
+      "id": "2mrcI1wJDCT8BMFzUVp2Qz",
+      "name": "DOO - 001",
+      "layer": "ground-proxies-00",
+      "min": [
+        113.032,
+        0,
+        -4.507
+      ],
+      "max": [
+        116.236,
+        2.137,
+        -4.269
+      ],
+      "action": "preserve approved open sitting/dining connection; do not restore source divider"
+    },
+    {
+      "id": "3$SsS73oTD9xjTkkK_wxPq",
+      "name": "WD - 007",
+      "layer": "ground-proxies-00",
+      "min": [
+        117.066,
+        0.4,
+        -2.042
+      ],
+      "max": [
+        117.141,
+        2.4,
+        -0.242
+      ],
+      "action": "preserve dining window and access"
+    },
+    {
+      "id": "0heo8rPOjCf99YWpmhxp18",
+      "name": "DOO - 003",
+      "layer": "ground-proxies-00",
+      "min": [
+        116.897,
+        0,
+        -4.283
+      ],
+      "max": [
+        117.135,
+        2.537,
+        -2.709
+      ],
+      "action": "preserve door and sweep"
+    },
+    {
+      "id": "1UieRMfiz6ff$_C0Gg3N_J",
+      "name": "SW - 012",
+      "layer": "ground-walls-02",
+      "min": [
+        112.907,
+        0,
+        -9.447
+      ],
+      "max": [
+        118.807,
+        3.3,
+        -9.247
+      ],
+      "action": "candidate media feature backing only; preserve wall and existing screen elements"
+    },
+    {
+      "id": "106CgxveH7AgVd21TOMqeT",
+      "name": "SW - 017",
+      "layer": "ground-walls-02",
+      "min": [
+        112.196,
+        0,
+        -7.544
+      ],
+      "max": [
+        112.396,
+        3.3,
+        -6.528
+      ],
+      "action": "preserve approved stair/sitting opening treatment"
+    },
+    {
+      "id": "2EsPR9DmT7yAkpAQwvzzQX",
+      "name": "SW - 017",
+      "layer": "ground-walls-02",
+      "min": [
+        112.196,
+        0,
+        -6.528
+      ],
+      "max": [
+        112.396,
+        3.3,
+        -5.558
+      ],
+      "action": "preserve approved stair/sitting opening treatment"
+    }
+  ],
+  "adjacentNotInScope": [
+    "Phase 14D kitchen, structural walls and columns, all stairs, entry, bedrooms, first-floor family room, balconies, exterior",
+    "Furniture with z centre below -9.62 m: adjacent built-ins require separate boundary evidence; no automatic suppression"
+  ],
+  "generatedFurniture": {
+    "diningRoot": "PDF_DINING_ROOM_19M2_SIX_CHAIRS_PROVISIONAL",
+    "tableGroup": "REAL_3D_DINING_TABLE",
+    "tableCentre": [
+      115.05,
+      0,
+      -1.52
+    ],
+    "tableSize": [
+      2.17,
+      0.81,
+      1.1
+    ],
+    "chairs": [
+      {
+        "id": "DINING_CHAIR_1",
+        "localXZ": [
+          -0.55,
+          -0.92
+        ],
+        "worldXZ": [
+          114.5,
+          -2.44
+        ],
+        "yaw": 3.141592653589793,
+        "assignedTableTargetLocalXZ": [
+          -0.55,
+          0
+        ]
+      },
+      {
+        "id": "DINING_CHAIR_2",
+        "localXZ": [
+          0.55,
+          -0.92
+        ],
+        "worldXZ": [
+          115.6,
+          -2.44
+        ],
+        "yaw": 3.141592653589793,
+        "assignedTableTargetLocalXZ": [
+          0.55,
+          0
+        ]
+      },
+      {
+        "id": "DINING_CHAIR_3",
+        "localXZ": [
+          -0.55,
+          0.92
+        ],
+        "worldXZ": [
+          114.5,
+          -0.6
+        ],
+        "yaw": 0,
+        "assignedTableTargetLocalXZ": [
+          -0.55,
+          0
+        ]
+      },
+      {
+        "id": "DINING_CHAIR_4",
+        "localXZ": [
+          0.55,
+          0.92
+        ],
+        "worldXZ": [
+          115.6,
+          -0.6
+        ],
+        "yaw": 0,
+        "assignedTableTargetLocalXZ": [
+          0.55,
+          0
+        ]
+      },
+      {
+        "id": "DINING_CHAIR_5",
+        "localXZ": [
+          -1.48,
+          0
+        ],
+        "worldXZ": [
+          113.57,
+          -1.52
+        ],
+        "yaw": -1.5707963267948966,
+        "assignedTableTargetLocalXZ": [
+          0,
+          0
+        ]
+      },
+      {
+        "id": "DINING_CHAIR_6",
+        "localXZ": [
+          1.48,
+          0
+        ],
+        "worldXZ": [
+          116.53,
+          -1.52
+        ],
+        "yaw": 1.5707963267948966,
+        "assignedTableTargetLocalXZ": [
+          0,
+          0
+        ]
+      }
+    ],
+    "sittingAccentCandidates": {
+      "currentYaw": -1.5707963267948966,
+      "sourceCoffeeTableCentre": [
+        116.814,
+        -6.998
+      ],
+      "south": [
+        [
+          118.03,
+          -8.35
+        ],
+        [
+          117.93,
+          -8.73
+        ],
+        [
+          118.58,
+          -8.51
+        ],
+        [
+          117.43,
+          -8.5
+        ]
+      ],
+      "north": [
+        [
+          118.03,
+          -5.76
+        ],
+        [
+          118.58,
+          -5.81
+        ],
+        [
+          117.52,
+          -5.69
+        ],
+        [
+          118.65,
+          -6.37
+        ],
+        [
+          117.65,
+          -6.04
+        ]
+      ],
+      "note": "These are source-code candidate positions, not verified selected live instances."
+    }
+  },
+  "findings": [
+    {
+      "id": "F01",
+      "severity": "blocking-before-integration",
+      "finding": "Fixed sitting accent yaw -PI/2 points local -Z toward +X; all nine candidate centres lie east of original coffee-table centre, so every current candidate faces away from the conversation target.",
+      "required": "Derive each yaw from the approved conversation point using the final asset's measured forward direction. Verify actual geometry and world matrix, not yaw alone."
+    },
+    {
+      "id": "F02",
+      "severity": "blocking-before-integration",
+      "finding": "Six dining chair yaw values face their respective table axes correctly in source; physical visual front/back after fitting still requires independent renders and world-transform tests.",
+      "required": "Verify backrest behind seat, front points toward assigned table edge, alignment >=0.999, table centre lies forward, no mirrored/reflected transform; repeat on both LODs and installed geometry."
+    },
+    {
+      "id": "F03",
+      "severity": "blocking-before-integration",
+      "finding": "Current dining +Z row centres at z=-0.60; fitted depth extends about 0.038 m beyond provisional z=-0.38 edge. East end chair is close to source wall plane x≈116.911. Provisional edges are not certified walls.",
+      "required": "Measure actual free floor and wall/door sweep; solve table group position and seating pull-out, do not clip or force a clearance value."
+    },
+    {
+      "id": "F04",
+      "severity": "blocking-before-integration",
+      "finding": "Original coffee table AABB overlaps the second source sofa AABB. AABB overlap is conservative, not proof of triangle penetration; original coffee table is still enhanced with overlay rather than replaced in Stage 4.",
+      "required": "Independently model distinct p14 sofas and paired p15 tables; compute new collision footprints, reject intersection and measure gap."
+    },
+    {
+      "id": "F05",
+      "severity": "open",
+      "finding": "Existing furniture catalogue contains curved sofa, rest-chaise, curved dining chair and other assets, but existence does not establish reference match or installed usage.",
+      "required": "Compare source photographs and independent actual model renders in next stages."
+    },
+    {
+      "id": "F06",
+      "severity": "open",
+      "finding": "Production publication of Phase 14D baseline not established by current source audit.",
+      "required": "Confirm exact production build/Pages status before final Phase 15 integration."
+    }
+  ],
+  "briefAcceptance": [
+    {
+      "pages": [
+        14
+      ],
+      "items": [
+        "three individual deep seat cushions, enclosed curved arms, contrasting timber outer detailing",
+        "asymmetric rest sofa, rounded end, curved back, dark piping and throw",
+        "olive upholstered accent chair with continuous vertical ribbing and wraparound shell"
+      ]
+    },
+    {
+      "pages": [
+        15
+      ],
+      "items": [
+        "two overlapping organic coffee tables with cylindrical pedestals and distinct dark stone / brown tops",
+        "wall-mounted TV, ivory panel, floating timber console, illuminated niche and concealed equipment"
+      ]
+    },
+    {
+      "pages": [
+        16,
+        17,
+        18,
+        19
+      ],
+      "items": [
+        "organic contour rug anchors seating; full-height curtains",
+        "warm layered ambient/task/accent lighting 2700–3000 K",
+        "conversation layout, accessible side tables, conceal cables, unobstructed ventilation, restrained accessories"
+      ]
+    },
+    {
+      "pages": [
+        20,
+        21,
+        10
+      ],
+      "items": [
+        "six curved timber chairs, open lower backs, upholstered seat/back, tapered legs",
+        "rounded dark timber table with two fluted hourglass pedestals",
+        "botanical relief feature wall and warm perimeter glow",
+        "elongated pendant shades in mixed warm finishes over actual table, 750–900 mm above tabletop, ~2700 K"
+      ]
+    }
+  ],
+  "proposedNotCertified": {
+    "palette": "taupe/ivory/dark brown with olive accent from p14; final swatches not client approved",
+    "mainPathM": [
+      0.9,
+      1.2
+    ],
+    "coffeeTableGapM": [
+      0.4,
+      0.45
+    ],
+    "diningPullOutM": 0.9,
+    "accentChairCount": 2
+  },
+  "releaseGates": {
+    "visualAndFloorSupportPending": true,
+    "measuredClearancePending": true,
+    "clientApproval": false,
+    "architectureCertification": false,
+    "sourceReplacementMustBeExact": true,
+    "productionDefault": true,
+    "protectedLayers": 76,
+    "activeDoors": 26,
+    "circulationRoutes": 5,
+    "requiredCaptureCount": 16,
+    "fullProductionCIBeforeMerge": true
+  }
+}
