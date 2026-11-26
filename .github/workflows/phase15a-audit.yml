@@ -5,6 +5,10 @@ on:
     paths:
       - 'architecture/phase15a-living-dining-audit.json'
       - 'src/phase2/phase15-seating.js'
+      - 'src/phase2/phase15-media.js'
+      - 'phase15c-review.html'
+      - 'tests/verify-phase15c-media.mjs'
+      - 'tests/qa-phase15c-media-browser.mjs'
       - 'phase15b-review.html'
       - 'tests/verify-phase15b-seating.mjs'
       - 'tests/qa-phase15b-seating-browser.mjs'
@@ -43,6 +47,17 @@ jobs:
         with:
           name: phase15b-seating-renders
           path: analysis/phase15b-visuals/
+      - name: Verify Phase 15C table and entertainment geometry
+        run: node tests/verify-phase15c-media.mjs
+      - name: Capture all independent media and table views
+        timeout-minutes: 8
+        run: node tests/qa-phase15c-media-browser.mjs
+      - name: Preserve independent media evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15c-media-renders
+          path: analysis/phase15c-visuals/
       - name: Preserve audit register
         if: always()
         uses: actions/upload-artifact@v4
