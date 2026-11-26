@@ -150,13 +150,58 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
    else{o.userData.dispose();blocked.push({id:'folded-glass-chandelier',reason:'Canopy or safe over-table envelope not confirmed'});}
   }else blocked.push({id:'folded-glass-chandelier',reason:'No ceiling support'});
  }
- // Wall-mounted assets need explicit source wall/opening and mounting checks;
- // a solid placeholder wall is never generated. Keep unresolved items visible
- // in the audit rather than overlapping existing media cabinetry/windows.
- for(const id of ['entertainment-wall','botanical-relief','layered-curtains','organic-mirror','contour-artwork','double-branch-wall-sconce','recessed-downlight','linear-cove-light','cushion-set','vases-and-books'])blocked.push({id,reason:'Final source anchor/host clearance and placement not yet certified'});
+ // Source wall-backed accessories: measure actual continuous wall face with
+ // a ray at multiple elevations, not only the bounding envelope.
+ const ray=new THREE.Raycaster(),wallRecords=records.filter(r=>r.layer?.level==='ground'&&r.category==='walls'&&r.mesh.visible&&!removed(r));
+ const openings=records.filter(r=>r.layer?.level==='ground'&&(/^(WD|DOO)\s*-/i.test(r.mesh.userData.ifc?.name||'')||['windows','doors'].includes(r.category))&&!r.mesh.userData.clientOpenPlanPartitionRemoved&&!r.mesh.userData.clientKitchenDiningDividerRemoved);
+ function wallSupport(b,faceZ){
+  const near=new THREE.Box3(new THREE.Vector3(b.min.x,b.min.y,faceZ-.10),new THREE.Vector3(b.max.x,b.max.y,faceZ+.12));
+  if(openings.some(r=>r.box.intersectsBox(near)))return false;
+  const meshes=wallRecords.filter(r=>r.box.intersectsBox(near)).map(r=>r.mesh);
+  if(!meshes.length)return false;
+  for(const u of [.06,.25,.50,.75,.94])for(const v of [.04,.33,.66,.96]){
+   ray.set(new THREE.Vector3(THREE.MathUtils.lerp(b.min.x,b.max.x,u),THREE.MathUtils.lerp(b.min.y,b.max.y,v),faceZ+.10),new THREE.Vector3(0,0,-1));ray.far=.24;
+   if(!ray.intersectObjects(meshes,false).length)return false;
+  }
+  return true;
+ }
+ if(rooms['G-SITTING'].installed){
+  const media=createPhase15Media('entertainment-wall',{detail}),face=-9.242-origin.z;
+  const cabinets=new Set(records.filter(r=>r.layer?.level==='ground'&&['2uXH5I0az5ve7ZLR9Ku1x$','1EuFhkbkzDauGp9vhICW8c','0JKmU$FxHC6v9MgSvkAkUr','1TVF3gbiv5PfQwZqliYRAe','08kI5oKxL0bOHDnyUi7gAA','18l3xfOOT4HgQkQeITi787'].includes(sourceGuid(r))));
+  let installed=false;
+  for(const x of [116.45,116.75,117.0]){
+   media.rotation.y=Math.PI;media.position.set(...local(x,.02,-9.242));let b=box(media);media.position.z+=face+.012-b.min.z;b=box(media);
+   const hits=[...cabinets].filter(r=>r.box.intersectsBox(b));
+   if(!within('G-SITTING',b)||!wallSupport(b,face)||collision(b,new Set([...excluded,...hits]),colliders.map(c=>c.box)))continue;
+   register('entertainment-wall',media,'G-SITTING',true,{sourceSupport:true,wallProbeCount:20,sourceCabinetsReplaced:hits.map(sourceGuid)});hits.forEach(r=>sourceSet.add(r));installed=true;break;
+  }
+  if(!installed){media.userData.dispose();blocked.push({id:'entertainment-wall',reason:'No continuous collision-free source-backed media wall in tested positions'});}
+  // Replace old throw styling only when all cushion bottoms are supported
+  // by the real sofa seat. Existing new sofa already includes loose pillows.
+  const main=seats.find(p=>p.id==='main-sofa')?.asset;
+  if(main){const c=createPhase15Style('cushion-set',{detail});const seat=main.getObjectByName('individual-seat-cushion-2');
+   if(seat){const sb=box(seat);c.rotation.y=main.rotation.y;c.position.set(main.position.x,sb.max.y-.045,main.position.z);const cb=box(c);const sofa=box(main);
+    if(cb.min.x>=sofa.min.x&&cb.max.x<=sofa.max.x&&cb.min.z>=sofa.min.z&&cb.max.z<=sofa.max.z)register('cushion-set',c,'G-SITTING',false,{support:'sofa seat, provisional styling'});else{c.userData.dispose();blocked.push({id:'cushion-set',reason:'Loose cushion envelope exceeds sofa'});}
+   }else{c.userData.dispose();blocked.push({id:'cushion-set',reason:'Seat anchor missing'});}
+  }
+ }
+ // Dining window: fit the reference drapes to the actual window span only
+ // if the track, floor and adjacent door all clear. No curtains on removed partitions.
+ if(rooms['G-DINING'].installed){
+  const win=records.find(r=>sourceGuid(r)==='3$SsS73oTD9xjTkkK_wxPq'),door=records.find(r=>sourceGuid(r)==='0heo8rPOjCf99YWpmhxp18');
+  if(win&&door){const w=world(win.box),z=(w.min.z+w.max.z)/2,x=116.68;
+   const o=createPhase15Style('layered-curtains',{detail}),cy=ceilingSampler(x-origin.x,z-origin.z,0)?.y,fy=floorSampler(x-origin.x,z-origin.z,0)?.y;
+   if(Number.isFinite(cy)&&Number.isFinite(fy)){o.scale.set(Math.min(1,(w.max.z-w.min.z+.12)/2.65),(cy-fy-.04)/2.70,1);pose(o,x,z,Math.PI/2,fy+.012);const bb=box(o);
+    const ok=within('G-DINING',bb)&&!bb.intersectsBox(door.box)&&[bb.min.z,bb.max.z].every(t=>Number.isFinite(ceilingSampler(x-origin.x,t,0)?.y))&&!colliders.some(c=>c.box.intersectsBox(bb));
+    if(ok)register('layered-curtains',o,'G-DINING',false,{sourceSupport:true,sourceWindow:sourceGuid(win),adaptedWidth:true});else{o.userData.dispose();blocked.push({id:'layered-curtains',reason:'Full-height track/curtain envelope not clear within mapped room'});}
+   }else{o.userData.dispose();blocked.push({id:'layered-curtains',reason:'Missing slab or floor support'});}
+  }
+ }
+ for(const id of ['botanical-relief','organic-mirror','contour-artwork','double-branch-wall-sconce','recessed-downlight','linear-cove-light','vases-and-books'])blocked.push({id,reason:'Final source anchor/host clearance and placement not yet certified'});
  const controller=createPhase15LightingController(fixtures);
- let visible=true,section=false,master=true,layers={ambient:true,task:true,accent:true},night=false;
+ let visible=true,section=false,master=true,layers={ambient:true,task:true,accent:true},night=false;const dimLevels={sitting:{ambient:1,task:1,accent:1},dining:{ambient:1,task:1,accent:1}};let lastUpdate={};
  function update({floor:level='all',walking=false,furnitureVisible=true,sectionEnabled=false,enabled=master,lightLayers=layers,night:nextNight=night,footY=0}={}){
+  lastUpdate={floor:level,walking,furnitureVisible,sectionEnabled,enabled,lightLayers,night:nextNight,footY};
   visible=(level==='all'||level==='ground'||(walking&&footY<1.6));section=sectionEnabled&&!walking;master=enabled;layers=lightLayers;night=nextNight;
   root.visible=visible;
   for(const [id,r] of Object.entries(rooms)){r.group.visible=furnitureVisible; if(r.installed)stage4.groups[id].visible=false;}
@@ -164,16 +209,17 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
   for(const r of sourceSet)r.mesh.visible=false;
   floor.root.visible=visible;ceiling.root.visible=visible&&!section;
   suppressSurface();
-  for(const f of fixtures){if(f.userData.anchor==='ceiling')f.visible=!section;f.userData.setLevel(master&&visible&&furnitureVisible&&f.visible&&layers[f.userData.layer]?(night?1:.28):0);}
+  for(const f of fixtures){if(f.userData.anchor==='ceiling')f.visible=!section;f.userData.setLevel(master&&visible&&furnitureVisible&&f.visible&&layers[f.userData.layer]?(night?1:.28)*dimLevels[f.userData.zone][f.userData.layer]:0);}
   if(rooms['G-DINING'].installed&&fixtures.some(f=>f.userData.assetId==='dining-pendant-cluster')){
    for(const e of lighting.briefEmitters.filter(e=>e.id==='dining-table-pendant')){e.assembly.visible=false;e.light.intensity=0;}
   }
  }
+ function setDimmer(zone,layer,level){if(!dimLevels[zone]||!(layer in dimLevels[zone])||!Number.isFinite(level))throw Error('Invalid room dimmer');dimLevels[zone][layer]=THREE.MathUtils.clamp(level,0,1);update(lastUpdate);}
  function blocks(x,z,y,radius){if(!root.visible)return false;return colliders.some(c=>rooms[c.room].group.visible&&y+1.5>c.box.min.y&&y+.20<c.box.max.y&&x>c.box.min.x-radius&&x<c.box.max.x+radius&&z>c.box.min.z-radius&&z<c.box.max.z+radius);}
  function status(){
   const orientation=[];if(rooms['G-DINING'].installed)ds.children.filter(o=>/^DINING_CHAIR_/.test(o.name)).forEach(o=>{const back=box(o.getObjectByName('backrest-landmark')).getCenter(new THREE.Vector3()),seat=box(o.getObjectByName('seat-landmark')).getCenter(new THREE.Vector3()),v=seat.sub(back);v.y=0;const dir=new THREE.Vector3(o.userData.target[0]-o.position.x,0,o.userData.target[1]-o.position.z).normalize();orientation.push({id:o.name,dot:v.normalize().dot(dir)});});
   for(const p of seats.filter(p=>p.id==='accent-chair')){const back=box(p.asset.getObjectByName('backrest-landmark')).getCenter(new THREE.Vector3()),seat=box(p.asset.getObjectByName('deep-seat-cushion')).getCenter(new THREE.Vector3()),v=seat.sub(back);v.y=0;const dir=new THREE.Vector3(p.target[0]-p.x,0,p.target[1]-p.z).normalize();orientation.push({id:p.asset.name,dot:v.normalize().dot(dir)});}
-  return {revision:'15H-integration',defaultOn:true,rooms:Object.fromEntries(Object.entries(rooms).map(([id,r])=>[id,{installed:r.installed,centre:r.centre??null}])),placed,blocked,orientation,sourceCount:sourceSet.size,visibleLegacy:[...sourceSet].filter(r=>r.mesh.visible).length,hiddenLegacyObjects:hiddenLegacy.length,colliders:colliders.length,floorRegions,ceilingRegions,fixtures:fixtures.map(f=>({id:f.userData.assetId,zone:f.userData.zone,intensity:f.userData.lights.reduce((s,l)=>s+l.intensity,0)})),liveClearanceCertified:false,clientApproved:false};
+  return {revision:'15H-integration',defaultOn:true,rooms:Object.fromEntries(Object.entries(rooms).map(([id,r])=>[id,{installed:r.installed,centre:r.centre??null}])),placed,blocked,orientation,sourceCount:sourceSet.size,visibleLegacy:[...sourceSet].filter(r=>r.mesh.visible).length,hiddenLegacyObjects:hiddenLegacy.length,colliders:colliders.length,floorRegions,ceilingRegions,fixtures:fixtures.map(f=>({id:f.userData.assetId,zone:f.userData.zone,intensity:f.userData.lights.reduce((s,l)=>s+l.intensity,0)})),dimmers:JSON.parse(JSON.stringify(dimLevels)),liveClearanceCertified:false,clientApproved:false};
  }
- update();return {root,sourceSet,colliders,fixtures,controller,rooms,update,blocks,status};
+ update();return {root,sourceSet,colliders,fixtures,controller,rooms,update,blocks,status,setDimmer};
 }
