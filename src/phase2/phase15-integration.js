@@ -246,7 +246,8 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
   }
   o.userData.dispose();blocked.push({id,reason:'No continuous source-supported wall footprint clear of openings and installed furniture'});return null;
  }
- mountWallAsset('organic-mirror','G-SITTING',createPhase15Style,.72);
+ const mirrorAsset=mountWallAsset('organic-mirror','G-SITTING',createPhase15Style,.72);
+ const mirror=mirrorAsset?.getObjectByName('organic-real-planar-reflection');if(mirror?.userData.reflectionBudget)mirror.userData.reflectionBudget.enabled=true;
  mountWallAsset('contour-artwork','G-SITTING',createPhase15Style,1.18);
  const sconce=mountWallAsset('double-branch-wall-sconce','G-SITTING',createPhase15Light,1.30);if(sconce)fixtures.push(sconce);
  // Full-size botanical relief must not be forced onto a removed divider or
@@ -257,11 +258,12 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
  const mediaHost=rooms['G-SITTING'].group.children.find(o=>o.userData.assetId==='entertainment-wall');
  if(mediaHost){
   const top=mediaHost.getObjectByName('floating-console-top'),tb=top&&box(top),o=createPhase15Style('vases-and-books',{detail});let done=false;
-  if(tb){for(const shift of [-.7,-.4,0,.4,.7]){
+  if(tb){for(const scale of [1,.82,.68])for(const shift of [-1.1,-.9,-.7,-.4,0,.4,.7,.9,1.1]){
+   if(done)break;o.scale.setScalar(scale);
    o.rotation.y=mediaHost.rotation.y;o.position.set((tb.min.x+tb.max.x)/2+shift,tb.max.y,(tb.min.z+tb.max.z)/2);const bb=box(o);
    if(bb.min.x<tb.min.x+.02||bb.max.x>tb.max.x-.02||bb.min.z<tb.min.z+.015||bb.max.z>tb.max.z-.015)continue;
    let hit=false;mediaHost.traverse(p=>{if(p.isMesh&&p!==top&&box(p).intersectsBox(bb)&&box(p).max.y>tb.max.y+.012)hit=true;});
-   if(!hit){register('vases-and-books',o,'G-SITTING',false,{support:'actual console top'});done=true;break;}
+   if(!hit){register('vases-and-books',o,'G-SITTING',false,{support:'actual console top',adaptedScale:scale});done=true;break;}
   }}
   if(!done){o.userData.dispose();blocked.push({id:'vases-and-books',reason:'No supported clear console top envelope'});}
  }else blocked.push({id:'vases-and-books',reason:'Media host not installed'});
@@ -313,12 +315,13 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
    for(const e of lighting.briefEmitters.filter(e=>e.id==='dining-table-pendant')){e.assembly.visible=false;e.light.intensity=0;}
   }
  }
+ function forceReflection(){mirror?.userData.forceReflection?.();}
  function setDimmer(zone,layer,level){if(!dimLevels[zone]||!(layer in dimLevels[zone])||!Number.isFinite(level))throw Error('Invalid room dimmer');dimLevels[zone][layer]=THREE.MathUtils.clamp(level,0,1);update(lastUpdate);}
  function blocks(x,z,y,radius){if(!root.visible)return false;return colliders.some(c=>rooms[c.room].group.visible&&y+1.5>c.box.min.y&&y+.20<c.box.max.y&&x>c.box.min.x-radius&&x<c.box.max.x+radius&&z>c.box.min.z-radius&&z<c.box.max.z+radius);}
  function status(){
   const orientation=[];if(rooms['G-DINING'].installed)ds.children.filter(o=>/^DINING_CHAIR_/.test(o.name)).forEach(o=>{const back=box(o.getObjectByName('backrest-landmark')).getCenter(new THREE.Vector3()),seat=box(o.getObjectByName('seat-landmark')).getCenter(new THREE.Vector3()),v=seat.sub(back);v.y=0;const dir=new THREE.Vector3(o.userData.target[0]-o.position.x,0,o.userData.target[1]-o.position.z).normalize();orientation.push({id:o.name,dot:v.normalize().dot(dir)});});
   for(const p of seats.filter(p=>p.id==='accent-chair')){const back=box(p.asset.getObjectByName('backrest-landmark')).getCenter(new THREE.Vector3()),seat=box(p.asset.getObjectByName('deep-seat-cushion')).getCenter(new THREE.Vector3()),v=seat.sub(back);v.y=0;const dir=new THREE.Vector3(p.target[0]-p.x,0,p.target[1]-p.z).normalize();orientation.push({id:p.asset.name,dot:v.normalize().dot(dir)});}
-  return {revision:'15H-integration',defaultOn:true,rooms:Object.fromEntries(Object.entries(rooms).map(([id,r])=>[id,{installed:r.installed,centre:r.centre??null}])),placed,blocked,orientation,sourceCount:sourceSet.size,visibleLegacy:[...sourceSet].filter(r=>r.mesh.visible).length,hiddenLegacyObjects:hiddenLegacy.length,colliders:colliders.length,floorRegions,ceilingRegions,fixtures:fixtures.map(f=>({id:f.userData.assetId,zone:f.userData.zone,intensity:f.userData.lights.reduce((s,l)=>s+l.intensity,0)})),replacedAmbient:lighting.emitters.filter(e=>e.light.parent.visible===false&&['dining','living','living-window'].includes(e.zone.id)).map(e=>e.zone.id),replacedBrief:lighting.briefEmitters.filter(e=>e.id==='dining-table-pendant'&&!e.assembly.visible).map(e=>e.id),dimmers:JSON.parse(JSON.stringify(dimLevels)),liveClearanceCertified:false,clientApproved:false};
+  return {revision:'15I-visual-refinement',defaultOn:true,rooms:Object.fromEntries(Object.entries(rooms).map(([id,r])=>[id,{installed:r.installed,centre:r.centre??null}])),placed,blocked,orientation,sourceCount:sourceSet.size,visibleLegacy:[...sourceSet].filter(r=>r.mesh.visible).length,hiddenLegacyObjects:hiddenLegacy.length,colliders:colliders.length,floorRegions,ceilingRegions,fixtures:fixtures.map(f=>({id:f.userData.assetId,zone:f.userData.zone,intensity:f.userData.lights.reduce((s,l)=>s+l.intensity,0)})),replacedAmbient:lighting.emitters.filter(e=>e.light.parent.visible===false&&['dining','living','living-window'].includes(e.zone.id)).map(e=>e.zone.id),replacedBrief:lighting.briefEmitters.filter(e=>e.id==='dining-table-pendant'&&!e.assembly.visible).map(e=>e.id),reflection:mirror?.userData.reflectionStats?.()??null,dimmers:JSON.parse(JSON.stringify(dimLevels)),liveClearanceCertified:false,clientApproved:false};
  }
- update();return {root,sourceSet,colliders,fixtures,controller,rooms,update,blocks,status,setDimmer};
+ update();return {root,sourceSet,colliders,fixtures,controller,rooms,update,blocks,status,setDimmer,forceReflection};
 }
