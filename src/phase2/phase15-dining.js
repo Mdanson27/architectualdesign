@@ -13,13 +13,13 @@ export function createPhase15Dining(id,{detail='high'}={}){
  const materials=[],textures=[];
  const mat=(name,c,r)=>{const m=new THREE.MeshStandardMaterial({name,color:c,roughness:r});materials.push(m);return m;};
  function grain(){
-  const n=high?128:64,d=new Uint8Array(n*n*4);
-  for(let y=0;y<n;y++)for(let x=0;x<n;x++){const u=x/n,v=y/n,k=(y*n+x)*4,a=10*Math.sin(u*105+Math.sin(v*7)*1.5)+4*Math.sin(u*240+v*3)+2*Math.sin(x*13+y*17);d[k]=91+a;d[k+1]=64+a*.78;d[k+2]=45+a*.60;d[k+3]=255;}
+  const n=high?256:128,d=new Uint8Array(n*n*4);
+  for(let y=0;y<n;y++)for(let x=0;x<n;x++){const u=x/n,v=y/n,k=(y*n+x)*4,a=2.8*Math.sin(u*135+Math.sin(v*9)*2.2)+1.3*Math.sin(u*245+v*4)+.9*Math.sin(x*13+y*17);d[k]=69+a;d[k+1]=49+a*.78;d[k+2]=37+a*.60;d[k+3]=255;}
   const t=new THREE.DataTexture(d,n,n);t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.generateMipmaps=true;t.minFilter=THREE.LinearMipmapLinearFilter;t.magFilter=THREE.LinearFilter;t.needsUpdate=true;textures.push(t);return t;
  }
  const wood=mat('warm-dark-walnut',0xffffff,.52);wood.map=grain();
- const topWood=mat('polished-dark-walnut-top',0xffffff,.40);topWood.map=wood.map;
- const fabric=mat('warm-taupe-woven-upholstery',0x9c8976,.94),seam=mat('taupe-piping',0x877462,.95),foot=mat('recessed-dark-foot',0x362820,.78);
+ const topWood=mat('polished-dark-walnut-top',0xd1c4b9,.56);topWood.map=wood.map;
+ const fabric=mat('warm-taupe-woven-upholstery',0x887463,.94),seam=mat('taupe-piping',0x877462,.95),foot=mat('recessed-dark-foot',0x362820,.78);
  function mesh(g,name,geo,m,x=0,y=0,z=0){const o=new THREE.Mesh(geo,m);o.name=name;o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;g.add(o);return o;}
  function rounded(g,name,w,h,d,r,m,x,y,z){return mesh(g,name,new RoundedBoxGeometry(w,h,d,high?4:2,Math.min(r,w/2,h/2,d/2)),m,x,y,z);}
  function surface(g,name,p,uv,ix,m){const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(ix);geo.computeVertexNormals();return mesh(g,name,geo,m);}
@@ -58,7 +58,7 @@ export function createPhase15Dining(id,{detail='high'}={}){
   for(let i=0;i<n;i++)for(let j=0;j<ringN;j++){const a=i*(ringN+1)+j,b=a+ringN+1;ix.push(a,b,a+1,b,b+1,a+1);}
   for(const end of [0,n]){const a=end*(ringN+1),c=p.length/3;let x=0,y=0,z=0;for(let j=0;j<ringN;j++){x+=p[(a+j)*3];y+=p[(a+j)*3+1];z+=p[(a+j)*3+2];}p.push(x/ringN,y/ringN,z/ringN);uv.push(end/n,.5);for(let j=0;j<ringN;j++)ix.push(...(end===0?[c,a+j,a+j+1]:[c,a+j+1,a+j]));}
   surface(g,'continuous-curved-timber-wrap',p,uv,ix,wood);
-  cushion(g,'backrest-landmark',.385,.226,.088,0,.785,.216,.63,.55);
+  cushion(g,'backrest-landmark',.365,.226,.078,0,.785,.192,.63,.55);
   // Support the descending front arm without filling the back aperture.
   for(const a of [-1,1])tube(g,'slender-arm-to-seat-joint',[[a*.222,.435,-.166],[a*.244,.49,-.165],[a*.248,.56,-.16]],.017,wood);
   return g;
