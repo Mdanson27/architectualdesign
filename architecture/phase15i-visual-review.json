@@ -1,0 +1,163 @@
+{
+  "schema": "autominds.phase15i.visual-review.v1",
+  "baselineCommit": "9e7281bb20e487ec16ec7a7123393c5c1bcef97f",
+  "workflow": 45957326837,
+  "artifact": 15180340836,
+  "reference": "Studio Anne Emmanuel design brief pp.14–17,20–21",
+  "reviewedViews": [
+    "S01-entry",
+    "S02-main-sofa",
+    "S03-rest-sofa",
+    "S04-accent",
+    "S05-coffee",
+    "S06-media",
+    "S07-night",
+    "S08-overhead",
+    "D01-entry",
+    "D02-pedestal",
+    "D03-chair",
+    "D04-wall",
+    "D05-pendant",
+    "D06-night",
+    "D07-overhead",
+    "C01-open-plan"
+  ],
+  "baseline": {
+    "layers": 76,
+    "routes": 5,
+    "chairOrientations": 8,
+    "sourceReplacements": 9,
+    "visibleLegacy": 0,
+    "desktop": {
+      "drawCalls": 1908,
+      "triangles": 1282066
+    },
+    "mobile": {
+      "drawCalls": 992,
+      "triangles": 1148168
+    },
+    "batching": {
+      "originalDrawCalls": 3711,
+      "optimized": 1908
+    },
+    "actualLowSpecHardwareVerified": false
+  },
+  "findings": [
+    {
+      "id": "I01",
+      "views": [
+        "S01",
+        "S05",
+        "D01",
+        "D03"
+      ],
+      "finding": "Patchy rug surface with overlapping backing and pile",
+      "action": "Separate rug surface from backing by at least 3 mm; test noncoplanarity",
+      "status": "corrected-code-awaiting-render"
+    },
+    {
+      "id": "I02",
+      "views": [
+        "S03",
+        "S04",
+        "S06"
+      ],
+      "finding": "Mirror appears black; Reflector uses object rotation to compute normal",
+      "action": "Rotate reflector object, not merely mesh geometry; retain actual planar reflection, test direction",
+      "status": "corrected-code-awaiting-render"
+    },
+    {
+      "id": "I03",
+      "views": [
+        "D01",
+        "D03",
+        "D07"
+      ],
+      "finding": "Orange tabletop and prominent procedural stripes differ from dark subdued walnut reference",
+      "action": "Darker base, lower grain amplitude, finer texture, subdued top sheen",
+      "status": "corrected-code-awaiting-render"
+    },
+    {
+      "id": "I04",
+      "views": [
+        "D02",
+        "D03"
+      ],
+      "finding": "Small light patches visible through chair backs; upholstered surfaces lighter than reference",
+      "action": "Reduce and move back pad inward; retain physical facing tests",
+      "status": "corrected-code-awaiting-render"
+    },
+    {
+      "id": "I05",
+      "views": [
+        "S04"
+      ],
+      "finding": "Accent chair exterior ribbing too subtle and colour yellowish",
+      "action": "Increase low LOD rib depth and frequency, use darker olive",
+      "status": "corrected-code-awaiting-render"
+    },
+    {
+      "id": "I06",
+      "views": [
+        "S08",
+        "D07",
+        "D04",
+        "C01"
+      ],
+      "finding": "Hanging fixtures occlude overhead evidence; wall and connection camera composition insufficient",
+      "action": "Explicit sectioned overheads, revised wall and connection camera positions",
+      "status": "corrected-code-awaiting-render"
+    },
+    {
+      "id": "I07",
+      "views": [
+        "S06"
+      ],
+      "finding": "Residual dark cabinetry adjacent to media unit, differs from reference",
+      "action": "Exact source identification and replacement still required; no unverified source suppression",
+      "status": "open"
+    },
+    {
+      "id": "I08",
+      "views": [
+        "S07",
+        "D06"
+      ],
+      "finding": "Lighting uneven and some highlights overbright; fixture shape differs from photos",
+      "action": "Further visual lighting calibration and reference fidelity review required",
+      "status": "open"
+    },
+    {
+      "id": "I09",
+      "views": [
+        "D04"
+      ],
+      "finding": "Curtains and botanical relief not installed; geometry clearance constraint",
+      "action": "Do not block door/windows or restore removed wall; alternative approved location needed",
+      "status": "open"
+    },
+    {
+      "id": "I10",
+      "views": [
+        "S06"
+      ],
+      "finding": "Vase/books package not supported in previous console fit",
+      "action": "Search smaller scaled layouts with actual host clearance",
+      "status": "corrected-code-awaiting-placement"
+    },
+    {
+      "id": "I11",
+      "finding": "Real planar reflection adds additional scene render per frame",
+      "action": "120ms live reflection refresh interval; force reflection for explicit evidence; measure actual performance after build",
+      "status": "corrected-code-awaiting-benchmark"
+    }
+  ],
+  "release": {
+    "allMandatoryChecksMustPass": true,
+    "visualMatchApproved": false,
+    "clientApproved": false,
+    "architectApproved": false,
+    "productionMerged": false,
+    "phase15JStarted": false
+  }
+}
