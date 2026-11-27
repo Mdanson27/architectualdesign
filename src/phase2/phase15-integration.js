@@ -285,6 +285,24 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
   floor.root.visible=visible;ceiling.root.visible=visible&&!section;
   suppressSurface();
   for(const f of fixtures){if(f.userData.anchor==='ceiling')f.visible=!section;f.userData.setLevel(master&&visible&&furnitureVisible&&f.visible&&layers[f.userData.layer]?(night?1:.28)*dimLevels[f.userData.zone][f.userData.layer]:0);}
+  // Finish and media diffusers are emissive previews, not additional room
+  // light sources. Bind them to the same zone/layer/master state.
+  function syncGlow(group,zone){
+   group.traverse(o=>{
+    if(!o.isMesh)return;
+    const layer=/downlight/i.test(o.name)?'ambient':/diffuser|light-strip|halo/i.test(o.name)?'accent':null;
+    if(!layer)return;
+    for(const m of Array.isArray(o.material)?o.material:[o.material]){
+     if(!m?.emissive||m.emissive.getHex()===0)continue;
+     // Shared finish materials must be isolated per layer/room. Clone once
+     // so the dining dimmer cannot change the sitting-room diffuser.
+     if(!o.userData.phase15GlowMaterial){o.material=m.clone();o.userData.phase15GlowMaterial=true;o.userData.phase15GlowNominal=m.emissiveIntensity;}
+     o.material.emissiveIntensity=(o.userData.phase15GlowNominal??.85)*(master&&visible&&layers[layer]?(night?1:.28)*dimLevels[zone][layer]:0);
+    }
+   });
+  }
+  for(const g of ceiling.root.children){const zone=g.name.includes('G-DINING')?'dining':'sitting';syncGlow(g,zone);}
+  for(const [id,r] of Object.entries(rooms))for(const g of r.group.children)if(['entertainment-wall','organic-mirror'].includes(g.userData.assetId))syncGlow(g,id==='G-DINING'?'dining':'sitting');
   for(const e of lighting.emitters){
    const zone=e.zone.id==='dining'?'dining':['living','living-window'].includes(e.zone.id)?'sitting':null;
    if(zone&&fixtures.some(f=>f.userData.zone===zone&&f.userData.assetId==='recessed-downlight')){
