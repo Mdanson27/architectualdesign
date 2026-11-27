@@ -150,6 +150,17 @@
       "finding": "Real planar reflection adds additional scene render per frame",
       "action": "120ms live reflection refresh interval; force reflection for explicit evidence; measure actual performance after build",
       "status": "corrected-code-awaiting-benchmark"
+    },
+    {
+      "id": "I12",
+      "finding": "Phase 11 GPU round-trip and Phase 12 adaptive canvas parity failed on commit 17de516: nested mirror render reset the parent pass draw counters; timing-dependent refresh produced unequal measurements.",
+      "action": "Preserve main pass counters around actual Reflector rendering and report secondary pass separately. Cover autoReset true/false and exception restoration. Keep all prior parity gates unchanged.",
+      "status": "corrected-code-awaiting-real-browser-retest",
+      "failedRuns": [
+        45960914452,
+        45960914500
+      ],
+      "fixCommit": "cc2c4ecf2b0245eb91b1e7ccfd9e87602cbe2b19"
     }
   ],
   "release": {
