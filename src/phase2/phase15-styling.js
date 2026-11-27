@@ -116,6 +116,18 @@ export function createPhase15Style(id,{detail='high'}={}){
   // Reflector calculates its reflection plane from its object transform, not its geometry normals.
   const glassGeo=new THREE.ShapeGeometry(shape);
   const mirror=new Reflector(glassGeo,{textureWidth:high?512:256,textureHeight:high?512:256,color:0xbdbdbd,clipBias:.003});mirror.name='organic-real-planar-reflection';mirror.rotation.y=Math.PI;mirror.position.z=-.028;g.add(mirror);reflectors.push(mirror);
+  // Live mode can reuse the most recent planar capture between frames.
+  // Independent reviews render every frame; explicit QA captures force a
+  // fresh reflection. A periodic refresh also catches animated doors.
+  const renderReflection=mirror.onBeforeRender;let last=-Infinity,updates=0,skipped=0,force=false;
+  mirror.userData.reflectionBudget={intervalMs:120,enabled:false};
+  mirror.userData.forceReflection=()=>{force=true;};
+  mirror.userData.reflectionStats=()=>({updates,skipped,intervalMs:mirror.userData.reflectionBudget.intervalMs});
+  mirror.onBeforeRender=function(renderer,scene,camera,geometry,material,group){
+   const now=performance.now(),budget=mirror.userData.reflectionBudget;
+   if(budget.enabled&&!force&&now-last<budget.intervalMs){skipped++;return;}
+   force=false;last=now;updates++;return renderReflection.call(this,renderer,scene,camera,geometry,material,group);
+  };
   const border=points.map(p=>[-p.x,p.y,-.021]);tube('organic-mirror-brushed-frame',border,.012,brass,g,true);
   const halo=mat('warm-mirror-perimeter-diffuser',0xffd7a0,.6);halo.emissive.setHex(0xffc17c);halo.emissiveIntensity=.8;
   tube('concealed-mirror-halo',points.map(p=>[-p.x*1.055,.72+(p.y-.72)*1.055,.007]),.011,halo,g,true);
