@@ -2172,12 +2172,12 @@ if(isLocalQA){
     openingRegistry:state.doorApertureAudit?.summary??null,
     blockedCuts:state.doorApertureAudit?.occlusionDetails??[]}),
   phase15Status:()=>state.phase15?.status()??null,
-  phase15View:(eye,target)=>{
+  phase15View:(eye,target,section=false)=>{
    if(!state.initialReady||!qaPage||!state.phase15)return null;
    if(state.mode==='walk')exitWalk();
-   state.floor='ground';state.sectionEnabled=false;state.showFurniture=true;refreshVisibility();
+   state.floor='ground';state.sectionEnabled=Boolean(section);state.showFurniture=true;refreshVisibility();
    camera.position.set(eye[0]-state.origin.x,eye[1],eye[2]-state.origin.z);orbit.target.set(target[0]-state.origin.x,target[1],target[2]-state.origin.z);
-   camera.lookAt(orbit.target);orbit.update();return state.phase15.status();
+   camera.lookAt(orbit.target);orbit.update();state.phase15.forceReflection();return state.phase15.status();
   },
   phase14dKitchenView:(eye,target)=>{
    if(!state.initialReady||!qaPage)return null;
@@ -2197,6 +2197,7 @@ if(isLocalQA){
    syncViewport();
    // Rendering and serialization in the SAME JS task avoids blank WebGL
    // screenshots on Chrome's SwiftShader software renderer.
+   state.phase15?.forceReflection();
    if(phase10Renderer)phase10Renderer.render(renderer,camera,{allowLod:false});
    else renderer.render(scene,camera);
    return renderer.domElement.toDataURL('image/png');
