@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import {STYLE15,createPhase15Style,stylingStats,canPlaceStyle} from '../src/phase2/phase15-styling.js';
+import {STYLE15,createPhase15Style,stylingStats,canPlaceStyle,measurePhase15Reflection} from '../src/phase2/phase15-styling.js';
 import {createPhase15Dining} from '../src/phase2/phase15-dining.js';
 const bounds=o=>new THREE.Box3().setFromObject(o,true),rows=[];
 for(const id of Object.keys(STYLE15)){
@@ -65,3 +65,22 @@ const evidence={sourceSupportVerified:true,openingClear:true,ventilationClear:tr
 assert(canPlaceStyle(evidence));for(const k of Object.keys(evidence))assert(!canPlaceStyle({...evidence,[k]:false}));assert(!canPlaceStyle());
 dining.userData.dispose();rug.userData.dispose();
 console.log('PHASE15F_STYLE_GEOMETRY',JSON.stringify({variants:rows,diningRugContacts:{passed:onRug,total:contacts},restMargin,fullPullOutOnRugCertified:false,liveInstalled:false}));
+
+// Real parent-pass statistics must be identical whether a reflection is
+// refreshed or cached; the secondary work must remain visible separately.
+for(const autoReset of [true,false]){
+ const info={autoReset,render:{frame:9,calls:31,triangles:450,points:2,lines:6}},renderer={info};
+ let secondary;
+ const result=measurePhase15Reflection(renderer,()=>{
+  info.render.frame++;
+  for(const [k,v] of Object.entries({calls:17,triangles:300,points:3,lines:4}))info.render[k]=autoReset?v:info.render[k]+v;
+  return 'reflected';
+ },v=>{secondary=v;});
+ assert.equal(result,'reflected');
+ assert.deepEqual(secondary,{calls:17,triangles:300,points:3,lines:4});
+ assert.deepEqual(info.render,{frame:10,calls:31,triangles:450,points:2,lines:6});
+ assert.equal(info.autoReset,autoReset);
+ assert.throws(()=>measurePhase15Reflection(renderer,()=>{info.render.calls=999;throw Error('test reflection failure');}),/test reflection failure/);
+ assert.equal(info.render.calls,31,'parent counters restored even on error');
+}
+console.log('PHASE15I_REFLECTION_COUNTER_PARITY_PASSED');
