@@ -42,9 +42,9 @@ export function createPhase15Style(id,{detail='high'}={}){
  if(id.includes('rug')){
   const {width:w,depth:d}=STYLE15[id],kind=id.startsWith('living')?'contour':'dining';
   const rugMat=mat('woven relief pattern',0xffffff,.98);rugMat.map=textile(kind);rugMat.bumpMap=rugMat.map;rugMat.bumpScale=high?.003:.001;
-  box('low-profile-rug-backing',w,.010,d,.004,taupe,0,.005,0);
+  box('low-profile-rug-backing',w,.009,d,.003,taupe,0,.0045,0);
   const n=high?80:32,m=high?64:24,p=[],uv=[],ix=[];
-  for(let j=0;j<=m;j++)for(let i=0;i<=n;i++){const u=i/n,v=j/m,x=(u-.5)*(w-.012),z=(v-.5)*(d-.012),f=Math.hypot((2*u-1+.20*Math.sin((2*v-1)*4))*1.18,(2*v-1-.22*Math.sin((2*u-1)*4))*.85)+.085*Math.sin((2*u-1)*5+(2*v-1)*3);const relief=kind==='contour'?Math.pow(.5+.5*Math.cos(f*Math.PI*36),5):0;p.push(x,.010+.0015*relief,z);uv.push(u,v);}
+  for(let j=0;j<=m;j++)for(let i=0;i<=n;i++){const u=i/n,v=j/m,x=(u-.5)*(w-.012),z=(v-.5)*(d-.012),f=Math.hypot((2*u-1+.20*Math.sin((2*v-1)*4))*1.18,(2*v-1-.22*Math.sin((2*u-1)*4))*.85)+.085*Math.sin((2*u-1)*5+(2*v-1)*3);const relief=kind==='contour'?Math.pow(.5+.5*Math.cos(f*Math.PI*36),5):0;p.push(x,.012+.0015*relief,z);uv.push(u,v);}
   for(let j=0;j<m;j++)for(let i=0;i<n;i++){const a=j*(n+1)+i,b=a+n+1;ix.push(a,b,a+1,b,b+1,a+1);}
   surface('woven-rug-pile',p,uv,ix,rugMat);
   g.userData.proposedFloorCovering=true;
@@ -113,8 +113,9 @@ export function createPhase15Style(id,{detail='high'}={}){
   // modest texture allocation and a separate, non-certified backlight.
   const n=high?96:40,points=[];for(let i=0;i<n;i++){const a=i*Math.PI*2/n,r=1+.12*Math.sin(3*a+.4)+.06*Math.cos(5*a);points.push(new THREE.Vector2(.36*r*Math.cos(a),.63*r*Math.sin(a)+.72));}
   const shape=new THREE.Shape(points);shape.closePath();
-  const glassGeo=new THREE.ShapeGeometry(shape);glassGeo.rotateY(Math.PI);
-  const mirror=new Reflector(glassGeo,{textureWidth:high?512:256,textureHeight:high?512:256,color:0xbdbdbd,clipBias:.003});mirror.name='organic-real-planar-reflection';mirror.position.z=-.028;g.add(mirror);reflectors.push(mirror);
+  // Reflector calculates its reflection plane from its object transform, not its geometry normals.
+  const glassGeo=new THREE.ShapeGeometry(shape);
+  const mirror=new Reflector(glassGeo,{textureWidth:high?512:256,textureHeight:high?512:256,color:0xbdbdbd,clipBias:.003});mirror.name='organic-real-planar-reflection';mirror.rotation.y=Math.PI;mirror.position.z=-.028;g.add(mirror);reflectors.push(mirror);
   const border=points.map(p=>[-p.x,p.y,-.021]);tube('organic-mirror-brushed-frame',border,.012,brass,g,true);
   const halo=mat('warm-mirror-perimeter-diffuser',0xffd7a0,.6);halo.emissive.setHex(0xffc17c);halo.emissiveIntensity=.8;
   tube('concealed-mirror-halo',points.map(p=>[-p.x*1.055,.72+(p.y-.72)*1.055,.007]),.011,halo,g,true);
