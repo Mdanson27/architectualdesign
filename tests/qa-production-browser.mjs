@@ -814,21 +814,21 @@ try{
     ['S05-coffee',[115.4,1.65,-6.1],[116.55,.35,-6.9]],
     ['S06-media',[116.5,1.64,-6.0],[116.5,1.40,-9.0]],
     ['S07-night',[113.05,1.64,-5.3],[116.4,.95,-7.1]],
-    ['S08-overhead',[116,2.5,-7.1],[116,.1,-7.11]],
+    ['S08-overhead',[116,7.4,-7.1],[116,.1,-7.11],true],
     ['D01-entry',[113.0,1.64,-3.8],[114.8,.85,-2.25]],
     ['D02-pedestal',[114.8,.65,-3.65],[114.8,.40,-2.25]],
     ['D03-chair',[115.7,1.3,-3.85],[115.25,.65,-3.1]],
-    ['D04-wall',[114.8,1.64,-2.3],[116.9,1.5,-1.9]],
+    ['D04-wall',[114.8,1.35,-1.20],[116.9,1.40,-1.20]],
     ['D05-pendant',[113.9,1.64,-3.65],[114.8,1.85,-2.25]],
     ['D06-night',[113.0,1.64,-3.8],[114.8,.85,-2.25]],
-    ['D07-overhead',[114.8,2.5,-2.25],[114.8,0,-2.26]],
-    ['C01-open-plan',[113.0,1.64,-4.6],[114.8,1,-2.1]]
+    ['D07-overhead',[114.8,5.9,-2.25],[114.8,0,-2.26],true],
+    ['C01-open-plan',[113.3,1.65,-6.0],[114.7,1.1,-2.25]]
    ];
-   for(const [name,eye,target] of views){
+   for(const [name,eye,target,section=false] of views){
     console.log('PHASE15H_CAPTURE_START',name);
     if(name==='S07-night'||name==='D06-night')await evaluate("document.querySelector('#lightBtn').click()");
     if(name==='S08-overhead'||name==='D07-overhead')await evaluate("document.querySelector('#lightBtn').click()");
-    const a=await evaluate('window.__AutoMindsQA.phase15View('+JSON.stringify(eye)+','+JSON.stringify(target)+')');
+    const a=await evaluate('window.__AutoMindsQA.phase15View('+JSON.stringify(eye)+','+JSON.stringify(target)+','+JSON.stringify(section)+')');
     if(!a||a.visibleLegacy!==0)throw Error('Phase 15H legacy mesh regression');
     const png=await captureCanvasPng();if(png.length<5000||png.toString('ascii',1,4)!=='PNG')throw Error('Invalid actual walkthrough capture '+name);fs.writeFileSync('analysis/phase15h/'+name+'.png',png);
     console.log('PHASE15H_CAPTURE',name,png.length);
