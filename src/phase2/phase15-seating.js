@@ -22,7 +22,7 @@ export function createPhase15Seating(id,{detail='high'}={}){
  }
  const fabric=new THREE.DataTexture(data,size,size);fabric.wrapS=fabric.wrapT=THREE.RepeatWrapping;fabric.repeat.set(5,5);fabric.magFilter=THREE.LinearFilter;fabric.minFilter=THREE.LinearMipmapLinearFilter;fabric.generateMipmaps=true;fabric.needsUpdate=true;
  const cloth=c=>new THREE.MeshStandardMaterial({color:c,roughness:.96,bumpMap:high?fabric:null,bumpScale:.0012});
- const ivory=cloth(0xddd1bf),cream=cloth(0xe8dfd0),taupe=cloth(0x8f7b67),olive=cloth(0x777847),oliveDark=cloth(0x65663d),walnut=new THREE.MeshStandardMaterial({color:0x563b2c,roughness:.55}),piping=cloth(0x625449),throwMat=cloth(0x9b8e7d);
+ const ivory=cloth(0xddd1bf),cream=cloth(0xe8dfd0),taupe=cloth(0x8f7b67),olive=cloth(0x62663e),oliveDark=cloth(0x505637),walnut=new THREE.MeshStandardMaterial({color:0x563b2c,roughness:.55}),piping=cloth(0x625449),throwMat=cloth(0x9b8e7d);
  const materials=[ivory,cream,taupe,olive,oliveDark,walnut,piping,throwMat];
  function add(name,geo,mat,x=0,y=0,z=0){const m=new THREE.Mesh(geo,mat);m.name=name;m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;m.userData={phase15Asset:id,component:name};g.add(m);return m;}
  function rounded(name,w,h,d,r,mat,x,y,z){return add(name,new RoundedBoxGeometry(w,h,d,high?5:2,Math.min(r,w/2,h/2,d/2)),mat,x,y,z);}
@@ -43,7 +43,7 @@ export function createPhase15Seating(id,{detail='high'}={}){
    const t=i/n,c=curve.getPointAt(t),v=curve.getTangentAt(t),normal=new THREE.Vector3(-v.z,0,v.x).normalize(),h=top(t);
    for(let j=0;j<=ring;j++){
     const a=2*Math.PI*j/ring,cs=pow(Math.cos(a),.45),sn=pow(Math.sin(a),.50);
-    const rib=ribs?(high?.0045:.0025)*(1+Math.cos(2*Math.PI*(high?ribs:Math.round(ribs/3))*t))*Math.max(0,cs):0;
+    const rib=ribs?(high?.0045:.0038)*(1+Math.cos(2*Math.PI*(high?ribs:Math.round(ribs/2))*t))*Math.max(0,cs):0;
     const q=c.clone().addScaledVector(normal,cs*(thickness/2+rib));q.y=(h+bottom)/2+sn*(h-bottom)/2;p.push(...q.toArray());uv.push(t,j/ring);
    }
   }
