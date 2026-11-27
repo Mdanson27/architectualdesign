@@ -161,18 +161,40 @@ export function createPhase15SourceCeilings({origin={x:0,z:0},ceilingSampler,det
  const root=new THREE.Group(),m=materialFactory(detail),regions=[];
  root.name='PHASE15E_SOURCE_SUPPORTED_CEILINGS';root.userData={installationApproved:false,hideInSection:true};
  for(const spec of FINISH15_SPEC.floorRegions.slice(0,2)){
-  const xs=spec.polygon.map(p=>p[0]),zs=spec.polygon.map(p=>p[1]),x0=Math.min(...xs)+.10,x1=Math.max(...xs)-.10,z0=Math.min(...zs)+.10,z1=Math.max(...zs)-.10;
-  const nx=Math.ceil((x1-x0)/.40),nz=Math.ceil((z1-z0)/.40),heights=[];let rejected=0;
-  for(let i=0;i<=nx;i++)for(let j=0;j<=nz;j++){
-   const y=ceilingSampler(x0+(x1-x0)*i/nx-(origin.x||0),z0+(z1-z0)*j/nz-(origin.z||0),0)?.y;
-   if(!Number.isFinite(y)||y<2.50||y>3.65)rejected++;else heights.push(y);
+  const xs=spec.polygon.map(p=>p[0]),zs=spec.polygon.map(p=>p[1]),base=[Math.min(...xs)+.10,Math.max(...xs)-.10,Math.min(...zs)+.10,Math.max(...zs)-.10];
+  const area=([a,b,c,d])=>(b-a)*(d-c),memo=new Map();
+  function inspect(bounds){
+   const [x0,x1,z0,z1]=bounds,nx=Math.ceil((x1-x0)/.40),nz=Math.ceil((z1-z0)/.40),heights=[],missing=[];
+   for(let i=0;i<=nx;i++)for(let j=0;j<=nz;j++){
+    const x=x0+(x1-x0)*i/nx,z=z0+(z1-z0)*j/nz,key=x.toFixed(6)+','+z.toFixed(6);
+    if(!memo.has(key))memo.set(key,ceilingSampler(x-(origin.x||0),z-(origin.z||0),0)?.y);
+    const y=memo.get(key);if(!Number.isFinite(y)||y<2.50||y>3.65)missing.push([x,z]);else heights.push(y);
+   }
+   const variation=heights.length?Math.max(...heights)-Math.min(...heights):null;
+   return {bounds,accepted:missing.length===0&&variation!==null&&variation<=.035,probes:heights.length+missing.length,rejected:missing.length,variation,sourceHeight:heights.length?Math.min(...heights):null,missing};
   }
-  const variation=heights.length?Math.max(...heights)-Math.min(...heights):null;
-  const accepted=!rejected&&variation!==null&&variation<=.035;
-  regions.push({id:spec.id,accepted,probes:heights.length+rejected,rejected,variation,sourceHeight:heights.length?Math.min(...heights):null});
+  const original=inspect(base);let chosen=original;
+  // A source void is never filled. Try a slightly inset rectangular decorative
+  // treatment only when the complete new footprint has independent support.
+  // Retain at least 85% of the originally intended treatment, and log the
+  // exact omitted band and original failed probes. No changes to slab geometry.
+  if(!original.accepted){
+   const candidates=[];
+   for(const l of [0,.12,.24,.36,.48])for(const r of [0,.12,.24,.36,.48])for(const f of [0,.12,.24,.36,.48])for(const b of [0,.12,.24,.36,.48]){
+    if(!(l+r+f+b)||l+r+f+b>.96)continue;
+    const v=[base[0]+l,base[1]-r,base[2]+f,base[3]-b];
+    if(area(v)<area(base)*.85)continue;
+    if(original.missing.some(([x,z])=>x>=v[0]-.001&&x<=v[1]+.001&&z>=v[2]-.001&&z<=v[3]+.001))continue;
+    candidates.push(v);
+   }
+   candidates.sort((a,b)=>area(b)-area(a));
+   for(const v of candidates.slice(0,32)){const p=inspect(v);if(p.accepted){chosen=p;break;}}
+  }
+  const {bounds:[x0,x1,z0,z1],accepted,probes,rejected,variation,sourceHeight}=chosen;
+  regions.push({id:spec.id,accepted,probes,rejected,variation,sourceHeight,bounds:chosen.bounds,originalProbes:original.probes,originalRejected:original.rejected,originalMissing:original.missing,coverage:area(chosen.bounds)/area(base),trimmed:chosen!==original});
   if(!accepted)continue;
   const g=new THREE.Group();g.name='PHASE15E_CEILING_'+spec.id;g.position.set((x0+x1)/2-(origin.x||0),0,(z0+z1)/2-(origin.z||0));
-  ceilingDetail(g,m,x1-x0,z1-z0,Math.min(...heights)-.035,detail);root.add(g);
+  ceilingDetail(g,m,x1-x0,z1-z0,sourceHeight-.035,detail);root.add(g);
  }
  root.userData.dispose=()=>{root.traverse(o=>{if(o.isMesh)o.geometry.dispose();});m.dispose();};
  return {root,regions,sourceGeometryModified:false,liveInstalled:false};
