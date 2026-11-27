@@ -131,7 +131,7 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
   const xx=x-origin.x,zz=z-origin.z,y=ceilingSampler(xx,zz,0)?.y;
   if(!Number.isFinite(y)){blocked.push({id,reason:'No actual overhead slab'});return null;}
   const floorY=rooms[room].floorY??0;
-  const accepted=ceilingRegions.some(r=>r.id===room&&r.accepted);
+  const accepted=ceilingRegions.some(r=>r.id===room&&r.accepted&&(!r.bounds||(x>r.bounds[0]+.20&&x<r.bounds[1]-.20&&z>r.bounds[2]+.20&&z<r.bounds[3]-.20)));
   const mount=y-(accepted?.1175:0);
   const o=createPhase15Light(id,{detail,zone,ceilingHeight:mount-(aboveTable?floorY+.026:floorY)});
   o.position.set(xx,mount,zz);const b=box(o),corners=[b.min.x,b.max.x].flatMap(a=>[b.min.z,b.max.z].map(c=>ceilingSampler(a,c,0)?.y));
@@ -145,7 +145,7 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
   // Chandelier has low drops; place over coffee table only (not free route).
   const y=ceilingSampler(x-origin.x,z-origin.z,0)?.y;
   if(Number.isFinite(y)){
-   const o=createPhase15Light('folded-glass-chandelier',{detail});o.position.set(...local(x,y,z));const b=box(o),c=colliders.find(q=>q.id==='paired-coffee-tables');
+   const lowered=ceilingRegions.some(r=>r.id==='G-SITTING'&&r.accepted&&(!r.bounds||(x>r.bounds[0]+.45&&x<r.bounds[1]-.45&&z>r.bounds[2]+.45&&z<r.bounds[3]-.45)));const o=createPhase15Light('folded-glass-chandelier',{detail});o.position.set(...local(x,y-(lowered?.1175:0),z));const b=box(o),c=colliders.find(q=>q.id==='paired-coffee-tables');
    const supported=[b.min.x,b.max.x].every(a=>[b.min.z,b.max.z].every(d=>Math.abs((ceilingSampler(a,d,0)?.y??-99)-y)<.035));
    if(supported&&c&&b.min.x>=c.box.min.x&&b.max.x<=c.box.max.x&&b.min.z>=c.box.min.z&&b.max.z<=c.box.max.z){register('folded-glass-chandelier',o,'G-SITTING',false,{sourceSupport:true,aboveTable:true});fixtures.push(o);}
    else{o.userData.dispose();blocked.push({id:'folded-glass-chandelier',reason:'Canopy or safe over-table envelope not confirmed'});}
