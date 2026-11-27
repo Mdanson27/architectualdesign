@@ -44,15 +44,15 @@ function cdp(method,params={},timeout=90000){
   ws.send(JSON.stringify({id,method,params}));
  });
 }
-async function evaluate(expr){
+async function evaluate(expr,timeout=90000){
  let msg;
- try{msg=await cdp('Runtime.evaluate',{expression:expr,awaitPromise:true,returnByValue:true});}
+ try{msg=await cdp('Runtime.evaluate',{expression:expr,awaitPromise:true,returnByValue:true},timeout);}
  catch(error){throw Error('Browser evaluation failed for '+expr.slice(0,240)+': '+error.message,{cause:error});}
  if(msg.result?.exceptionDetails)throw Error('Browser evaluation: '+msg.result.exceptionDetails.text);
  return msg.result?.result?.value;
 }
 async function captureCanvasPng(){
- const data=await evaluate('window.__AutoMindsQA.captureStage9CanvasFrame()');
+ const data=await evaluate('window.__AutoMindsQA.captureStage9CanvasFrame()',240000);
  if(typeof data!=='string'||!data.startsWith('data:image/png;base64,'))
   throw Error('Browser did not return PNG WebGL render');
  const buf=Buffer.from(data.slice('data:image/png;base64,'.length),'base64');
@@ -709,7 +709,7 @@ try{
       pathLengthMetres:x.distanceMetres}))
    }));
  }
- report={status:'complete',ready,summary,scene,crossings,obstructed,blockedWhenClosed,circulation,exceptions};
+ report={...report,status:'complete',ready,summary,scene,crossings,obstructed,blockedWhenClosed,circulation,exceptions};
  console.log('BROWSER_QA_SUMMARY',JSON.stringify({
   sourceLayers:ready.loadedLayers,doors:summary.doorCount,windows:summary.windows?.windowAssemblies,
   facade:summary.verifiedFacadeGlazing,
@@ -825,11 +825,12 @@ try{
     ['C01-open-plan',[113.0,1.64,-4.6],[114.8,1,-2.1]]
    ];
    for(const [name,eye,target] of views){
+    console.log('PHASE15H_CAPTURE_START',name);
     if(name==='S07-night'||name==='D06-night')await evaluate("document.querySelector('#lightBtn').click()");
     if(name==='S08-overhead'||name==='D07-overhead')await evaluate("document.querySelector('#lightBtn').click()");
     const a=await evaluate('window.__AutoMindsQA.phase15View('+JSON.stringify(eye)+','+JSON.stringify(target)+')');
     if(!a||a.visibleLegacy!==0)throw Error('Phase 15H legacy mesh regression');
-    const png=await captureCanvasPng();if(png.length<5000)throw Error('Invalid actual walkthrough capture '+name);fs.writeFileSync('analysis/phase15h/'+name+'.png',png);
+    const png=await captureCanvasPng();if(png.length<5000||png.toString('ascii',1,4)!=='PNG')throw Error('Invalid actual walkthrough capture '+name);fs.writeFileSync('analysis/phase15h/'+name+'.png',png);
     console.log('PHASE15H_CAPTURE',name,png.length);
    }
   }else{const count=fs.readdirSync('analysis/phase15h').filter(f=>f.endsWith('.png')&&fs.statSync('analysis/phase15h/'+f).size>=5000).length;if(count!==16)throw Error('Missing retained Phase 15H evidence: '+count);}
