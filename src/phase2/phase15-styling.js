@@ -15,6 +15,22 @@ export const STYLE15=Object.freeze({
  'contour-artwork':{anchor:'wall',page:16}
 });
 const sp=(v,p)=>Math.sign(v)*Math.pow(Math.abs(v),p);
+// Three.js Reflector invokes a nested renderer.render() during the main pass.
+// Its reset (or accumulated counts when autoReset=false) must not destroy the
+// parent pass counters. Keep frame/geometry/texture state untouched; record
+// secondary-pass work separately and restore counters even on an exception.
+export function measurePhase15Reflection(renderer,render,record){
+ const info=renderer.info,keys=['calls','triangles','points','lines'];
+ if(!info?.render)return render();
+ const before=Object.fromEntries(keys.map(k=>[k,info.render[k]]));
+ try{return render();}
+ finally{
+  const work=Object.fromEntries(keys.map(k=>[k,Math.max(0,(info.render[k]??0)-(info.autoReset===false?(before[k]??0):0))]));
+  for(const k of keys)if(before[k]!==undefined)info.render[k]=before[k];
+  record?.(work);
+ }
+}
+
 export function createPhase15Style(id,{detail='high'}={}){
  if(!STYLE15[id]||!['high','low'].includes(detail))throw Error('Unknown styling asset');
  const high=detail==='high',g=new THREE.Group();g.name='PHASE15F_'+id;g.userData={assetId:id,detail,anchor:STYLE15[id].anchor,clientApproved:false,forward:[0,0,-1]};
@@ -120,13 +136,15 @@ export function createPhase15Style(id,{detail='high'}={}){
   // Independent reviews render every frame; explicit QA captures force a
   // fresh reflection. A periodic refresh also catches animated doors.
   const renderReflection=mirror.onBeforeRender;let last=-Infinity,updates=0,skipped=0,force=false;
+  let secondaryPass={calls:0,triangles:0,points:0,lines:0};
   mirror.userData.reflectionBudget={intervalMs:120,enabled:false};
   mirror.userData.forceReflection=()=>{force=true;};
-  mirror.userData.reflectionStats=()=>({updates,skipped,intervalMs:mirror.userData.reflectionBudget.intervalMs});
+  mirror.userData.reflectionStats=()=>({updates,skipped,intervalMs:mirror.userData.reflectionBudget.intervalMs,secondaryPass:{...secondaryPass}});
   mirror.onBeforeRender=function(renderer,scene,camera,geometry,material,group){
    const now=performance.now(),budget=mirror.userData.reflectionBudget;
    if(budget.enabled&&!force&&now-last<budget.intervalMs){skipped++;return;}
-   force=false;last=now;updates++;return renderReflection.call(this,renderer,scene,camera,geometry,material,group);
+   force=false;last=now;updates++;
+   return measurePhase15Reflection(renderer,()=>renderReflection.call(this,renderer,scene,camera,geometry,material,group),work=>{secondaryPass=work;});
   };
   const border=points.map(p=>[-p.x,p.y,-.021]);tube('organic-mirror-brushed-frame',border,.012,brass,g,true);
   const halo=mat('warm-mirror-perimeter-diffuser',0xffd7a0,.6);halo.emissive.setHex(0xffc17c);halo.emissiveIntensity=.8;
