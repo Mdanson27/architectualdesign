@@ -16,6 +16,7 @@ for(const id of Object.keys(STYLE15)){
    assert(Math.abs(s.dimensions[2]-STYLE15[id].depth)<.01);
    const pile=g.getObjectByName('woven-rug-pile');assert(pile.material.map&&pile.material.bumpMap);
    assert(pile.geometry.attributes.normal.getY(0)>.9);
+   assert(bounds(pile).min.y-bounds(g.getObjectByName('low-profile-rug-backing')).max.y>=.0025,'rug layers must not be coplanar');
   }
   if(id==='layered-curtains'){
    const l=g.getObjectByName('left-full-height-linen-drape'),r=g.getObjectByName('right-full-height-linen-drape'),ls=g.getObjectByName('left-translucent-sheer'),rs=g.getObjectByName('right-translucent-sheer');
@@ -44,6 +45,7 @@ for(const id of Object.keys(STYLE15)){
    const mirror=g.getObjectByName('organic-real-planar-reflection');
    assert(mirror?.isReflector===true||mirror?.type==='Reflector');
    assert.equal(mirror.getRenderTarget().width,detail==='high'?512:256);
+   const normal=new THREE.Vector3(0,0,1).transformDirection(mirror.matrixWorld);assert(normal.z<-.999,'Reflector object plane must face the room, not merely its geometry');
    assert(g.getObjectByName('concealed-mirror-halo').material.emissiveIntensity>0);
    assert(g.userData.mountingRequired);
   }
