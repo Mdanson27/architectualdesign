@@ -26,6 +26,7 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
  const within=(id,b,pad=.015)=>{const [a,c,d,e]=ROOM[id],w=world(b);return w.min.x>=a+pad&&w.max.x<=c-pad&&w.min.z>=d+pad&&w.max.z<=e-pad;};
  const probes=(b,datum=0)=>{const xs=[b.min.x+.012,(b.min.x+b.max.x)/2,b.max.x-.012],zs=[b.min.z+.012,(b.min.z+b.max.z)/2,b.max.z-.012],out=[];for(const x of xs)for(const z of zs){const y=floorSampler(x,z,datum)?.y;out.push(Number.isFinite(y)?y:null);}return out;};
  const floorOk=p=>p.every(y=>y!==null&&Math.abs(y-p[4])<.055&&Math.abs(y)<.12);
+ const arrivalKeepClear=(b)=>{const w=world(b),r=.45;return [[114.65,-3.95],[115.12,-6.86]].some(([x,z])=>x>w.min.x-r&&x<w.max.x+r&&z>w.min.z-r&&z<w.max.z+r&&w.max.y>.20);};
  const fixed=records.filter(r=>r.layer?.level==='ground'&&r.box&&!removed(r)&&r.mesh.visible&&['walls','columns','furniture','proxies','windows','doors'].includes(r.category)&&r.box.max.y>.10&&r.box.min.y<1.80&&
   !/^SLA|^STA|TREAD|LANDING|STEP/i.test(String(r.mesh.userData.ifc?.name||'')));
  const collision=(b,exclude,others=[])=>{
@@ -101,11 +102,11 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
   const p=attemptFloor(rug,'G-SITTING',cx-.24,cz,0,excluded,[],false);
   if(p)register('living-contour-rug',rug,'G-SITTING',false,{sourceSupport:true});else{rug.userData.dispose();blocked.push({id:'living-contour-rug',reason:'Rug footprint lacks full source support'});}
   function floorAccessory(id,factory,poses){
-   const o=factory(id,{detail});for(const [x,z] of poses){const q=attemptFloor(o,'G-SITTING',x,z,0,excluded,colliders.map(c=>c.box));if(q){register(id,o,'G-SITTING',true,{sourceSupport:true});return o;}}
+   const o=factory(id,{detail});for(const [x,z] of poses){const q=attemptFloor(o,'G-SITTING',x,z,0,excluded,colliders.map(c=>c.box));if(q&&!arrivalKeepClear(q.b)){register(id,o,'G-SITTING',true,{sourceSupport:true});return o;}}
    o.userData.dispose();blocked.push({id,reason:'No clear floor-supported position in tested candidates'});return null;
   }
   const side=floorAccessory('pedestal-side-table',createPhase15Media,[[114.1,-5.8],[114.65,-8.7],[115.15,-8.4],[117.9,-8.65]]);
-  floorAccessory('olive-planter',createPhase15Style,[[118.9,-8.55],[118.95,-5.7],[115.4,-8.75]]);
+  floorAccessory('olive-planter',createPhase15Style,[[118.9,-8.55],[118.95,-5.7],[115.4,-8.75],[119.0,-6.85],[119.0,-7.15],[118.85,-5.28],[117.45,-5.36],[114.9,-5.35],[115.4,-8.35],[113.35,-8.9]]);
   const lamp=floorAccessory('brass-arc-floor-lamp',createPhase15Light,[[114.05,-5.65],[114.6,-8.8],[115.15,-8.5],[118.85,-6.8]]);
   if(lamp)fixtures.push(lamp);
   if(side){const b=box(side),o=createPhase15Light('black-shade-table-lamp',{detail});o.position.set(side.position.x,b.max.y,side.position.z);register('black-shade-table-lamp',o,'G-SITTING',false,{support:'side-table top'});fixtures.push(o);}
@@ -189,15 +190,81 @@ export function createPhase15Integration({scene,origin,records,solids,sofaSystem
  // if the track, floor and adjacent door all clear. No curtains on removed partitions.
  if(rooms['G-DINING'].installed){
   const win=records.find(r=>sourceGuid(r)==='3$SsS73oTD9xjTkkK_wxPq'),door=records.find(r=>sourceGuid(r)==='0heo8rPOjCf99YWpmhxp18');
-  if(win&&door){const w=world(win.box),z=(w.min.z+w.max.z)/2,x=116.68;
-   const o=createPhase15Style('layered-curtains',{detail}),cy=ceilingSampler(x-origin.x,z-origin.z,0)?.y,fy=floorSampler(x-origin.x,z-origin.z,0)?.y;
-   if(Number.isFinite(cy)&&Number.isFinite(fy)){o.scale.set(Math.min(1,(w.max.z-w.min.z+.12)/2.65),(cy-fy-.04)/2.70,1);pose(o,x,z,Math.PI/2,fy+.012);const bb=box(o);
-    const ok=within('G-DINING',bb)&&!bb.intersectsBox(door.box)&&[bb.min.z,bb.max.z].every(t=>Number.isFinite(ceilingSampler(x-origin.x,t,0)?.y))&&!colliders.some(c=>c.box.intersectsBox(bb));
-    if(ok)register('layered-curtains',o,'G-DINING',false,{sourceSupport:true,sourceWindow:sourceGuid(win),adaptedWidth:true});else{o.userData.dispose();blocked.push({id:'layered-curtains',reason:'Full-height track/curtain envelope not clear within mapped room'});}
-   }else{o.userData.dispose();blocked.push({id:'layered-curtains',reason:'Missing slab or floor support'});}
-  }
+  if(win&&door){const w=world(win.box),z=(w.min.z+w.max.z)/2;
+   const o=createPhase15Style('layered-curtains',{detail});let installed=false;
+   // Fit the width within the window's own span, without extending into the
+   // adjacent door. Check all nine floor and ceiling support points.
+   for(const x of [116.84,116.77,116.70,116.63])for(const widthFactor of [1,.94,.88]){
+    if(installed)break;
+    const cy=ceilingSampler(x-origin.x,z-origin.z,0)?.y,fy=floorSampler(x-origin.x,z-origin.z,0)?.y;
+    if(!Number.isFinite(cy)||!Number.isFinite(fy)||cy-fy<2.5)continue;
+    o.scale.set(Math.min(1,(w.max.z-w.min.z-.04)/2.65)*widthFactor,(cy-fy-.1175-.02)/2.70,1);pose(o,x,z,-Math.PI/2,fy+.012);const bb=box(o);
+    const corners=[bb.min.x,(bb.min.x+bb.max.x)/2,bb.max.x].flatMap(a=>[bb.min.z,(bb.min.z+bb.max.z)/2,bb.max.z].map(t=>[a,t]));
+    const ok=within('G-DINING',bb)&&!bb.clone().expandByScalar(.035).intersectsBox(door.box)&&corners.every(([a,t])=>Math.abs((ceilingSampler(a,t,0)?.y??-99)-cy)<.035&&Math.abs((floorSampler(a,t,0)?.y??-99)-fy)<.035)&&!colliders.some(c=>c.box.intersectsBox(bb))&&!arrivalKeepClear(bb);
+    if(ok){register('layered-curtains',o,'G-DINING',false,{sourceSupport:true,sourceWindow:sourceGuid(win),adaptedWidth:true,anchorProbes:18});installed=true;}
+   }
+   if(!installed){o.userData.dispose();blocked.push({id:'layered-curtains',reason:'Window track or floor envelope not clear of adjacent source door'});}
+  }else blocked.push({id:'layered-curtains',reason:'Exact source window or adjacent door not found'});
  }
- for(const id of ['botanical-relief','organic-mirror','contour-artwork','double-branch-wall-sconce','vases-and-books'])blocked.push({id,reason:'Final source anchor/host clearance and placement not yet certified'});
+ // Mount small decorative pieces only on actual continuous source wall.
+ // Use actual wall face rays from the room-facing side, with all existing
+ // apertures and furniture excluded. The panel keeps its original dimensions.
+ function mountWallAsset(id,room,factory,height){
+  if(!rooms[room].installed)return null;
+  const o=factory(id,{detail}),[xmin,xmax,zmin,zmax]=ROOM[room],midX=(xmin+xmax)/2-origin.x,midZ=(zmin+zmax)/2-origin.z;
+  const floorY=rooms[room].floorY??0;
+  const candidates=[];
+  for(const r of wallRecords){
+   const b=r.box,dx=b.max.x-b.min.x,dz=b.max.z-b.min.z;
+   if(b.min.y>floorY+.3||b.max.y<floorY+2.1)continue;
+   if(dx>dz&&dz<.5){
+    const face=midZ>b.getCenter(new THREE.Vector3()).z?b.max.z:b.min.z,sign=midZ>face?1:-1;
+    const lo=Math.max(b.min.x,xmin-origin.x+.08),hi=Math.min(b.max.x,xmax-origin.x-.08);
+    if(face<zmin-origin.z-.3||face>zmax-origin.z+.3)continue;
+    for(let t=lo+.20;t<hi-.18;t+=.22)candidates.push({r,axis:'z',face,sign,t,yaw:sign===1?Math.PI:0});
+   }else if(dz>dx&&dx<.5){
+    const face=midX>b.getCenter(new THREE.Vector3()).x?b.max.x:b.min.x,sign=midX>face?1:-1;
+    const lo=Math.max(b.min.z,zmin-origin.z+.08),hi=Math.min(b.max.z,zmax-origin.z-.08);
+    if(face<xmin-origin.x-.3||face>xmax-origin.x+.3)continue;
+    for(let t=lo+.20;t<hi-.18;t+=.22)candidates.push({r,axis:'x',face,sign,t,yaw:sign===1?-Math.PI/2:Math.PI/2});
+   }
+  }
+  for(const c of candidates){
+   o.rotation.y=c.yaw;o.position.set(c.axis==='x'?c.face:c.t,floorY+height,c.axis==='z'?c.face:c.t);
+   let b=box(o);const edge=c.axis==='x'?(c.sign===1?b.min.x:b.max.x):(c.sign===1?b.min.z:b.max.z);
+   o.position[c.axis]+=c.face+c.sign*.012-edge;b=box(o);
+   if(!within(room,b,.005)||b.min.y<floorY+.015||b.max.y>floorY+2.70||arrivalKeepClear(b))continue;
+   const slab=b.clone();slab.min[c.axis]=c.face-.07;slab.max[c.axis]=c.face+.07;
+   if(openings.some(r=>r.box.intersectsBox(slab))||collision(b,new Set([c.r,...sourceSet]),colliders.map(c=>c.box))||rooms[room].group.children.some(p=>box(p).intersectsBox(b)))continue;
+   const transverse=c.axis==='x'?'z':'x',dir=new THREE.Vector3();dir[c.axis]=-c.sign;let support=true;
+   for(const u of [.05,.25,.5,.75,.95])for(const v of [.04,.33,.66,.96]){
+    const p=new THREE.Vector3();p[c.axis]=c.face+c.sign*.09;p[transverse]=THREE.MathUtils.lerp(b.min[transverse],b.max[transverse],u);p.y=THREE.MathUtils.lerp(b.min.y,b.max.y,v);
+    ray.set(p,dir);ray.far=.18;if(!ray.intersectObject(c.r.mesh,false).length)support=false;
+   }
+   if(!support)continue;
+   register(id,o,room,false,{sourceSupport:true,wallProbeCount:20,sourceWall:sourceGuid(c.r)});return o;
+  }
+  o.userData.dispose();blocked.push({id,reason:'No continuous source-supported wall footprint clear of openings and installed furniture'});return null;
+ }
+ mountWallAsset('organic-mirror','G-SITTING',createPhase15Style,.72);
+ mountWallAsset('contour-artwork','G-SITTING',createPhase15Style,1.18);
+ const sconce=mountWallAsset('double-branch-wall-sconce','G-SITTING',createPhase15Light,1.30);if(sconce)fixtures.push(sconce);
+ // Full-size botanical relief must not be forced onto a removed divider or
+ // obstruct a window. The p20 dimensions are preserved. Approval of a changed
+ // design or location is separate from geometric support.
+ blocked.push({id:'botanical-relief',reason:'Full-height panel has no verified approved uninterrupted wall in dining room; do not rebuild an open-plan divider'});
+ // Fit separately supported decoration on the floating console where clear.
+ const mediaHost=rooms['G-SITTING'].group.children.find(o=>o.userData.assetId==='entertainment-wall');
+ if(mediaHost){
+  const top=mediaHost.getObjectByName('floating-console-top'),tb=top&&box(top),o=createPhase15Style('vases-and-books',{detail});let done=false;
+  if(tb){for(const shift of [-.7,-.4,0,.4,.7]){
+   o.rotation.y=mediaHost.rotation.y;o.position.set((tb.min.x+tb.max.x)/2+shift,tb.max.y,(tb.min.z+tb.max.z)/2);const bb=box(o);
+   if(bb.min.x<tb.min.x+.02||bb.max.x>tb.max.x-.02||bb.min.z<tb.min.z+.015||bb.max.z>tb.max.z-.015)continue;
+   let hit=false;mediaHost.traverse(p=>{if(p.isMesh&&p!==top&&box(p).intersectsBox(bb)&&box(p).max.y>tb.max.y+.012)hit=true;});
+   if(!hit){register('vases-and-books',o,'G-SITTING',false,{support:'actual console top'});done=true;break;}
+  }}
+  if(!done){o.userData.dispose();blocked.push({id:'vases-and-books',reason:'No supported clear console top envelope'});}
+ }else blocked.push({id:'vases-and-books',reason:'Media host not installed'});
  // Independent ambient/accent layers are installed only under actual slab
  // support, in both rooms, rather than relying on old fixture emissives.
  for(const [room,z,x] of [['G-SITTING',-6.3,115.9],['G-DINING',-2.25,114.0]]){
