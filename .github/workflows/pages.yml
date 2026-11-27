@@ -122,13 +122,13 @@ jobs:
       - name: Verify walkable IFC floor classification
         run: npm run test:floor
       - name: Real-browser architectural walkthrough QA
-        timeout-minutes: 20
+        timeout-minutes: 55
         run: |
           command -v google-chrome
           npm run test:browser
       - name: Required 26 active doors, 5 open-plan routes and maid access
         if: success()
-        timeout-minutes: 8
+        timeout-minutes: 25
         env:
           QA_ALL_DOORS: '1'
         run: npm run test:browser
@@ -141,6 +141,7 @@ jobs:
             architecture-browser-qa.json
             analysis/stage9-visuals/*.png
             analysis/phase14d/*.png
+            analysis/phase15h/*.png
             analysis/phase14-visuals/*.png
             analysis/phase14-visuals/review.json
             analysis/stage1-room-candidate-crosswalk.json

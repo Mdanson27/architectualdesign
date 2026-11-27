@@ -1,0 +1,126 @@
+name: Phase 15A living and dining source audit
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'architecture/phase15a-living-dining-audit.json'
+      - 'src/phase2/phase15-seating.js'
+      - 'src/phase2/phase15-media.js'
+      - 'src/phase2/phase15-dining.js'
+      - 'src/phase2/phase15-finishes.js'
+      - 'src/phase2/phase15-styling.js'
+      - 'src/phase2/phase15-lighting.js'
+      - 'phase15g-review.html'
+      - 'tests/verify-phase15g-lighting.mjs'
+      - 'tests/qa-phase15g-lighting-browser.mjs'
+      - 'phase15f-review.html'
+      - 'tests/verify-phase15f-styling.mjs'
+      - 'tests/qa-phase15f-styling-browser.mjs'
+      - 'phase15e-review.html'
+      - 'tests/verify-phase15e-finishes.mjs'
+      - 'tests/qa-phase15e-finishes-browser.mjs'
+      - 'phase15d-review.html'
+      - 'tests/verify-phase15d-dining.mjs'
+      - 'tests/qa-phase15d-dining-browser.mjs'
+      - 'phase15c-review.html'
+      - 'tests/verify-phase15c-media.mjs'
+      - 'tests/qa-phase15c-media-browser.mjs'
+      - 'phase15b-review.html'
+      - 'tests/verify-phase15b-seating.mjs'
+      - 'tests/qa-phase15b-seating-browser.mjs'
+      - 'tests/verify-phase15a-audit.mjs'
+      - '.github/workflows/phase15a-audit.yml'
+      - 'src/phase2/phase14-furniture-library.js'
+      - 'src/phase2/phase14abc-integration.js'
+      - 'src/phase2/stage4-living-dining.js'
+      - 'src/phase2/dining-furnishings.js'
+      - 'src/phase2/circulation-furniture.js'
+jobs:
+  source-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Verify exact IFC register and physical seating direction
+        run: node tests/verify-phase15a-audit.mjs
+      - name: Existing circulation and furniture regressions
+        run: |
+          npm run test:clearance
+          npm run test:stage4
+          npm run test:phase14abc
+      - name: Verify Phase 15B geometry, physical orientation and LOD
+        run: node tests/verify-phase15b-seating.mjs
+      - name: Capture all independent seating views
+        timeout-minutes: 8
+        run: node tests/qa-phase15b-seating-browser.mjs
+      - name: Preserve independent seating evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15b-seating-renders
+          path: analysis/phase15b-visuals/
+      - name: Verify Phase 15C table and entertainment geometry
+        run: node tests/verify-phase15c-media.mjs
+      - name: Capture all independent media and table views
+        timeout-minutes: 8
+        run: node tests/qa-phase15c-media-browser.mjs
+      - name: Preserve independent media evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15c-media-renders
+          path: analysis/phase15c-visuals/
+      - name: Verify Phase 15D physical chair direction and source slab support
+        run: node tests/verify-phase15d-dining.mjs
+      - name: Capture all independent dining furniture and arrangement views
+        timeout-minutes: 8
+        run: node tests/qa-phase15d-dining-browser.mjs
+      - name: Preserve dining visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15d-dining-renders
+          path: analysis/phase15d-visuals/
+      - name: Verify Phase 15E botanical panel, source-supported floors and ceilings
+        run: node tests/verify-phase15e-finishes.mjs
+      - name: Capture independent architectural finish views
+        timeout-minutes: 8
+        run: node tests/qa-phase15e-finishes-browser.mjs
+      - name: Preserve finish visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15e-finishes-renders
+          path: analysis/phase15e-visuals/
+      - name: Verify Phase 15F textile, accessory and rug support geometry
+        run: node tests/verify-phase15f-styling.mjs
+      - name: Capture independent styling and accessory views
+        timeout-minutes: 10
+        run: node tests/qa-phase15f-styling-browser.mjs
+      - name: Preserve styling visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15f-styling-renders
+          path: analysis/phase15f-visuals/
+      - name: Verify Phase 15G lighting fixture geometry and independent dimming zones
+        run: node tests/verify-phase15g-lighting.mjs
+      - name: Capture day, night and dimmed lighting fixture views
+        timeout-minutes: 10
+        run: node tests/qa-phase15g-lighting-browser.mjs
+      - name: Preserve lighting visual evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15g-lighting-renders
+          path: analysis/phase15g-visuals/
+      - name: Preserve audit register
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase15a-source-audit
+          path: architecture/phase15a-living-dining-audit.json

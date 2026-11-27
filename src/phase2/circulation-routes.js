@@ -11,14 +11,17 @@ export const PLAN_ROUTE_TARGETS=[
   // S1 sitting-room safe standing point confirmed in the real-browser route;
   // the earlier nominal anchor lay 24cm behind local room furniture.
   drawing:'S1 ground floor stair / 35m² sitting room'},
+ // Phase 15H: the old dining target (114.65,-2.38) is inside the new
+ // table. Use the south dining aisle, still inside the same mapped room.
+ // Every grid edge retains the original source floor and collision tests.
  {id:'ground-sitting-dining',label:'Sitting Room → Dining · no door',level:0,
-  start:[115.12,-6.86],end:[114.65,-2.38],
+  start:[115.12,-6.86],end:[114.65,-3.95],
   drawing:'Client-corrected S1 · no partition or sliding leaf'},
  {id:'ground-stair-dining',label:'Stair foyer → Dining Room',level:0,
-  start:[110.15,-6.70],end:[114.65,-2.38],
+  start:[110.15,-6.70],end:[114.65,-3.95],
   drawing:'S1 ground floor stair / 19m² dining room'},
  {id:'ground-dining-kitchen',label:'Dining Room → Kitchen',level:0,
-  start:[114.65,-2.38],end:[109.65,-2.38],
+  start:[114.65,-3.95],end:[109.65,-2.38],
   drawing:'S1 ground floor dining / 25m² kitchen'},
  {id:'first-stair-family',label:'Upper stair landing → first-floor Family Room',level:3.3,
   // Clear arrival point inside the west side of the 19m² Family Room.
