@@ -44,6 +44,11 @@ function cdp(method,params={},timeout=90000){
   ws.send(JSON.stringify({id,method,params}));
  });
 }
+// Full-scene GPU audits submit multiple real WebGL frames, including planar
+// reflection work, on CI's software GPU. Keep interactive probes at 90s;
+// give these bounded heavy operations a separate 300s response budget.
+// This does not alter geometry, draw-call parity, or screenshot assertions.
+const FULL_SCENE_AUDIT_TIMEOUT_MS=300000;
 async function evaluate(expr,timeout=90000){
  let msg;
  try{msg=await cdp('Runtime.evaluate',{expression:expr,awaitPromise:true,returnByValue:true},timeout);}
@@ -739,7 +744,7 @@ try{
  let screenshots=[];
  let mobilePerf=null,mobileNav=null;
  const rawMetrics=()=>evaluate("JSON.stringify(window.__AutoMindsQA.stage9PerformanceStatus())");
- const phase10=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase10PerformanceAudit())"));
+ const phase10=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase10PerformanceAudit())",FULL_SCENE_AUDIT_TIMEOUT_MS));
  if(!phase10?.visibilityRestored||!phase10.batching.originalMeshesRetained||
     phase10.batching.extraBytes>phase10.batching.maxExtraBytes||
     phase10.baseline.drawCalls<=phase10.optimized.drawCalls||
@@ -753,7 +758,7 @@ try{
   if(!phase11?.automatic||phase11.sourceLayers!==phase11.expectedLayers||phase11.loading?.failed!==0||phase11.loading?.peak>2||!phase11.residency?.sourceGeometryRetained||!phase11.residency?.tracked)throw Error('Phase 11 production integration failed: '+JSON.stringify(phase11));
   console.log('PHASE11_PRODUCTION_RESIDENCY',JSON.stringify(phase11));
   report.phase11=phase11;
-  const roundTrip=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase11GpuRoundTrip())"));
+  const roundTrip=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase11GpuRoundTrip())",FULL_SCENE_AUDIT_TIMEOUT_MS));
   if(!roundTrip?.visibilityRestored||!roundTrip.webglResponsive||
      roundTrip.inactive.residency.evictions<=roundTrip.before.residency.evictions||
      roundTrip.inactive.geometries>=roundTrip.before.geometries||
@@ -764,7 +769,7 @@ try{
    throw Error('Phase 11 real WebGL eviction/re-upload parity failed: '+JSON.stringify(roundTrip));
   console.log('PHASE11_WEBGL_ROUND_TRIP',JSON.stringify(roundTrip));
   report.phase11GpuRoundTrip=roundTrip;
-  const adaptive=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase12AdaptiveAudit())"));
+  const adaptive=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase12AdaptiveAudit())",FULL_SCENE_AUDIT_TIMEOUT_MS));
   if(!adaptive?.active.automatic||!adaptive.sourcePreserved||!adaptive.webglResponsive||adaptive.sourceLayers!==76||
      adaptive.high.profile!=='high'||adaptive.low.profile!=='lightweight'||adaptive.recovered.profile!=='high'||
      !(adaptive.low.dpr<adaptive.high.dpr)||!(adaptive.low.width<adaptive.high.width)||
@@ -784,7 +789,7 @@ try{
   report.phase13=compressed;
   if(!compressed.textures?.available||compressed.textures.decoded!==6||compressed.textures.fallbacks!==0||compressed.textures.textures.some(t=>t.mipLevels!==10||t.width!==512||t.height!==512||!t.visual||t.visual.meanAbsoluteError>5||t.visual.p99AbsoluteError>24))throw Error('Phase 13 KTX2 browser decode failed: '+JSON.stringify(compressed.textures));
   console.log('PHASE13_KTX2_BROWSER',JSON.stringify(compressed.textures));
-  const lod=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase13LodAudit())"));
+  const lod=JSON.parse(await evaluate("JSON.stringify(window.__AutoMindsQA.phase13LodAudit())",FULL_SCENE_AUDIT_TIMEOUT_MS));
   if(!lod?.sourcePreserved||!lod.originalFoliagePreserved||!lod.simplified.lod.lastLodBatches||lod.simplified.triangles>=lod.full.triangles||lod.simplified.calls!==lod.full.calls)throw Error('Phase 13 actual decorative LOD parity failed: '+JSON.stringify(lod));
   console.log('PHASE13_BROWSER_DECORATIVE_LOD',JSON.stringify(lod));report.phase13Lod=lod;
   const library=await evaluate("(async()=>{const r=await fetch('/architectualdesign/furniture/manifest.json');if(!r.ok)throw Error('Furniture manifest missing');const m=await r.json();const a=m.assets.find(x=>x.id==='sculptural-accent-chair');const response=await fetch('/architectualdesign'+a.variants.high.path);const b=await response.arrayBuffer();return {assets:m.assets.length,variants:m.assets.reduce((n,x)=>n+Object.keys(x.variants).length,0),chairGLB:new DataView(b).getUint32(0,true)===0x46546c67,chairBytes:b.byteLength,expectedBytes:a.variants.high.bytes};})()");
